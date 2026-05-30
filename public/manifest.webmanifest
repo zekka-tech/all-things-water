@@ -1,0 +1,17 @@
+{
+  "name": "All Things Water",
+  "short_name": "ATW",
+  "description": "Premium bottled water, coolers, dispensers & accessories.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#06a3f0",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
