@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, ShoppingBag, Trash2 } from "lucide-react";
+import { ArrowRight, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { QuantityStepper } from "@/components/QuantityStepper";
 import { useCart } from "@/context/CartContext";
@@ -13,16 +13,25 @@ export function Cart() {
 
   const delivery = subtotal >= DELIVERY_THRESHOLD || subtotal === 0 ? 0 : DELIVERY_FEE;
   const total = subtotal + delivery;
+  const amountToFreeShipping = Math.max(0, DELIVERY_THRESHOLD - subtotal);
+  const shippingProgress = Math.min(100, (subtotal / DELIVERY_THRESHOLD) * 100);
+  const freeShipping = subtotal >= DELIVERY_THRESHOLD && subtotal > 0;
 
   if (items.length === 0) {
     return (
       <>
         <Seo title="Your cart" />
-        <div className="container-page grid place-items-center py-24 text-center">
-          <ShoppingBag className="h-14 w-14 text-ink-300" />
-          <h1 className="mt-4 text-2xl font-bold">Your cart is empty</h1>
-          <p className="mt-2 text-ink-500">Add some water to get started.</p>
-          <Link to="/shop" className="btn-primary mt-6 px-5 py-3">
+        <div className="container-page flex flex-col items-center justify-center py-28 text-center">
+          <div className="icon-wrap-lg mb-2">
+            <ShoppingBag className="h-7 w-7" />
+          </div>
+          <h1 className="mt-4 font-display text-2xl font-bold text-ink-900 dark:text-white">
+            Your cart is empty
+          </h1>
+          <p className="mt-2 text-ink-500 dark:text-ink-400">
+            Add some water to get started.
+          </p>
+          <Link to="/shop" className="btn-primary mt-7 px-6 py-3 text-base">
             Browse products <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
@@ -34,34 +43,74 @@ export function Cart() {
     <>
       <Seo title="Your cart" />
       <div className="container-page py-10">
-        <h1 className="text-3xl font-extrabold tracking-tight">Your cart</h1>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink-900 dark:text-white">
+          Your cart
+        </h1>
+
+        {/* Free shipping progress */}
+        {subtotal > 0 && (
+          <div className="mt-4 rounded-xl border border-ink-200 bg-ink-50 px-4 py-3 dark:border-ink-800 dark:bg-ink-900/50">
+            <div className="flex items-center justify-between gap-2 text-sm">
+              <div className="flex items-center gap-2 text-ink-600 dark:text-ink-300">
+                <Truck className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+                {freeShipping ? (
+                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    You've unlocked free delivery!
+                  </span>
+                ) : (
+                  <span>
+                    Add{" "}
+                    <span className="font-semibold text-ink-900 dark:text-white">
+                      {formatZAR(amountToFreeShipping)}
+                    </span>{" "}
+                    more for free delivery
+                  </span>
+                )}
+              </div>
+              <span className="shrink-0 text-xs text-ink-400">{formatZAR(DELIVERY_THRESHOLD)}</span>
+            </div>
+            <div className="progress-track mt-2">
+              <div
+                className={`progress-fill ${freeShipping ? "from-emerald-500 to-emerald-600" : ""}`}
+                style={{ width: `${shippingProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="mt-8 grid gap-8 lg:grid-cols-3">
-          <div className="space-y-4 lg:col-span-2">
+          {/* Line items */}
+          <div className="space-y-3 lg:col-span-2">
             {items.map(({ product, quantity }) => (
               <div key={product.id} className="card flex gap-4 p-4">
                 <Link
                   to={`/product/${product.slug}`}
-                  className="grid h-24 w-24 shrink-0 place-items-center rounded-xl bg-brand-50 p-2 dark:bg-ink-800"
+                  className="grid h-24 w-24 shrink-0 place-items-center rounded-xl bg-gradient-to-b from-brand-50 to-white p-2 dark:from-ink-800 dark:to-ink-900"
                 >
-                  <img src={product.image} alt={product.name} className="h-full object-contain" />
+                  <img
+                    src={product.image}
+                    alt={product.name}
+                    className="h-full object-contain transition-transform duration-300 hover:scale-105"
+                  />
                 </Link>
                 <div className="flex flex-1 flex-col">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <Link
                         to={`/product/${product.slug}`}
-                        className="font-semibold hover:text-brand-600"
+                        className="font-display font-semibold text-ink-900 hover:text-brand-600 dark:text-ink-50 dark:hover:text-brand-400 transition-colors"
                       >
                         {product.name}
                       </Link>
-                      <p className="text-sm text-ink-500">{product.unit}</p>
+                      <p className="mt-0.5 text-sm text-ink-500 dark:text-ink-400">
+                        {product.unit}
+                      </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => removeItem(product.id)}
                       aria-label={`Remove ${product.name}`}
-                      className="btn-ghost h-9 w-9 p-0 text-ink-400 hover:text-red-600"
+                      className="btn-ghost h-8 w-8 shrink-0 rounded-lg p-0 text-ink-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -73,7 +122,9 @@ export function Cart() {
                       size="sm"
                       onChange={(q) => setQuantity(product.id, q)}
                     />
-                    <span className="font-bold">{formatZAR(product.price * quantity)}</span>
+                    <span className="font-display font-bold text-ink-900 dark:text-white">
+                      {formatZAR(product.price * quantity)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -82,7 +133,7 @@ export function Cart() {
             <button
               type="button"
               onClick={clear}
-              className="text-sm font-medium text-ink-500 hover:text-red-600"
+              className="text-sm font-medium text-ink-400 transition-colors hover:text-red-600 dark:hover:text-red-400"
             >
               Clear cart
             </button>
@@ -90,26 +141,32 @@ export function Cart() {
 
           {/* Summary */}
           <aside className="card h-fit p-6">
-            <h2 className="text-lg font-bold">Order summary</h2>
-            <dl className="mt-4 space-y-3 text-sm">
+            <h2 className="font-display text-lg font-bold text-ink-900 dark:text-white">
+              Order summary
+            </h2>
+            <dl className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between">
-                <dt className="text-ink-500">Subtotal</dt>
+                <dt className="text-ink-500 dark:text-ink-400">Subtotal</dt>
                 <dd className="font-medium">{formatZAR(subtotal)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-ink-500">Delivery</dt>
-                <dd className="font-medium">
-                  {delivery === 0 ? "Free" : formatZAR(delivery)}
+                <dt className="text-ink-500 dark:text-ink-400">Delivery</dt>
+                <dd className={`font-medium ${freeShipping ? "text-emerald-600 dark:text-emerald-400" : ""}`}>
+                  {delivery === 0 ? (subtotal > 0 ? "Free" : "—") : formatZAR(delivery)}
                 </dd>
               </div>
               {delivery > 0 && (
-                <p className="text-xs text-ink-400">
+                <p className="rounded-lg bg-brand-50 px-3 py-2 text-xs text-ink-500 dark:bg-brand-900/20 dark:text-ink-400">
                   Free delivery on orders over {formatZAR(DELIVERY_THRESHOLD)}.
                 </p>
               )}
-              <div className="flex justify-between border-t border-ink-200 pt-3 text-base dark:border-ink-800">
-                <dt className="font-bold">Total</dt>
-                <dd className="font-bold">{formatZAR(total)}</dd>
+              <div className="divider pt-3">
+                <div className="flex justify-between text-base">
+                  <dt className="font-display font-bold text-ink-900 dark:text-white">Total</dt>
+                  <dd className="font-display font-bold text-ink-900 dark:text-white">
+                    {formatZAR(total)}
+                  </dd>
+                </div>
               </div>
             </dl>
             <Link to="/checkout" className="btn-primary mt-6 w-full py-3">
@@ -117,7 +174,7 @@ export function Cart() {
             </Link>
             <Link
               to="/shop"
-              className="mt-3 block text-center text-sm font-medium text-brand-600 hover:underline"
+              className="mt-3 block text-center text-sm font-medium text-brand-600 hover:underline dark:text-brand-400"
             >
               Continue shopping
             </Link>
