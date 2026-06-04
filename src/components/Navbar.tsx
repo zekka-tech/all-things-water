@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Droplets, Menu, Moon, ShoppingCart, Sun, X } from "lucide-react";
+import { Droplets, Menu, Moon, Settings, ShoppingCart, Sun, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useTheme } from "@/context/ThemeContext";
 import { cx } from "@/lib/format";
@@ -107,6 +107,25 @@ export function Navbar() {
                 {l.label}
               </NavLink>
             ))}
+
+            {/* Admin link — subtle, mobile only */}
+            <NavLink
+              to="/admin"
+              onClick={() => setOpen(false)}
+              className={({ isActive }) =>
+                cx(
+                  "block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300"
+                    : "text-ink-400 hover:bg-ink-50 dark:text-ink-500 dark:hover:bg-ink-800/60",
+                )
+              }
+            >
+              <span className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Admin
+              </span>
+            </NavLink>
           </div>
         </nav>
       )}

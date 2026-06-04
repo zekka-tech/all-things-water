@@ -36,3 +36,12 @@ export interface CategoryMeta {
   label: string;
   description: string;
 }
+
+export interface Review {
+  id: string;
+  productId: string;
+  author: string;
+  rating: number;
+  date: string;
+  comment: string;
+}

@@ -5,6 +5,7 @@ import { Seo } from "@/components/Seo";
 import { ProductCard } from "@/components/ProductCard";
 import { StockBadge } from "@/components/StockBadge";
 import { QuantityStepper } from "@/components/QuantityStepper";
+import { ProductReviews } from "@/components/ProductReviews";
 import { getProductBySlug, getRelatedProducts } from "@/data/products";
 import { categoryLabel } from "@/data/categories";
 import { formatZAR } from "@/lib/format";
@@ -154,6 +155,8 @@ export function ProductDetail() {
             </div>
           </section>
         )}
+
+        <ProductReviews productId={product.id} />
       </div>
     </>
   );

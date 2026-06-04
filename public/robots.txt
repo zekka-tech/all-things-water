@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://allthingswater.co.za/sitemap.xml

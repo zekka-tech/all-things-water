@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Mail, MapPin, Phone, Send, CheckCircle2 } from "lucide-react";
+import { Mail, MapPin, Phone, Send, CheckCircle2, MessageCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { cx } from "@/lib/format";
+import { env } from "@/lib/env";
+import { validateEmail, validatePhone } from "@/lib/validation";
 
 const contactInfo = [
   { icon: Phone, label: "Phone", value: "+27 00 000 0000" },
@@ -9,21 +11,87 @@ const contactInfo = [
   { icon: MapPin, label: "Location", value: "South Africa" },
 ];
 
+/* ── Helpers ── */
+
+function whatsappUrl(number: string, message: string): string {
+  const body = encodeURIComponent(message);
+  return `https://wa.me/${number}?text=${body}`;
+}
+
+/* ── Component ── */
+
 export function Contact() {
   const [sent, setSent] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", message: "" });
-  const [errors, setErrors] = useState<{ name?: string; email?: string; message?: string }>({});
+  const [sending, setSending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const [errors, setErrors] = useState<{
+    name?: string;
+    email?: string;
+    phone?: string;
+    message?: string;
+  }>({});
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const validate = (): boolean => {
     const next: typeof errors = {};
     if (!form.name.trim()) next.name = "Please enter your name.";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
-      next.email = "Enter a valid email.";
+    if (!validateEmail(form.email)) next.email = "Enter a valid email address.";
+    if (form.phone.trim() && !validatePhone(form.phone)) {
+      next.phone = "Enter a valid SA number (e.g. 082 123 4567).";
+    }
     if (!form.message.trim()) next.message = "Please enter a message.";
     setErrors(next);
-    if (Object.keys(next).length === 0) setSent(true);
+    return Object.keys(next).length === 0;
   };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitError(null);
+
+    if (!validate()) return;
+
+    setSending(true);
+
+    try {
+      if (env.contactFormEndpoint) {
+        const res = await fetch(env.contactFormEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: form.name.trim(),
+            email: form.email.trim(),
+            phone: form.phone.trim() || undefined,
+            message: form.message.trim(),
+          }),
+        });
+
+        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
+      } else {
+        // Degrade gracefully — log to console when no endpoint is configured
+        console.log("[Contact] Form payload (no endpoint configured):", {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim() || undefined,
+          message: form.message.trim(),
+        });
+      }
+
+      setSent(true);
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.",
+      );
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const whatsappMessage = "Hi All Things Water! I'd like to get in touch.";
+  const waUrl = env.whatsappNumber
+    ? whatsappUrl(env.whatsappNumber, whatsappMessage)
+    : "";
 
   return (
     <>
@@ -70,12 +138,32 @@ export function Contact() {
               Reach out and let's build a plan that works for you.
             </p>
           </div>
+
+          {/* WhatsApp CTA */}
+          {waUrl && (
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-outline mt-6 w-full py-3 text-sm"
+            >
+              <MessageCircle className="h-4 w-4" />
+              Send us a WhatsApp
+            </a>
+          )}
         </div>
 
         {/* Right — form */}
         <div className="card p-6">
+          {/* ── Status feedback (aria-live) ── */}
+          <div className="sr-only" aria-live="polite" aria-atomic="true">
+            {sending && "Sending your message…"}
+            {sent && "Message sent successfully!"}
+            {submitError && `Error: ${submitError}`}
+          </div>
+
           {sent ? (
-            <div className="flex flex-col items-center justify-center py-14 text-center">
+            <div className="flex flex-col items-center justify-center py-14 text-center animate-scale-in">
               <div className="grid h-16 w-16 place-items-center rounded-full bg-emerald-100 dark:bg-emerald-500/15">
                 <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
               </div>
@@ -88,6 +176,17 @@ export function Contact() {
             </div>
           ) : (
             <form onSubmit={submit} className="space-y-5">
+              {/* ── Submission error banner ── */}
+              {submitError && (
+                <div
+                  className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 animate-fade-in"
+                  role="alert"
+                >
+                  <AlertTriangle className="h-4 w-4 shrink-0" />
+                  {submitError}
+                </div>
+              )}
+
               <div>
                 <label
                   htmlFor="c-name"
@@ -101,9 +200,13 @@ export function Contact() {
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="Your name"
                   className={cx("input", errors.name && "border-red-400 focus:ring-red-200")}
+                  aria-invalid={!!errors.name}
+                  aria-describedby={errors.name ? "c-name-error" : undefined}
                 />
                 {errors.name && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.name}</p>
+                  <p id="c-name-error" className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">
+                    {errors.name}
+                  </p>
                 )}
               </div>
 
@@ -121,9 +224,42 @@ export function Contact() {
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   placeholder="you@example.com"
                   className={cx("input", errors.email && "border-red-400 focus:ring-red-200")}
+                  aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? "c-email-error" : undefined}
                 />
                 {errors.email && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.email}</p>
+                  <p id="c-email-error" className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="c-phone"
+                  className="mb-1.5 block text-sm font-medium text-ink-700 dark:text-ink-200"
+                >
+                  Phone{" "}
+                  <span className="font-normal text-ink-400 dark:text-ink-500">
+                    (optional)
+                  </span>
+                </label>
+                <input
+                  id="c-phone"
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) =>
+                    setForm({ ...form, phone: e.target.value })
+                  }
+                  placeholder="082 123 4567"
+                  className={cx("input", errors.phone && "border-red-400 focus:ring-red-200")}
+                  aria-invalid={!!errors.phone}
+                  aria-describedby={errors.phone ? "c-phone-error" : undefined}
+                />
+                {errors.phone && (
+                  <p id="c-phone-error" className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">
+                    {errors.phone}
+                  </p>
                 )}
               </div>
 
@@ -144,14 +280,31 @@ export function Contact() {
                     "input resize-none",
                     errors.message && "border-red-400 focus:ring-red-200",
                   )}
+                  aria-invalid={!!errors.message}
+                  aria-describedby={errors.message ? "c-msg-error" : undefined}
                 />
                 {errors.message && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{errors.message}</p>
+                  <p id="c-msg-error" className="mt-1 text-xs text-red-600 dark:text-red-400" role="alert">
+                    {errors.message}
+                  </p>
                 )}
               </div>
 
-              <button type="submit" className="btn-primary w-full py-3 text-base">
-                Send message <Send className="h-4 w-4" />
+              <button
+                type="submit"
+                disabled={sending}
+                className="btn-primary w-full py-3 text-base"
+              >
+                {sending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Sending…
+                  </>
+                ) : (
+                  <>
+                    Send message <Send className="h-4 w-4" />
+                  </>
+                )}
               </button>
             </form>
           )}
