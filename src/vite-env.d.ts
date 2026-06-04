@@ -9,4 +9,7 @@ interface ImportMetaEnv {
   readonly VITE_COMPANY_PHONE?: string;
   readonly VITE_COMPANY_ADDRESS?: string;
   readonly VITE_GA_MEASUREMENT_ID?: string;
+  readonly VITE_SUPABASE_URL?: string;
+  readonly VITE_SUPABASE_ANON_KEY?: string;
+  readonly VITE_SENTRY_DSN?: string;
 }

@@ -7,6 +7,8 @@ import { Shop } from "@/pages/Shop";
 import { ProductDetail } from "@/pages/ProductDetail";
 import { Cart } from "@/pages/Cart";
 import { Checkout } from "@/pages/Checkout";
+import { CheckoutReturn } from "@/pages/CheckoutReturn";
+import { CheckoutCancel } from "@/pages/CheckoutCancel";
 import { About } from "@/pages/About";
 import { Contact } from "@/pages/Contact";
 import { Terms } from "@/pages/Terms";
@@ -27,6 +29,8 @@ export default function App() {
           <Route path="/product/:slug" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/checkout/return" element={<CheckoutReturn />} />
+          <Route path="/checkout/cancel" element={<CheckoutCancel />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/terms" element={<Terms />} />

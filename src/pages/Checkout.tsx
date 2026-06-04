@@ -11,11 +11,14 @@ import {
   XCircle,
   Smartphone,
   Store,
+  Loader2,
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { useCart } from "@/context/CartContext";
 import { formatZAR, cx } from "@/lib/format";
 import { env } from "@/lib/env";
+import { apiPost, userFriendlyError } from "@/lib/api";
+import { captureException } from "@/lib/sentry";
 import {
   DELIVERY_THRESHOLD,
   DELIVERY_FEE,
@@ -86,8 +89,8 @@ export function Checkout() {
   const { items, subtotal, clear } = useCart();
   const [form, setForm] = useState<Form>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
-  const [placed, setPlaced] = useState(false);
-  const [orderRef, setOrderRef] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // ── New state for enhancements ──
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("delivery");
@@ -143,7 +146,7 @@ export function Checkout() {
   const isPostalDeliverable =
     deliveryMethod === "collection" || postalStatus === "metro" || postalStatus === "borderline";
 
-  if (items.length === 0 && !placed) {
+  if (items.length === 0) {
     return (
       <>
         <Seo title="Checkout" />
@@ -184,64 +187,57 @@ export function Checkout() {
     return Object.keys(next).length === 0;
   };
 
-  const placeOrder = (e: React.FormEvent) => {
+  const placeOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    const ref = `ATW-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-    setOrderRef(ref);
-    setPlaced(true);
-    clear();
+
+    setSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      const functionsUrl = `${env.supabaseUrl}/functions/v1`;
+
+      const orderPayload = {
+        items: items.map(({ product, quantity }) => ({
+          productId: product.id,
+          quantity,
+        })),
+        customer: {
+          name: form.name.trim(),
+          email: form.email.trim(),
+          phone: form.phone.trim(),
+        },
+        delivery: {
+          address: deliveryMethod === "delivery" ? form.address.trim() : undefined,
+          city: deliveryMethod === "delivery" ? form.city.trim() : undefined,
+          postalCode: deliveryMethod === "delivery" ? form.postal.trim() : undefined,
+          notes: form.notes.trim() || undefined,
+          method: deliveryMethod,
+        },
+        whatsappOptin: whatsappOptIn,
+      };
+
+      const orderResult = await apiPost<{ orderId: string; orderRef: string }>(
+        `${functionsUrl}/orders`,
+        orderPayload,
+      );
+
+      const paymentResult = await apiPost<{ redirectUrl: string }>(
+        `${functionsUrl}/payments-payfast-initiate`,
+        { orderId: orderResult.orderId },
+      );
+
+      clear();
+
+      window.location.href = paymentResult.redirectUrl;
+    } catch (err) {
+      captureException(err instanceof Error ? err : new Error(String(err)), {
+        action: "placeOrder",
+      });
+      setSubmitError(userFriendlyError(err));
+      setSubmitting(false);
+    }
   };
-
-  // ── WhatsApp share helper ──
-  const buildWhatsAppMessage = (): string => {
-    const itemsSummary = items
-      .map(({ product, quantity }) => `${product.name} × ${quantity}`)
-      .join(", ");
-    const methodLabel = deliveryMethod === "collection" ? "Collect from depot" : "Delivery";
-    const line1 = `Hi All Things Water, I've placed order *${orderRef}*.`;
-    const line2 = `Items: ${itemsSummary}`;
-    const line3 = `Total: ${formatZAR(total)} | ${methodLabel}`;
-    return encodeURIComponent(`${line1}\n${line2}\n${line3}\n\nPlease confirm.`);
-  };
-
-  if (placed) {
-    return (
-      <>
-        <Seo title="Order confirmed" />
-        <div className="container-page flex flex-col items-center py-28 text-center">
-          <div className="grid h-20 w-20 place-items-center rounded-full bg-emerald-100 dark:bg-emerald-500/15">
-            <CheckCircle2 className="h-10 w-10 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <h1 className="mt-6 font-display text-3xl font-extrabold text-ink-900 dark:text-white">
-            Thank you, {form.name.split(" ")[0]}!
-          </h1>
-          <p className="mt-3 max-w-md text-ink-500 dark:text-ink-400">
-            Your order{" "}
-            <span className="font-semibold text-ink-800 dark:text-ink-200">{orderRef}</span>{" "}
-            has been received. We'll be in touch shortly to confirm payment and delivery.
-          </p>
-
-          {/* WhatsApp quick-share button */}
-          {env.whatsappNumber && (
-            <a
-              href={`https://wa.me/${env.whatsappNumber.replace(/\D/g, "")}?text=${buildWhatsAppMessage()}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-outline mt-6 inline-flex items-center gap-2 px-5 py-3 text-sm"
-            >
-              <Smartphone className="h-4 w-4" />
-              Send order via WhatsApp
-            </a>
-          )}
-
-          <Link to="/shop" className="btn-primary mt-4 px-6 py-3 text-base">
-            Continue shopping
-          </Link>
-        </div>
-      </>
-    );
-  }
 
   const field = (
     key: keyof Form,
@@ -523,11 +519,28 @@ export function Checkout() {
               </h2>
               <div className="mt-4 rounded-xl bg-ink-50 px-4 py-3 dark:bg-ink-800/50">
                 <p className="text-sm leading-relaxed text-ink-500 dark:text-ink-400">
-                  This is a demo store — no payment is taken now. Place your order and we'll contact
-                  you to arrange payment via <strong className="text-ink-700 dark:text-ink-200">EFT</strong> or{" "}
-                  <strong className="text-ink-700 dark:text-ink-200">card on delivery</strong>.
+                  You&rsquo;ll be redirected to <strong className="text-ink-700 dark:text-ink-200">PayFast</strong>{" "}
+                  to complete your payment securely via{" "}
+                  <strong className="text-ink-700 dark:text-ink-200">EFT</strong>,{" "}
+                  <strong className="text-ink-700 dark:text-ink-200">card</strong>, or{" "}
+                  <strong className="text-ink-700 dark:text-ink-200">Instant EFT</strong>.
                 </p>
               </div>
+
+              {submitError && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-500/10">
+                  <p className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400">
+                    <XCircle className="h-4 w-4 shrink-0" />
+                    {submitError}
+                  </p>
+                  <button
+                    type="submit"
+                    className="mt-2 text-sm font-medium text-red-600 hover:underline dark:text-red-400"
+                  >
+                    Try again
+                  </button>
+                </div>
+              )}
             </section>
           </div>
 
@@ -590,12 +603,19 @@ export function Checkout() {
 
             <button
               type="submit"
-              disabled={!isPostalDeliverable}
+              disabled={!isPostalDeliverable || submitting}
               className="btn-primary mt-6 w-full py-3 text-base"
             >
-              Place order
+              {submitting ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Processing&hellip;
+                </span>
+              ) : (
+                "Place order"
+              )}
             </button>
-            {!isPostalDeliverable && deliveryMethod === "delivery" && (
+            {!isPostalDeliverable && deliveryMethod === "delivery" && !submitting && (
               <p className="mt-2 text-center text-xs text-red-600 dark:text-red-400">
                 Please enter a deliverable postal code to continue.
               </p>
