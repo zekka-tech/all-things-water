@@ -4,29 +4,11 @@ import {
   jsonResponse,
   errorResponse,
 } from "../_shared/cors.ts";
-import { crypto } from "jsr:@std/crypto";
-
-function buildPayFastSignature(
-  params: Record<string, string>,
-  passphrase: string,
-): string {
-  const sorted = Object.keys(params)
-    .filter((k) => k !== "signature")
-    .sort()
-    .map((k) => {
-      const val = params[k].trim();
-      return `${k}=${encodeURIComponent(val).replace(/%20/g, "+")}`;
-    })
-    .join("&");
-
-  const toHash = passphrase ? `${sorted}&passphrase=${encodeURIComponent(passphrase)}` : sorted;
-  const data = new TextEncoder().encode(toHash);
-  const hash = crypto.subtle.digestSync("MD5", data);
-  const hex = Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  return hex;
-}
+import {
+  buildSignedQuery,
+  getProcessUrl,
+  type Param,
+} from "../_shared/payfast.ts";
 
 Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
@@ -66,35 +48,26 @@ Deno.serve(async (req: Request) => {
     const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID")!;
     const merchantKey = Deno.env.get("PAYFAST_MERCHANT_KEY")!;
     const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "";
-    const sandbox = Deno.env.get("PAYFAST_SANDBOX") === "true";
     const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "http://localhost:5180";
-
-    const payfastUrl = sandbox
-      ? "https://sandbox.payfast.co.za/eng/process"
-      : "https://www.payfast.co.za/eng/process";
-
     const functionBaseUrl = Deno.env.get("SUPABASE_URL")!;
 
-    const params: Record<string, string> = {
-      merchant_id: merchantId,
-      merchant_key: merchantKey,
-      return_url: `${siteUrl}/checkout/return`,
-      cancel_url: `${siteUrl}/checkout/cancel`,
-      notify_url: `${functionBaseUrl}/functions/v1/payments-payfast-itn`,
-      name_first: order.customer_name,
-      email_address: order.customer_email,
-      m_payment_id: order.id,
-      amount: order.total.toFixed(2),
-      item_name: `All Things Water \u2014 Order #${order.order_ref}`,
-    };
+    // Order matters: the signature is computed over this exact sequence and
+    // submitted in the same order. PayFast rebuilds the signature from the
+    // data it receives, so signed-order must equal sent-order.
+    const params: Param[] = [
+      ["merchant_id", merchantId],
+      ["merchant_key", merchantKey],
+      ["return_url", `${siteUrl}/checkout/return`],
+      ["cancel_url", `${siteUrl}/checkout/cancel`],
+      ["notify_url", `${functionBaseUrl}/functions/v1/payments-payfast-itn`],
+      ["name_first", order.customer_name],
+      ["email_address", order.customer_email],
+      ["m_payment_id", order.id],
+      ["amount", order.total.toFixed(2)],
+      ["item_name", `All Things Water \u2014 Order #${order.order_ref}`],
+    ];
 
-    const signature = buildPayFastSignature(params, passphrase);
-
-    const queryString = Object.entries({ ...params, signature })
-      .map(([k, v]) => `${k}=${encodeURIComponent(v.trim()).replace(/%20/g, "+")}`)
-      .join("&");
-
-    const redirectUrl = `${payfastUrl}?${queryString}`;
+    const redirectUrl = `${getProcessUrl()}?${buildSignedQuery(params, passphrase)}`;
 
     await supabase
       .from("orders")

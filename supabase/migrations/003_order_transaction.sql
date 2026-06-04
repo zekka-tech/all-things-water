@@ -41,9 +41,13 @@ begin
       return jsonb_build_object('error', 'Invalid item', 'productId', v_product_id);
     end if;
 
+    -- FOR UPDATE locks the product row for the duration of the transaction,
+    -- so concurrent orders for the same product serialise and cannot both
+    -- pass the stock check on the last unit.
     select stock, name, price into v_stock, v_name, v_price
     from public.products
-    where id = v_product_id and visible = true;
+    where id = v_product_id and visible = true
+    for update;
 
     if not found then
       return jsonb_build_object('error', 'Product not found', 'productId', v_product_id);
