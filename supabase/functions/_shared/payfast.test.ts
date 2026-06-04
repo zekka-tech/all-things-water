@@ -222,30 +222,32 @@ Deno.test("getParam returns undefined for missing key", () => {
   assertEquals(getParam(params, "nope"), undefined);
 });
 
-// ── Real-world PayFast signature (known test vector) ──
-// This follows the PayFast docs: for these params with passphrase "salt",
-// the signature must match a pre-computed value.
+// ── Known-answer vector (cross-checked against an independent MD5) ──
+// The expected hashes below were computed with Node's crypto.createHash("md5")
+// over the exact PayFast signature string — a different MD5 implementation than
+// the @std/crypto one under test. This catches any regression in the encoding,
+// parameter ordering, or hashing (e.g. accidentally sorting the params).
 
-Deno.test("buildSignature matches known PayFast test vector", () => {
-  const params: Param[] = [
-    ["merchant_id", "10000100"],
-    ["merchant_key", "46f0cd694581a"],
-    ["return_url", "http://localhost/return"],
-    ["cancel_url", "http://localhost/cancel"],
-    ["notify_url", "http://localhost/notify"],
-    ["name_first", "Test"],
-    ["name_last", "User"],
-    ["email_address", "test@example.com"],
-    ["m_payment_id", "order-123"],
-    ["amount", "100.00"],
-    ["item_name", "Test Product"],
-  ];
+const VECTOR: Param[] = [
+  ["merchant_id", "10000100"],
+  ["merchant_key", "46f0cd694581a"],
+  ["return_url", "http://localhost/return"],
+  ["cancel_url", "http://localhost/cancel"],
+  ["notify_url", "http://localhost/notify"],
+  ["name_first", "Test"],
+  ["name_last", "User"],
+  ["email_address", "test@example.com"],
+  ["m_payment_id", "order-123"],
+  ["amount", "100.00"],
+  ["item_name", "Test Product"],
+];
 
-  // The signature should be stable for these inputs
-  const sig = buildSignature(params, "salt");
-  assertEquals(sig.length, 32);
-  assertEquals(/^[a-f0-9]{32}$/.test(sig), true);
+Deno.test("buildSignature matches known MD5 vector (no passphrase)", () => {
+  assertEquals(buildSignature(VECTOR), "4d683f503d61409ae59bfb5f99d85785");
+});
 
-  // Verify it round-trips
-  assertEquals(verifySignature(params, sig, "salt"), true);
+Deno.test("buildSignature matches known MD5 vector (passphrase 'salt')", () => {
+  const sig = buildSignature(VECTOR, "salt");
+  assertEquals(sig, "6e22db2745ab3ccda993d2018d36b720");
+  assertEquals(verifySignature(VECTOR, sig, "salt"), true);
 });

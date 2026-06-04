@@ -119,6 +119,8 @@ Tests cover:
 - Signed query building (`buildSignedQuery`)
 - Form-param parsing (`parseFormParams`) — order preservation, URL-decoding
 - Edge cases: empty params, missing values, trailing ampersands
+- Known-answer vectors cross-checked against an independent MD5 implementation
+  (guards against encoding/ordering regressions)
 
 ## Environment Variables
 

@@ -9,7 +9,7 @@
     "jsr:@supabase/supabase-js": "jsr:@supabase/supabase-js@2"
   },
   "compilerOptions": {
-    "lib": ["deno.ns", "deno.unstable"]
+    "lib": ["deno.window", "deno.ns", "deno.unstable"]
   },
   "fmt": {
     "indentWidth": 2,
