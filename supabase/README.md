@@ -47,14 +47,78 @@ supabase db seed
 
 ## Edge Functions
 
-Edge Functions are served from `supabase/functions/` (to be created as separate subtasks):
+Edge Functions are served from `supabase/functions/` using the Deno runtime
+(configured via `deno.json`).
 
-- `create-order` — creates an order and returns PayFast redirect URL
-- `payfast-notify` — handles PayFast ITN (instant transaction notification)
-- `payfast-return` — handles PayFast return URL redirect
-- `order-confirmation` — sends confirmation email via Resend
+Available functions:
 
-Each function uses the service_role key for database access.
+- `orders` — accepts cart items + customer details, validates stock, creates
+  an order atomically via the `create_order` RPC, returns `{ orderId, orderRef }`
+- `payments-payfast-initiate` — builds a signed PayFast redirect URL for the
+  given order
+- `payments-payfast-itn` — handles PayFast ITN (instant transaction
+  notification) — verifies signature, validates via server-to-server call,
+  marks order as paid, fires Resend email notifications
+
+Deploy all functions:
+
+```bash
+supabase functions deploy
+```
+
+Or deploy individually:
+
+```bash
+supabase functions deploy orders
+supabase functions deploy payments-payfast-initiate
+supabase functions deploy payments-payfast-itn
+```
+
+### Function secrets
+
+Set these in the Supabase dashboard → Edge Functions → Secrets, or via CLI:
+
+```bash
+supabase secrets set SUPABASE_SERVICE_ROLE_KEY=...
+supabase secrets set PAYFAST_MERCHANT_ID=...
+supabase secrets set PAYFAST_MERCHANT_KEY=...
+supabase secrets set PAYFAST_PASSPHRASE=...
+supabase secrets set RESEND_API_KEY=...
+supabase secrets set PUBLIC_SITE_URL=https://your-domain.com
+supabase secrets set MERCHANT_EMAIL=orders@allthingswater.co.za
+```
+
+## Testing
+
+### Type-check (deno check)
+
+```bash
+# From project root:
+npm run deno:check
+
+# Or directly:
+cd supabase/functions && deno check **/*.ts
+```
+
+### Unit tests
+
+The PayFast signature builder has a dedicated Deno test suite.
+
+```bash
+# From project root:
+npm run deno:test
+
+# Or directly:
+cd supabase/functions && deno test --allow-env --allow-net _shared/payfast.test.ts
+```
+
+Tests cover:
+- URL encoding (`pfEncode`)
+- Signature generation (`buildSignature`) — deterministic, order-sensitive, passphrase-dependent
+- Signature verification (`verifySignature`)
+- Signed query building (`buildSignedQuery`)
+- Form-param parsing (`parseFormParams`) — order preservation, URL-decoding
+- Edge cases: empty params, missing values, trailing ampersands
 
 ## Environment Variables
 

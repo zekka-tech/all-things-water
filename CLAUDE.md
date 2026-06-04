@@ -12,11 +12,14 @@ This is a **standalone application** — do **not** merge it into any parent `ma
 npm run dev        # dev server on http://localhost:5180 (auto-opens browser)
 npm run build      # type-check (tsc -b) then Vite production build → dist/
 npm run preview    # serve the production build locally
-npm run lint       # ESLint across all source files
+npm run lint       # ESLint across all source files (excludes supabase/)
 npm run typecheck  # tsc -b --noEmit (type-check without emitting)
+npm test           # Vitest unit tests (149 tests, 11 files)
+npm run deno:check # Deno type-check of supabase/functions/
+npm run deno:test  # Deno unit tests for PayFast signature builder
 ```
 
-There are no tests in this project.
+**Tests:** 149 Vitest tests in `src/` (utilities, data, contexts, components). Deno tests for Edge Function shared utilities in `supabase/functions/_shared/payfast.test.ts`.
 
 ## Architecture
 
