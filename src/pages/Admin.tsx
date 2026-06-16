@@ -5,7 +5,12 @@ import AdminOrders from "@/components/admin/AdminOrders";
 import AdminStock from "@/components/admin/AdminStock";
 import { products } from "@/data/products";
 import { cx } from "@/lib/format";
-import { env } from "@/lib/env";
+import {
+  signInAdmin,
+  signOutAdmin,
+  isCurrentUserAdmin,
+  onAdminAuthChange,
+} from "@/lib/adminAuth";
 import { logAuditEvent, syncToSupabase } from "@/lib/adminAudit";
 import type { Product } from "@/types";
 import {
@@ -17,7 +22,6 @@ import {
 } from "lucide-react";
 
 // ── Constants ──
-const STORAGE_AUTH = "atw.admin.auth";
 const STORAGE_STOCK = "atw.admin.stock";
 const STORAGE_VISIBILITY = "atw.admin.visibility";
 const STORAGE_PRODUCTS = "atw.admin.products";
@@ -38,20 +42,37 @@ function saveJson(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-// ── Password Gate ──
-function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
-  const [input, setInput] = useState("");
-  const [error, setError] = useState(false);
+// ── Login Gate (Supabase Auth) ──
+function LoginGate({ onAuthed }: { onAuthed: () => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (input === env.adminPassword) {
-      sessionStorage.setItem(STORAGE_AUTH, "true");
-      onUnlock();
-    } else {
-      setError(true);
-      setInput("");
+    setLoading(true);
+    setError(null);
+
+    const result = await signInAdmin(email, password);
+    if (!result.ok) {
+      setError(result.error || "Sign-in failed. Check your credentials.");
+      setPassword("");
+      setLoading(false);
+      return;
     }
+
+    // Credentials are valid, but only allowlisted users may enter.
+    const isAdmin = await isCurrentUserAdmin();
+    if (!isAdmin) {
+      await signOutAdmin();
+      setError("This account does not have admin access.");
+      setPassword("");
+      setLoading(false);
+      return;
+    }
+
+    onAuthed();
   };
 
   return (
@@ -64,25 +85,34 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
           Admin Access
         </h2>
         <p className="mt-1.5 text-sm text-ink-500 dark:text-ink-400">
-          Enter the admin password to continue.
+          Sign in with your admin account to continue.
         </p>
         <form onSubmit={handleSubmit} className="mt-6 space-y-3">
           <input
-            type="password"
-            value={input}
-            onChange={(e) => { setInput(e.target.value); setError(false); }}
-            placeholder="Password"
-            className={cx(
-              "input text-center",
-              error && "border-red-400 focus:border-red-400 focus:ring-red-200 dark:border-red-500 dark:focus:ring-red-900",
-            )}
+            type="email"
+            value={email}
+            onChange={(e) => { setEmail(e.target.value); setError(null); }}
+            placeholder="Email"
+            autoComplete="username"
+            className="input"
             autoFocus
           />
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setError(null); }}
+            placeholder="Password"
+            autoComplete="current-password"
+            className={cx(
+              "input",
+              error && "border-red-400 focus:border-red-400 focus:ring-red-200 dark:border-red-500 dark:focus:ring-red-900",
+            )}
+          />
           {error && (
-            <p className="text-xs text-red-600 dark:text-red-400">Incorrect password. Please try again.</p>
+            <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
           )}
-          <button type="submit" className="btn-primary w-full">
-            Unlock
+          <button type="submit" className="btn-primary w-full" disabled={loading}>
+            {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
       </div>
@@ -92,8 +122,24 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
 
 // ── Main Admin Component ──
 export function Admin() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem(STORAGE_AUTH) === "true");
+  const [status, setStatus] = useState<"loading" | "unauthed" | "authed">("loading");
   const [tab, setTab] = useState<Tab>("products");
+
+  // Resolve auth state from the Supabase session + admin allowlist, and stay in
+  // sync with sign-in/sign-out events (e.g. token expiry, logout in another tab).
+  useEffect(() => {
+    let active = true;
+    const resolve = async () => {
+      const isAdmin = await isCurrentUserAdmin();
+      if (active) setStatus(isAdmin ? "authed" : "unauthed");
+    };
+    resolve();
+    const unsubscribe = onAdminAuthChange(resolve);
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
 
   // Stock overrides (merged with static data)
   const [stockOverrides, setStockOverrides] = useState<Record<string, number>>(() =>
@@ -146,8 +192,8 @@ export function Admin() {
 
   // ── Handlers ──
   const handleLogout = () => {
-    sessionStorage.removeItem(STORAGE_AUTH);
-    setAuthed(false);
+    // onAdminAuthChange fires on sign-out and flips status back to "unauthed".
+    void signOutAdmin();
   };
 
   const handleToggleVisibility = (id: string) => {
@@ -276,11 +322,22 @@ export function Admin() {
     });
   }, [mergedProducts, stockDraft]);
 
-  if (!authed) {
+  if (status === "loading") {
     return (
       <>
         <Seo title="Admin" description="Admin dashboard for All Things Water." />
-        <PasswordGate onUnlock={() => setAuthed(true)} />
+        <div className="flex min-h-[80vh] items-center justify-center">
+          <span className="text-sm text-ink-500 dark:text-ink-400">Loading…</span>
+        </div>
+      </>
+    );
+  }
+
+  if (status !== "authed") {
+    return (
+      <>
+        <Seo title="Admin" description="Admin dashboard for All Things Water." />
+        <LoginGate onAuthed={() => setStatus("authed")} />
       </>
     );
   }

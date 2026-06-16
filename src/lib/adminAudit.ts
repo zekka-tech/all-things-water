@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { getAccessToken } from "@/lib/adminAuth";
 
 interface AuditEvent {
   action: string;
@@ -38,15 +39,18 @@ export async function syncToSupabase(
 ): Promise<boolean> {
   if (!env.supabaseUrl || !env.supabaseAnonKey) return false;
 
+  const accessToken = await getAccessToken();
+  if (!accessToken) return false;
+
   try {
     const res = await fetch(`${env.supabaseUrl}/functions/v1/admin-sync`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${env.supabaseAnonKey}`,
+        apikey: env.supabaseAnonKey,
+        Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        adminPassword: env.adminPassword,
         stockUpdates,
         auditEvents,
       }),

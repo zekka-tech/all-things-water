@@ -9,7 +9,6 @@ export const env = {
     import.meta.env.VITE_COMPANY_EMAIL || "info@allthingswater.co.za",
   companyPhone: import.meta.env.VITE_COMPANY_PHONE || "",
   companyAddress: import.meta.env.VITE_COMPANY_ADDRESS || "",
-  adminPassword: import.meta.env.VITE_ADMIN_PASSWORD || "atw-admin-2024",
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL || "",
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
 } as const;

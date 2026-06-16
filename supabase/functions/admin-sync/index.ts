@@ -7,7 +7,6 @@ import {
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 interface SyncPayload {
-  adminPassword: string;
   stockUpdates: Record<string, number>;
   auditEvents: {
     action: string;
@@ -16,8 +15,6 @@ interface SyncPayload {
     changes: Record<string, unknown>;
   }[];
 }
-
-const ADMIN_PASSWORD = Deno.env.get("VITE_ADMIN_PASSWORD") || "atw-admin-2024";
 
 Deno.serve(async (req: Request) => {
   const cors = handleCors(req);
@@ -33,15 +30,35 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const body: SyncPayload = await req.json();
-
-    if (body.adminPassword !== ADMIN_PASSWORD) {
-      return errorResponse("Unauthorized", 401);
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+    // ── Authorization: verify the caller's Supabase Auth JWT, then confirm the
+    //    user is in the server-controlled `admins` allowlist. The secret never
+    //    leaves the server, unlike the old shared password.
+    const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
+    if (!token) return errorResponse("Unauthorized", 401);
+
+    const anon = createClient(supabaseUrl, anonKey);
+    const { data: userData, error: userErr } = await anon.auth.getUser(token);
+    if (userErr || !userData.user) return errorResponse("Unauthorized", 401);
+
+    const supabase = createClient(supabaseUrl, serviceKey);
+
+    const { data: adminRow, error: adminErr } = await supabase
+      .from("admins")
+      .select("user_id")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    if (adminErr) {
+      console.error("admin lookup failed:", adminErr);
+      return errorResponse("Internal server error", 500);
+    }
+    if (!adminRow) return errorResponse("Forbidden", 403);
+
+    const performedBy = userData.user.email ?? userData.user.id;
+    const body: SyncPayload = await req.json();
 
     // Update product stock levels
     if (body.stockUpdates && Object.keys(body.stockUpdates).length > 0) {
@@ -67,6 +84,7 @@ Deno.serve(async (req: Request) => {
           product_id: e.productId || null,
           product_name: e.productName || null,
           changes: e.changes,
+          performed_by: performedBy,
           performed_at: new Date().toISOString(),
         })));
 
