@@ -5,6 +5,7 @@ import {
   errorResponse,
 } from "../_shared/cors.ts";
 import { calculateDelivery } from "../_shared/delivery.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 interface OrderItem {
   productId: string;
@@ -38,6 +39,19 @@ Deno.serve(async (req: Request) => {
 
   if (req.method !== "POST") {
     return errorResponse("Method not allowed", 405);
+  }
+
+  const clientIp =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("cf-connecting-ip") ||
+    "unknown";
+  const rateLimit = checkRateLimit(`order:${clientIp}`);
+  if (!rateLimit.allowed) {
+    return errorResponse(
+      "Too many requests. Please try again later.",
+      429,
+      { retryAfter: rateLimit.retryAfter },
+    );
   }
 
   try {

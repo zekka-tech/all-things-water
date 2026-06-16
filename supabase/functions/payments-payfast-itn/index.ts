@@ -10,10 +10,24 @@ import {
   parseFormParams,
   verifySignature,
 } from "../_shared/payfast.ts";
+import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return errorResponse("Method not allowed", 405);
+  }
+
+  const clientIp =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("cf-connecting-ip") ||
+    "unknown";
+  const rateLimit = checkRateLimit(`payfast-itn:${clientIp}`);
+  if (!rateLimit.allowed) {
+    return errorResponse(
+      "Too many requests. Please try again later.",
+      429,
+      { retryAfter: rateLimit.retryAfter },
+    );
   }
 
   try {

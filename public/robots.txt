@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /checkout
+Disallow: /checkout/return
+Disallow: /checkout/cancel
+Disallow: /cart
 
 Sitemap: https://allthingswater.co.za/sitemap.xml

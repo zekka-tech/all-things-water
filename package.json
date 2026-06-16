@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -b --noEmit",
+    "generate-sitemap": "npx tsx scripts/generate-sitemap.ts > public/sitemap.xml",
     "deno:check": "cd supabase/functions && deno check **/*.ts",
     "deno:test": "cd supabase/functions && deno test --allow-env --allow-net _shared/payfast.test.ts"
   },
@@ -37,7 +38,6 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.12",
     "globals": "^15.11.0",
-    "happy-dom": "^20.10.1",
     "jsdom": "^29.1.1",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.13",

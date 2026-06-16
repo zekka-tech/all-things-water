@@ -1,15 +1,18 @@
 {
-  "name": "All Things Water",
+  "name": "All Things Water — Bottled Water, Coolers & Dispensers",
   "short_name": "ATW",
-  "description": "Premium bottled water, coolers, dispensers & accessories.",
+  "description": "Premium bottled water, water coolers, dispensers & accessories delivered across South Africa.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#06a3f0",
+  "categories": ["shopping", "food"],
   "icons": [
     {
       "src": "/favicon.svg",
-      "sizes": "any",
+      "sizes": "48x48 72x72 96x96 128x128 144x144 152x152 192x192 256x256 384x384 512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }

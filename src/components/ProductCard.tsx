@@ -5,6 +5,7 @@ import type { Product } from "@/types";
 import { formatZAR } from "@/lib/format";
 import { useCart } from "@/context/CartContext";
 import { StockBadge } from "./StockBadge";
+import { OptimizedImage } from "./OptimizedImage";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
@@ -24,10 +25,9 @@ export function ProductCard({ product }: { product: Product }) {
         to={`/product/${product.slug}`}
         className="relative block aspect-square overflow-hidden bg-gradient-to-b from-brand-50 via-brand-50/60 to-white dark:from-ink-800 dark:via-ink-800/60 dark:to-ink-900"
       >
-        <img
+        <OptimizedImage
           src={product.image}
           alt={product.name}
-          loading="lazy"
           className="h-full w-full object-contain p-6 transition-transform duration-500 group-hover:scale-[1.06]"
         />
         <span className="absolute left-3 top-3">
