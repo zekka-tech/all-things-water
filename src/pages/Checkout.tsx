@@ -194,6 +194,12 @@ export function Checkout() {
     setSubmitting(true);
     setSubmitError(null);
 
+    if (!env.supabaseUrl || !env.supabaseAnonKey) {
+      setSubmitError("Checkout is temporarily unavailable until site configuration is completed.");
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const functionsUrl = `${env.supabaseUrl}/functions/v1`;
 

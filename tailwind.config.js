@@ -33,8 +33,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        display: ['"Plus Jakarta Sans"', "Inter", "system-ui", "sans-serif"],
+        sans: ["ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["ui-rounded", "ui-sans-serif", "system-ui", "sans-serif"],
       },
       boxShadow: {
         "glow-brand": "0 0 32px -4px rgba(6, 163, 240, 0.35)",

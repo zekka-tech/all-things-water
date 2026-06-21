@@ -2,7 +2,11 @@
 import { createClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 
-export const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey);
+export const hasSupabaseConfig = Boolean(env.supabaseUrl && env.supabaseAnonKey);
+
+export const supabase = hasSupabaseConfig
+  ? createClient(env.supabaseUrl, env.supabaseAnonKey)
+  : null;
 
 export interface Database {
   public: {

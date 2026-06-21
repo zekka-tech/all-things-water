@@ -1,6 +1,6 @@
-const CRITICAL_VARS = ["VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY"] as const;
-
 const WARN_VARS = [
+  "VITE_SUPABASE_URL",
+  "VITE_SUPABASE_ANON_KEY",
   "VITE_SENTRY_DSN",
   "VITE_GA_MEASUREMENT_ID",
   "VITE_WHATSAPP_NUMBER",
@@ -9,14 +9,6 @@ const WARN_VARS = [
 
 export function validateEnv(): string[] {
   const warnings: string[] = [];
-
-  for (const key of CRITICAL_VARS) {
-    if (!import.meta.env[key]) {
-      throw new Error(
-        `Missing required environment variable: ${key}. Check your .env file.`,
-      );
-    }
-  }
 
   for (const key of WARN_VARS) {
     if (!import.meta.env[key]) {
