@@ -130,7 +130,7 @@ export function Footer() {
               <span className="font-display text-base">All Things Water</span>
             </Link>
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-500 dark:text-ink-400">
-              Premium bottled water, coolers and dispensers — delivered across South Africa.
+              Premium bottled water, dispensers and water filters — delivered across South Africa.
             </p>
           </div>
 
@@ -143,7 +143,7 @@ export function Footer() {
               {[
                 { to: "/shop", label: "All products" },
                 { to: "/shop?category=bottled-water", label: "Bottled water" },
-                { to: "/shop?category=coolers", label: "Water coolers" },
+                { to: "/shop?category=coolers", label: "Water filters" },
                 { to: "/shop?category=dispensers", label: "Dispensers" },
                 { to: "/shop?category=accessories", label: "Accessories" },
               ].map((l) => (

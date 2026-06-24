@@ -30,7 +30,7 @@ const valueProps = [
   {
     icon: Snowflake,
     title: "Hot & cold",
-    text: "Coolers and dispensers for every kitchen and office.",
+    text: "Dispensers and water filters for every kitchen and office.",
   },
   {
     icon: Recycle,
@@ -41,7 +41,7 @@ const valueProps = [
 
 const categoryIcons: Record<string, React.ElementType> = {
   "bottled-water": Waves,
-  coolers: Snowflake,
+  coolers: Wind,
   dispensers: Package,
   accessories: Wrench,
 };
@@ -52,8 +52,8 @@ export function Home() {
   return (
     <>
       <Seo
-        title="Bottled Water, Coolers & Dispensers"
-        description="All Things Water — premium bottled water, coolers, dispensers and accessories delivered across South Africa."
+        title="Bottled Water, Dispensers & Water Filters"
+        description="All Things Water — premium bottled water, dispensers, water filters and accessories delivered across South Africa."
       />
 
       {/* ── Hero ── */}
@@ -82,8 +82,8 @@ export function Home() {
             </h1>
 
             <p className="mt-5 max-w-lg text-lg leading-relaxed text-ink-600 dark:text-ink-300">
-              Premium still and sparkling bottled water, hot &amp; cold coolers,
-              refillable dispensers and accessories — for home and office.
+              Premium still and sparkling bottled water, refillable dispensers, water filters
+              and accessories — for home and office.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">

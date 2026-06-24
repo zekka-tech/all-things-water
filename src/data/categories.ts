@@ -8,13 +8,13 @@ export const categories: CategoryMeta[] = [
   },
   {
     id: "coolers",
-    label: "Water Coolers",
-    description: "Hot & cold and counter-top coolers for home and office.",
+    label: "Water Filters",
+    description: "Water filtration solutions for cleaner, better-tasting water.",
   },
   {
     id: "dispensers",
-    label: "Dispensers & Bottles",
-    description: "Refillable dispenser bottles to keep the water flowing.",
+    label: "Dispensers",
+    description: "Bottle-based dispensers, hot-and-cold units and refillable bottles for home and office.",
   },
   {
     id: "accessories",

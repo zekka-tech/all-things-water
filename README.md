@@ -1,7 +1,7 @@
 # All Things Water 💧
 
 A standalone e-commerce storefront for **All Things Water** — premium bottled water,
-coolers, dispensers and accessories, delivered across South Africa.
+dispensers, water filters and accessories, delivered across South Africa.
 
 This app was forked and enhanced from the parent `water-filter-company` project and lives
 on its own branch as an independent application.

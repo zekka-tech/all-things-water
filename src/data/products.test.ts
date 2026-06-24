@@ -46,13 +46,15 @@ describe("getRelatedProducts", () => {
   });
 
   it("fills remaining slots with other-category products when same-category is too few", () => {
-    // coolers has 2 products (atw-001, atw-002)
+    // dispensers has 3 products (atw-001, atw-002, atw-003)
     const product = products.find((p) => p.slug === "hot-cold-water-cooler-ylr-805lb")!;
     const related = getRelatedProducts(product);
-    expect(related.length).toBeLessThanOrEqual(3);
-    // First should be the other cooler (same category)
-    const otherCooler = related.find((p) => p.id === "atw-002");
-    expect(otherCooler).toBeDefined();
+    expect(related.length).toBe(3);
+    expect(related[0]?.id).toBe("atw-002");
+    expect(related[1]?.id).toBe("atw-003");
+    expect(related[0]?.category).toBe("dispensers");
+    expect(related[1]?.category).toBe("dispensers");
+    expect(related.every((p) => p.id !== product.id)).toBe(true);
   });
 
   it("respects a custom limit", () => {

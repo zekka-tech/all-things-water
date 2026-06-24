@@ -27,7 +27,7 @@ const sections = [
         <p>You may return a product if it meets one of the following criteria:</p>
         <ul className="mt-2 space-y-1.5 text-sm list-disc pl-5">
           <li>
-            <strong>Durable equipment</strong> (coolers, dispensers, accessories): Must be unused,
+            <strong>Durable equipment</strong> (dispensers, water filters, accessories): Must be unused,
             in original packaging and returned within 14 days of delivery.
           </li>
           <li>
@@ -120,7 +120,7 @@ const sections = [
     content: (
       <>
         <p>
-          We offer exchanges on durable equipment (coolers, dispensers, accessories) within 14 days
+          We offer exchanges on durable equipment (dispensers, water filters, accessories) within 14 days
           of delivery, provided the item is unused and in original packaging. Exchanges are subject
           to product availability.
         </p>
@@ -155,7 +155,7 @@ export function Returns() {
     <>
       <Seo
         title="Returns & Refunds"
-        description="Our returns and refunds policy for bottled water, water coolers, dispensers and accessories."
+        description="Our returns and refunds policy for bottled water, water dispensers, water filters and accessories."
       />
 
       {/* Hero */}

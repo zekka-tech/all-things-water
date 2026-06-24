@@ -12,6 +12,7 @@ const { mockAuth, mockFrom } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/supabase", () => ({
+  hasSupabaseConfig: true,
   supabase: {
     auth: mockAuth,
     from: (...args: unknown[]) => mockFrom(...args),

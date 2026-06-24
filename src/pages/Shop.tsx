@@ -112,7 +112,7 @@ export function Shop() {
 
   return (
     <>
-      <Seo title="Shop" description="Browse bottled water, coolers, dispensers and accessories." />
+      <Seo title="Shop" description="Browse bottled water, dispensers, water filters and accessories." />
 
       <div className="container-page py-10">
         {/* Header */}

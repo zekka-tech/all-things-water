@@ -32,7 +32,7 @@ const products: SeedProduct[] = [
     tagline: "Instant hot and chilled water for home or office.",
     description:
       "A free-standing floor cooler that delivers piping-hot and refreshingly-cold water on demand. The YLR-805LB takes standard 18.9L bottles and is built for busy kitchens, reception areas and offices.",
-    category: "coolers",
+    category: "dispensers",
     price: 2645,
     cost: 2300,
     unit: "each",
@@ -53,7 +53,7 @@ const products: SeedProduct[] = [
     tagline: "Compact cooling that fits on any counter.",
     description:
       "A space-saving counter-top cooler that brings cold, great-tasting water to smaller offices, kitchenettes and homes without taking up floor space.",
-    category: "coolers",
+    category: "dispensers",
     price: 1800,
     cost: 1350,
     unit: "each",
