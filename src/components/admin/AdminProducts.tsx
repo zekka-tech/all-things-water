@@ -13,7 +13,8 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react";
-import { StatCard, stockStatus } from "./shared";
+import { StatCard } from "./shared";
+import { stockStatus } from "./utils";
 
 export default function AdminProducts({
   products: productList,

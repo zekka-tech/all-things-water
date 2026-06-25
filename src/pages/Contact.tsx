@@ -50,39 +50,34 @@ export function Contact() {
 
     if (!validate()) return;
 
+    if (!env.contactFormEndpoint) {
+      setSubmitError(
+        "Contact form is currently unavailable. Please email us or reach out on WhatsApp instead.",
+      );
+      return;
+    }
+
     setSending(true);
 
     try {
-      if (env.contactFormEndpoint) {
-        const res = await fetch(env.contactFormEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: form.name.trim(),
-            email: form.email.trim(),
-            phone: form.phone.trim() || undefined,
-            message: form.message.trim(),
-          }),
-        });
-
-        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-      } else {
-        // Degrade gracefully — log to console when no endpoint is configured
-        console.log("[Contact] Form payload (no endpoint configured):", {
+      const res = await fetch(env.contactFormEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           name: form.name.trim(),
           email: form.email.trim(),
           phone: form.phone.trim() || undefined,
           message: form.message.trim(),
-        });
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("We couldn't send your message right now. Please try again later.");
       }
 
       setSent(true);
-    } catch (err) {
-      setSubmitError(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+    } catch {
+      setSubmitError("We couldn't send your message right now. Please try again later.");
     } finally {
       setSending(false);
     }

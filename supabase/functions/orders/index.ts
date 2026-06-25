@@ -4,7 +4,7 @@ import {
   jsonResponse,
   errorResponse,
 } from "../_shared/cors.ts";
-import { calculateDelivery } from "../_shared/delivery.ts";
+import { calculateDelivery, isDeliverablePostalCode } from "../_shared/delivery.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 
 interface OrderItem {
@@ -57,16 +57,31 @@ Deno.serve(async (req: Request) => {
   try {
     const body: CreateOrderRequest = await req.json();
 
-    // Validate required fields
     if (!body.customer?.name?.trim()) {
       return errorResponse("Customer name is required", 400);
     }
-    if (!body.customer?.email?.trim() ||
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.customer.email)) {
+    if (
+      !body.customer?.email?.trim() ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.customer.email)
+    ) {
       return errorResponse("Valid customer email is required", 400);
     }
     if (!body.items?.length) {
       return errorResponse("At least one item is required", 400);
+    }
+
+    const deliveryMethod = body.delivery?.method || "delivery";
+    if (deliveryMethod === "delivery") {
+      if (!body.delivery?.address?.trim() || !body.delivery?.city?.trim()) {
+        return errorResponse("Delivery address and city are required", 400);
+      }
+      if (!body.delivery?.postalCode?.trim()) {
+        return errorResponse("Delivery postal code is required", 400);
+      }
+      const zone = isDeliverablePostalCode(body.delivery.postalCode.trim());
+      if (!zone.deliverable) {
+        return errorResponse("We cannot deliver to this postal code", 400, zone);
+      }
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -76,7 +91,6 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
-    // Fetch all ordered products
     const productIds = body.items.map((i) => i.productId);
     const { data: products, error: fetchErr } = await supabase
       .from("products")
@@ -89,7 +103,6 @@ Deno.serve(async (req: Request) => {
       return errorResponse("Failed to retrieve products", 500);
     }
 
-    // Build item details with server-side prices
     const orderItems = body.items.map((item) => {
       const product = products?.find((p) => p.id === item.productId);
       if (!product) {
@@ -110,18 +123,14 @@ Deno.serve(async (req: Request) => {
       };
     });
 
-    // Server-side recomputation
     const subtotal = orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-    const deliveryMethod = body.delivery?.method || "delivery";
     const deliveryFee = calculateDelivery(subtotal, deliveryMethod);
     const total = subtotal + deliveryFee;
 
-    // Generate order reference
     const orderRef =
       "ATW-" +
       crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase();
 
-    // Atomic order creation via RPC
     const { data: result, error: rpcErr } = await supabase.rpc("create_order", {
       p_customer_name: body.customer.name.trim(),
       p_customer_email: body.customer.email.trim(),

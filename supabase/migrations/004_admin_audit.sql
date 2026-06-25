@@ -18,4 +18,7 @@ create index idx_admin_audit_performed_at on public.admin_audit_log(performed_at
 alter table public.admin_audit_log enable row level security;
 
 create policy "Service role can manage audit log" on public.admin_audit_log
-  for all using (true) with check (true);
+  for all
+  to service_role
+  using (true)
+  with check (true);

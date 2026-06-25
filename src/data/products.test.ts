@@ -4,6 +4,8 @@ import {
   getProductBySlug,
   getRelatedProducts,
   featuredProducts,
+  getProductReviews,
+  productReviews,
 } from "./products";
 import type { Product } from "@/types";
 
@@ -176,5 +178,18 @@ describe("products data integrity", () => {
       expect(product.image).toBeTruthy();
       expect(typeof product.image).toBe("string");
     }
+  });
+
+  it("every review points to an existing product id", () => {
+    const productIds = new Set(products.map((product) => product.id));
+
+    for (const review of productReviews) {
+      expect(productIds.has(review.productId)).toBe(true);
+    }
+  });
+
+  it("returns reviews when queried with a PDP product id", () => {
+    expect(getProductReviews("atw-001")).toHaveLength(3);
+    expect(getProductReviews("atw-001").map((review) => review.author)).toContain("Thandi M.");
   });
 });

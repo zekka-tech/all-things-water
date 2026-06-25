@@ -1,8 +1,16 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import { Seo } from "@/components/Seo";
+import { useCart } from "@/context/CartContext";
 
 export function CheckoutReturn() {
+  const { clear } = useCart();
+
+  useEffect(() => {
+    clear();
+  }, [clear]);
+
   return (
     <>
       <Seo title="Order confirmed" description="Your payment is being processed." />

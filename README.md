@@ -1,7 +1,7 @@
 # All Things Water 💧
 
 A standalone e-commerce storefront for **All Things Water** — premium bottled water,
-dispensers, water filters and accessories, delivered across South Africa.
+dispensers & chillers, water filters and accessories, delivered across South Africa.
 
 This app was forked and enhanced from the parent `water-filter-company` project and lives
 on its own branch as an independent application.
@@ -59,13 +59,13 @@ The catalog in `src/data/products.ts` is derived from the company's *Item Pricin
 
 | Product                         | Category      | Price (ZAR) |
 | ------------------------------- | ------------- | ----------- |
-| Hot & Cold Water Cooler YLR-805LB | Coolers     | R2 645      |
-| Counter Top Water Cooler YLR 95TB | Coolers     | R1 800      |
-| 18.9L Water Dispenser Bottle      | Dispensers  | R150        |
-| Caps for 5-Gallon Bottle          | Accessories | R10         |
-| Monate Water 500ml (case of 24)   | Bottled     | R175        |
-| Voss Original 800ml (case of 12)  | Bottled     | R1 500      |
-| Aquafria Sparkling 500ml (×24)    | Bottled     | R120        |
-| Aquafria Still 500ml (×24)        | Bottled     | R120        |
+| Hot & Cold Water Cooler YLR-805LB | Dispensers & chillers | R2 645 |
+| Counter Top Water Cooler YLR 95TB | Dispensers & chillers | R1 800 |
+| 18.9L Water Dispenser Bottle      | Dispensers & chillers | R150   |
+| Caps for 5-Gallon Bottle          | Accessories            | R10    |
+| Monate Water 500ml (case of 24)   | Bottled                | R175   |
+| Voss Original 800ml (case of 12)  | Accessories            | R1 500 |
+| Aquafria Sparkling 500ml (×24)    | Bottled                | R120   |
+| Aquafria Still 500ml (×24)        | Bottled                | R120   |
 
 Prices and stock levels can be adjusted directly in `src/data/products.ts`.

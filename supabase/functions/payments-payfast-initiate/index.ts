@@ -38,8 +38,26 @@ Deno.serve(async (req: Request) => {
       return errorResponse("orderId is required", 400);
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID");
+    const merchantKey = Deno.env.get("PAYFAST_MERCHANT_KEY");
+    const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "";
+    const siteUrl = Deno.env.get("PUBLIC_SITE_URL");
+    const functionBaseUrl = Deno.env.get("SUPABASE_URL");
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return errorResponse("Supabase server configuration is incomplete", 500);
+    }
+    if (!merchantId || !merchantKey) {
+      return errorResponse("PayFast merchant configuration is incomplete", 500);
+    }
+    if (!siteUrl || siteUrl.includes("localhost")) {
+      return errorResponse("PUBLIC_SITE_URL must be configured for checkout", 500);
+    }
+    if (!functionBaseUrl) {
+      return errorResponse("SUPABASE_URL must be configured for checkout", 500);
+    }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
@@ -59,15 +77,6 @@ Deno.serve(async (req: Request) => {
       return errorResponse("Order is not pending payment", 400);
     }
 
-    const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID")!;
-    const merchantKey = Deno.env.get("PAYFAST_MERCHANT_KEY")!;
-    const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "";
-    const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "http://localhost:5180";
-    const functionBaseUrl = Deno.env.get("SUPABASE_URL")!;
-
-    // Order matters: the signature is computed over this exact sequence and
-    // submitted in the same order. PayFast rebuilds the signature from the
-    // data it receives, so signed-order must equal sent-order.
     const params: Param[] = [
       ["merchant_id", merchantId],
       ["merchant_key", merchantKey],
@@ -78,7 +87,7 @@ Deno.serve(async (req: Request) => {
       ["email_address", order.customer_email],
       ["m_payment_id", order.id],
       ["amount", order.total.toFixed(2)],
-      ["item_name", `All Things Water \u2014 Order #${order.order_ref}`],
+      ["item_name", `All Things Water — Order #${order.order_ref}`],
     ];
 
     const redirectUrl = `${getProcessUrl()}?${buildSignedQuery(params, passphrase)}`;

@@ -86,7 +86,7 @@ const postalFeedback: Record<
 };
 
 export function Checkout() {
-  const { items, subtotal, clear } = useCart();
+  const { items, subtotal } = useCart();
   const [form, setForm] = useState<Form>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -232,8 +232,6 @@ export function Checkout() {
         `${functionsUrl}/payments-payfast-initiate`,
         { orderId: orderResult.orderId },
       );
-
-      clear();
 
       window.location.href = paymentResult.redirectUrl;
     } catch (err) {

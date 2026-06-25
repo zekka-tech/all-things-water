@@ -6,7 +6,7 @@ import { validateEmail } from "@/lib/validation";
 
 export function Footer() {
   const [email, setEmail] = useState("");
-  const [state, setState] = useState<"idle" | "loading" | "success" | "error">(
+  const [state, setState] = useState<"idle" | "loading" | "success" | "error" | "unavailable">(
     "idle",
   );
 
@@ -14,23 +14,21 @@ export function Footer() {
     e.preventDefault();
     if (!validateEmail(email)) return;
 
+    if (!env.newsletterEndpoint) {
+      setState("unavailable");
+      return;
+    }
+
     setState("loading");
 
     try {
-      if (env.newsletterEndpoint) {
-        const res = await fetch(env.newsletterEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: email.trim() }),
-        });
+      const res = await fetch(env.newsletterEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
 
-        if (!res.ok) throw new Error(`Server responded with ${res.status}`);
-      } else {
-        // Degrade gracefully when no endpoint is configured
-        console.log("[Newsletter] Subscription payload (no endpoint configured):", {
-          email: email.trim(),
-        });
-      }
+      if (!res.ok) throw new Error("Subscription failed");
 
       setState("success");
     } catch {
@@ -68,52 +66,65 @@ export function Footer() {
               </p>
             )}
 
-            {/* ── Error state ── */}
-            {state === "error" && (
-              <div className="flex items-center gap-3 animate-fade-in">
-                <p className="text-sm text-red-600 dark:text-red-400">
-                  <span className="inline-flex items-center gap-1">
-                    <AlertTriangle className="h-3.5 w-3.5" />
-                    Something went wrong.
-                  </span>
-                </p>
-                <button
-                  type="button"
-                  onClick={reset}
-                  className="btn-ghost !px-2 !py-1 text-xs"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Try again
-                </button>
-              </div>
-            )}
-
             {/* ── Form or loading ── */}
-            {(state === "idle" || state === "loading") && (
-              <form onSubmit={handleSubscribe} className="flex w-full max-w-sm gap-2">
+            {state !== "success" && (
+              <form onSubmit={handleSubscribe} className="w-full max-w-sm space-y-2">
                 <div className="sr-only" aria-live="polite">
                   {state === "loading" && "Subscribing…"}
+                  {state === "error" && "Newsletter subscription failed."}
+                  {state === "unavailable" && "Newsletter subscription is currently unavailable."}
                 </div>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  className="input flex-1 text-sm"
-                  aria-label="Email address"
-                  disabled={state === "loading"}
-                />
-                <button
-                  type="submit"
-                  disabled={state === "loading"}
-                  className="btn-primary shrink-0 px-4 py-2.5 text-sm"
-                >
-                  {state === "loading" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowRight className="h-4 w-4" />
-                  )}
-                </button>
+                {(state === "error" || state === "unavailable") && (
+                  <div
+                    className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 animate-fade-in"
+                    role="alert"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                    <span>
+                      {state === "unavailable"
+                        ? "Newsletter sign-up is currently unavailable."
+                        : "We couldn't subscribe you right now. Please try again later."}
+                    </span>
+                    {state === "error" && (
+                      <button
+                        type="button"
+                        onClick={reset}
+                        className="btn-ghost ml-auto !px-2 !py-1 text-xs"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        Try again
+                      </button>
+                    )}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (state === "error" || state === "unavailable") {
+                        setState("idle");
+                      }
+                    }}
+                    placeholder="your@email.com"
+                    className="input flex-1 text-sm"
+                    aria-label="Email address"
+                    disabled={state === "loading"}
+                  />
+                  <button
+                    type="submit"
+                    disabled={state === "loading"}
+                    className="btn-primary shrink-0 px-4 py-2.5 text-sm"
+                    aria-label="Subscribe to newsletter"
+                  >
+                    {state === "loading" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowRight className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </form>
             )}
           </div>

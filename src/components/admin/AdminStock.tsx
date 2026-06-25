@@ -2,7 +2,7 @@ import { OptimizedImage } from "@/components/OptimizedImage";
 import { cx } from "@/lib/format";
 import type { Product } from "@/types";
 import { Save, RefreshCw, Minus, Plus } from "lucide-react";
-import { stockStatus } from "./shared";
+import { stockStatus } from "./utils";
 
 export default function AdminStock({
   products: productList,

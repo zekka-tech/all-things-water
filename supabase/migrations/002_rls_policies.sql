@@ -35,8 +35,3 @@ create policy "Service role full access"
   using (true)
   with check (true);
 
--- Orders: anon can view own order by ref (filtered in Edge Function)
-create policy "Anon can view own order by ref"
-  on public.orders for select
-  to anon
-  using (true);

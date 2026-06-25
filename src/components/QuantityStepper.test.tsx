@@ -1,10 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QuantityStepper } from "@/components/QuantityStepper";
 
 describe("QuantityStepper", () => {
-  // ✅ Positive tests
   it("renders the initial value", () => {
     render(
       <QuantityStepper value={3} max={10} onChange={vi.fn()} />,
@@ -12,12 +11,11 @@ describe("QuantityStepper", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
   });
 
-  it("increments value when + button is clicked", async () => {
+  it("increments value when + button is clicked", () => {
     const onChange = vi.fn();
-    const user = userEvent.setup();
 
     render(<QuantityStepper value={3} max={10} onChange={onChange} />);
-    await user.click(screen.getByRole("button", { name: /increase/i }));
+    fireEvent.click(screen.getByRole("button", { name: /increase/i }));
 
     expect(onChange).toHaveBeenCalledOnce();
     expect(onChange).toHaveBeenCalledWith(4);
@@ -34,7 +32,6 @@ describe("QuantityStepper", () => {
     expect(onChange).toHaveBeenCalledWith(2);
   });
 
-  // ❌ Negative / boundary tests
   it("cannot decrement below min (default 1)", () => {
     const onChange = vi.fn();
     render(<QuantityStepper value={1} max={10} onChange={onChange} />);
@@ -58,7 +55,7 @@ describe("QuantityStepper", () => {
     );
 
     const decButton = screen.getByRole("button", { name: /decrease/i });
-    expect(decButton).toBeDisabled(); // value is 0, min is 0
+    expect(decButton).toBeDisabled();
   });
 
   it("respects custom min value (can decrement to min)", async () => {
@@ -93,7 +90,6 @@ describe("QuantityStepper", () => {
     expect(decButton).toBeDisabled();
   });
 
-  // Edge: value above max (should still display, but + disabled)
   it("disables + when value is somehow above max", () => {
     const onChange = vi.fn();
     render(
@@ -103,7 +99,6 @@ describe("QuantityStepper", () => {
     expect(incButton).toBeDisabled();
   });
 
-  // Renders with different size props
   it("renders with sm size prop without error", () => {
     render(
       <QuantityStepper value={1} max={5} onChange={vi.fn()} size="sm" />,

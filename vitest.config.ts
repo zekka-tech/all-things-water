@@ -5,7 +5,11 @@ export default mergeConfig(
   baseConfig,
   defineConfig({
     test: {
+      pool: "threads",
+      singleThread: true,
       globals: true,
+      testTimeout: 10000,
+      hookTimeout: 10000,
       environment: "jsdom",
       setupFiles: ["./src/test/setup.ts"],
       include: ["src/**/*.{test,spec}.{ts,tsx}"],

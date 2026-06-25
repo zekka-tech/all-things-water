@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter, useNavigate } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 
-// Helper component that exposes navigation so we can trigger route changes
 function NavigateButton({ to }: { to: string }) {
   const navigate = useNavigate();
   return <button onClick={() => navigate(to)}>Navigate to {to}</button>;
@@ -40,9 +38,7 @@ describe("ScrollToTop", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("calls scrollTo on each pathname change", async () => {
-    const user = userEvent.setup();
-
+  it("calls scrollTo on each pathname change", () => {
     render(
       <MemoryRouter initialEntries={["/first"]}>
         <ScrollToTop />
@@ -50,13 +46,10 @@ describe("ScrollToTop", () => {
       </MemoryRouter>,
     );
 
-    // Mount: scrollTo called once
     expect(scrollToSpy).toHaveBeenCalledTimes(1);
 
-    // Navigate to a new path
-    await user.click(screen.getByText("Navigate to /second"));
+    fireEvent.click(screen.getByText("Navigate to /second"));
 
-    // After navigation, scrollTo should fire again
     expect(scrollToSpy).toHaveBeenCalledTimes(2);
   });
 });

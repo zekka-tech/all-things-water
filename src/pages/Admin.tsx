@@ -325,7 +325,7 @@ export function Admin() {
   if (status === "loading") {
     return (
       <>
-        <Seo title="Admin" description="Admin dashboard for All Things Water." />
+        <Seo title="Admin" description="Admin dashboard for All Things Water." noIndex />
         <div className="flex min-h-[80vh] items-center justify-center">
           <span className="text-sm text-ink-500 dark:text-ink-400">Loading…</span>
         </div>
@@ -336,7 +336,7 @@ export function Admin() {
   if (status !== "authed") {
     return (
       <>
-        <Seo title="Admin" description="Admin dashboard for All Things Water." />
+        <Seo title="Admin" description="Admin dashboard for All Things Water." noIndex />
         <LoginGate onAuthed={() => setStatus("authed")} />
       </>
     );
@@ -344,7 +344,7 @@ export function Admin() {
 
   return (
     <>
-      <Seo title="Admin" description="Admin dashboard for All Things Water." />
+      <Seo title="Admin" description="Admin dashboard for All Things Water." noIndex />
 
       <div className="container-page py-8 animate-fade-in">
         {/* ── Header ── */}

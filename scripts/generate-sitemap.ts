@@ -1,4 +1,4 @@
-import { products } from "../src/data/products";
+import { productCatalog } from "../src/data/productCatalog";
 
 const BASE_URL = process.env.PUBLIC_SITE_URL || "https://allthingswater.co.za";
 
@@ -27,7 +27,7 @@ for (const page of staticPages) {
   </url>`);
 }
 
-for (const product of products) {
+for (const product of productCatalog) {
   urls.push(`  <url>
     <loc>${escapeXml(`${BASE_URL}/product/${product.slug}`)}</loc>
     <changefreq>weekly</changefreq>
