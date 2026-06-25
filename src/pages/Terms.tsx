@@ -11,7 +11,7 @@ const sections = [
           These Terms of Service (&ldquo;Terms&rdquo;) govern your use of the All Things Water
           website and the purchase of products through our online store. By accessing or using our
           website, you agree to be bound by these Terms. All Things Water is a South African
-          e-commerce business specialising in bottled water, dispensers, water filters and
+          e-commerce business specialising in bottled water, dispensers, chillers, water filters and
           accessories.
         </p>
         <p>
@@ -52,7 +52,7 @@ const sections = [
         </p>
         <p>
           Bottled water is a consumable product and must be stored and handled in accordance with
-          the instructions provided. Dispensers and water filters include manufacturer warranties as
+          the instructions provided. Dispensers, chillers and water filters include manufacturer warranties as
           specified on the relevant product pages.
         </p>
       </>

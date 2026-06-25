@@ -13,8 +13,8 @@ export const categories: CategoryMeta[] = [
   },
   {
     id: "dispensers",
-    label: "Dispensers",
-    description: "Bottle-based dispensers, hot-and-cold units and refillable bottles for home and office.",
+    label: "Dispensers & chillers",
+    description: "Bottle-based dispensers, chillers, hot-and-cold units and refillable bottles for home and office.",
   },
   {
     id: "accessories",

@@ -107,7 +107,7 @@ export function Contact() {
             Get in touch
           </h1>
           <p className="mt-3 max-w-sm leading-relaxed text-ink-600 dark:text-ink-300">
-            Questions about an order, bulk pricing or a cooler setup? Send us a message and we'll get
+            Questions about an order, bulk pricing or a dispenser, chiller or water-filter setup? Send us a message and we'll get
             back to you within one business day.
           </p>
 

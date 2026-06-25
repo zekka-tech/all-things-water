@@ -135,7 +135,7 @@ const products: SeedProduct[] = [
     tagline: "Iconic Norwegian still water — premium glass.",
     description:
       "VOSS artesian still water in the signature 800ml cylinder. A premium centrepiece for fine dining, hospitality and gifting. Sold as a case of 12.",
-    category: "bottled-water",
+    category: "accessories",
     price: 1500,
     cost: 1345,
     unit: "case of 12",

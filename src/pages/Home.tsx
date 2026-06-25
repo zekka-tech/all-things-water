@@ -30,7 +30,7 @@ const valueProps = [
   {
     icon: Snowflake,
     title: "Hot & cold",
-    text: "Dispensers and water filters for every kitchen and office.",
+    text: "Dispensers, chillers and water filters for every kitchen and office.",
   },
   {
     icon: Recycle,
@@ -52,8 +52,8 @@ export function Home() {
   return (
     <>
       <Seo
-        title="Bottled Water, Dispensers & Water Filters"
-        description="All Things Water — premium bottled water, dispensers, water filters and accessories delivered across South Africa."
+        title="Bottled Water, Dispensers & Chillers, and Water Filters"
+        description="All Things Water — premium bottled water, dispensers, chillers, water filters and accessories delivered across South Africa."
       />
 
       {/* ── Hero ── */}
@@ -82,7 +82,7 @@ export function Home() {
             </h1>
 
             <p className="mt-5 max-w-lg text-lg leading-relaxed text-ink-600 dark:text-ink-300">
-              Premium still and sparkling bottled water, refillable dispensers, water filters
+              Premium still and sparkling bottled water, refillable dispensers, chillers, water filters
               and accessories — for home and office.
             </p>
 
@@ -242,7 +242,7 @@ export function Home() {
             Set up your water station today
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-brand-100">
-            From a single case of water to a complete cooler &amp; dispenser setup — we have everything you need.
+            From a single case of water to a complete dispenser, chiller or water-filter setup — we have everything you need.
           </p>
           <Link
             to="/shop"

@@ -47,7 +47,7 @@ export function About() {
           <p className="mt-5 text-lg leading-relaxed text-ink-600 dark:text-ink-300">
             All Things Water began with a simple idea: getting great water — and the equipment to
             serve it — should be effortless for every home and office. Today we bring still and
-            sparkling bottled water, dispensers, water filters and accessories together in one place.
+            sparkling bottled water, dispensers, chillers, water filters and accessories together in one place.
           </p>
         </div>
       </section>

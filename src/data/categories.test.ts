@@ -7,7 +7,7 @@ describe("categoryLabel", () => {
   it("returns the label for a valid category id", () => {
     expect(categoryLabel("bottled-water")).toBe("Bottled Water");
     expect(categoryLabel("coolers")).toBe("Water Filters");
-    expect(categoryLabel("dispensers")).toBe("Dispensers");
+    expect(categoryLabel("dispensers")).toBe("Dispensers & chillers");
     expect(categoryLabel("accessories")).toBe("Accessories");
   });
 

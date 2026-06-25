@@ -33,16 +33,16 @@ describe("getProductBySlug", () => {
 describe("getRelatedProducts", () => {
   it("returns products from the same category first, up to the default limit", () => {
     const product = products.find((p) => p.slug === "aquafria-still-500ml-case")!;
-    // aquafria-still is bottled-water. There are 4 bottled-water products total.
-    // Excluding itself, there are 3. Default limit is 3.
-    // So all 3 should be same-category bottled-water.
+    // aquafria-still is bottled-water. There are 3 bottled-water products total.
+    // Excluding itself, there are 2. Default limit is 3.
+    // So two related items should be same-category bottled-water, plus one filler from another category.
     const related = getRelatedProducts(product);
     expect(related.length).toBeLessThanOrEqual(3);
     expect(related.every((p) => p.id !== product.id)).toBe(true);
-    // All related should be from bottled-water (since we have enough same-category)
-    // Actually, bottled-water has 4 items (atw-005, atw-006, atw-007, atw-008)
-    // Excluding atw-008, we have 3 left = limit 3, so all same category
-    expect(related.every((p) => p.category === "bottled-water")).toBe(true);
+    expect(related.filter((p) => p.category === "bottled-water")).toHaveLength(2);
+    expect(related[0]?.id).toBe("atw-005");
+    expect(related[1]?.id).toBe("atw-007");
+    expect(related[2]?.category).not.toBe("bottled-water");
   });
 
   it("fills remaining slots with other-category products when same-category is too few", () => {
@@ -61,7 +61,7 @@ describe("getRelatedProducts", () => {
     const product = products.find((p) => p.slug === "aquafria-still-500ml-case")!;
     const related = getRelatedProducts(product, 5);
     // There are 8 total products, excluding itself = 7. Limit 5.
-    // 3 same-category (bottled-water excluding itself) + 4 other = can fill 5
+    // 2 same-category (bottled-water excluding itself) + 5 other = can fill 5
     expect(related.length).toBe(5);
   });
 

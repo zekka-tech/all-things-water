@@ -144,7 +144,7 @@ export function Footer() {
                 { to: "/shop", label: "All products" },
                 { to: "/shop?category=bottled-water", label: "Bottled water" },
                 { to: "/shop?category=coolers", label: "Water filters" },
-                { to: "/shop?category=dispensers", label: "Dispensers" },
+                { to: "/shop?category=dispensers", label: "Dispensers & chillers" },
                 { to: "/shop?category=accessories", label: "Accessories" },
               ].map((l) => (
                 <li key={l.to}>
