@@ -1,7 +1,7 @@
 # All Things Water — CTO Advisor Assessment & Investment Case
 
 *Prepared: June 2026 · Scope: storefront repo (`all-things-water` branch) + South African
-/ African market context · Status: post production-readiness hardening (commit `eb39954`)*
+/ African market context · Status: post production-readiness hardening + P0/P1 customer features (commits `eb39954`, `6d62bbb`)*
 
 This document is a senior engineering + commercial review. It is written for the founder
 and for prospective investors. It is deliberately honest about both strengths and gaps:
@@ -66,16 +66,18 @@ economics are concrete; not yet a Series-A case.
 
 ### 2.3 Capability gaps (honest, prioritised)
 
-| Gap | Impact | Priority |
-| --- | --- | --- |
-| **Recurring/subscription orders** | Bottled water + filters are inherently replenishment purchases; no subscription engine today | **P0 for retention** |
-| **Customer accounts / order history** | Logged-out-only purchase caps LTV and review capture | **P0** |
-| **Reviews/ratings on PDPs** | Reviews exist in data model but the storefront PDP review widget was previously broken | P1 (fix in progress) |
-| **Delivery-area + scheduling self-service** | Only postal-code eligibility check; no date/time slot selection | P1 |
-| **Loyalty / referral** | No program; LTV tooling absent | P2 |
-| **Inventory multi-warehouse** | Single stock count; no branch-level allocation | P2 |
-| **Marketing stack confirmed** | Analytics is consent-gated and generic GA/GTM; no CDP/klaviyo-style email lifecycle | P1 |
-| **Back-in-stock notifications** | None | P1 |
+| Gap | Impact | Priority | Status |
+| --- | --- | --- | --- |
+| **Recurring/subscription orders** | Bottled water + filters are inherently replenishment purchases | **P0 for retention** | Schema ready (`subscriptions` table in migration 007); subscription-creation UI + scheduler pending |
+| **Customer accounts / order history** | Logged-out-only purchase caps LTV | **P0** | ✅ **Implemented** — Supabase Auth account page with real order history |
+| **Lifecycle email** | No order shipping/delivery email to customers | **P0** | ✅ **Implemented** — shipping + delivery templates via Resend, admin-triggered |
+| **Reviews/ratings on PDPs** | Reviews exist in data model but the storefront PDP review widget was broken | P1 | ✅ **Fixed** (prior phase) |
+| **Delivery-area + scheduling self-service** | No date/time slot selection | P1 | ✅ **Implemented** — delivery window picker in checkout |
+| **Back-in-stock notifications** | No way to capture demand for sold-out SKUs | P1 | ✅ **Implemented** — table + edge fn + PDP widget |
+| **Admin order management with real orders** | Admin used mock data only | P0 | ✅ **Implemented** — real order fetch + status updates + lifecycle email triggers |
+| **Loyalty / referral** | No program; LTV tooling absent | P2 | Pending |
+| **Inventory multi-warehouse** | Single stock count; no branch-level allocation | P2 | Pending |
+| **Marketing stack confirmed** | Analytics is consent-gated and generic GA/GTM; no CDP/klaviyo email lifecycle | P1 | Lifecycle email ✅; marketing CDP pending |
 
 ---
 
@@ -268,21 +270,23 @@ business” and the moat becomes the recurring revenue + delivery UX, not the co
 
 ---
 
-## 8. Recommended next engineering actions (post-commit `eb39954`)
+## 8. Recommended next engineering actions (post-commit `6d62bbb`)
 
-Ranked by ROI on the investment case:
+</parameter>
+Ranked by ROI on the investment case, items 1–4 from the prior list are now ✅ complete:
 
-1. **Customer accounts + standing orders / subscriptions** (P0 — unlocks retention + LTV).
-2. **Lifecycle email via Resend** keyed off order events (P0 — retention).
-3. **Back-in-stock notifications** for sold-out SKUs (P1 — recovered demand).
-4. **Playwright e2e of the purchase funnel** against PayFast sandbox (P1 — regression safety).
-5. **Structured logging + alerting** on `orders` and `payments-payfast-itn` Edge Functions (P1).
-6. **Core Web Vitals budget** in CI + axe a11y check on storefront routes (P2).
-7. **Delivery slot selection** in checkout (P2 — GTM differentiator).
-8. **B2B invoicing flow** for office-water contracts (P2 — highest-LTV segment).
+1. ~~**Customer accounts + standing orders / subscriptions**~~ (✅ P0 — accounts + order history shipped; subscription engine schema ready, creation UI pending)
+2. ~~**Lifecycle email via Resend**~~ (✅ P0 — shipping + delivery templates, admin-triggered via order-status Edge Function)
+3. ~~**Back-in-stock notifications**~~ (✅ P1 — table + edge fn + PDP widget shipped)
+4. ~~**Delivery slot selection**~~ (✅ P1 — window picker in checkout)
+5. ~~**Admin order management**~~ (✅ P0 — real orders + status advancement + lifecycle email triggers)
 
-Each of these maps directly to a revenue or risk-reduction outcome in §6–7, which is the
-narrative investors will underwrite.
+Remaining:
+6. **Subscription creation UI + payment scheduler** (P1 — schema ready in migration 007, needs storefront CRUD + cron)
+7. **Playwright e2e of the purchase funnel** against PayFast sandbox (P1 — regression safety)
+8. **Structured logging + alerting** on `orders` and `payments-payfast-itn` Edge Functions (P1)
+9. **Core Web Vitals budget** in CI + axe a11y check on storefront routes (P2)
+10. **B2B invoicing flow** for office-water contracts (P2 — highest-LTV segment)
 
 ---
 
