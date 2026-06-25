@@ -108,3 +108,97 @@ export async function sendMerchantNotification(
     console.error("Resend merchant email error:", err);
   }
 }
+
+function emailShell(title: string, bodyHtml: string): string {
+  return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1f2630">
+<h1 style="color:#06a3f0;margin:0 0 4px">All Things Water</h1>
+<p style="margin:0 0 24px;color:#66778f">${title}</p>
+${bodyHtml}
+<p style="color:#66778f;font-size:14px;margin-top:24px">Questions? Reply to this email or WhatsApp us.</p>
+</body></html>`;
+}
+
+export async function sendShippingNotification(
+  email: string,
+  orderRef: string,
+  trackingNote?: string,
+): Promise<void> {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) {
+    console.warn("RESEND_API_KEY not set — skipping shipping email");
+    return;
+  }
+
+  try {
+    const body = `
+<div style="background:#f6f7f9;border-radius:12px;padding:20px;margin-bottom:24px">
+<p style="margin:0 0 8px;font-weight:600">Order ${orderRef}</p>
+<p style="margin:0 0 16px">Good news — your order is on its way!</p>
+${trackingNote ? `<p style="margin:0 0 16px;color:#66778f">${trackingNote}</p>` : ""}
+<p style="margin:0">We&rsquo;ll let you know once it&rsquo;s been delivered.</p>
+</div>`;
+    const html = emailShell("Your order is on its way", body);
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "All Things Water <orders@allthingswater.co.za>",
+        to: email,
+        subject: `Your order is on its way — ${orderRef}`,
+        html,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("Resend shipping email failed:", await res.text());
+    }
+  } catch (err) {
+    console.error("Resend shipping email error:", err);
+  }
+}
+
+export async function sendDeliveryNotification(
+  email: string,
+  orderRef: string,
+): Promise<void> {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) {
+    console.warn("RESEND_API_KEY not set — skipping delivery email");
+    return;
+  }
+
+  try {
+    const body = `
+<div style="background:#f6f7f9;border-radius:12px;padding:20px;margin-bottom:24px">
+<p style="margin:0 0 8px;font-weight:600">Order ${orderRef}</p>
+<p style="margin:0 0 16px">Your order has been delivered. We hope you enjoy it!</p>
+<p style="margin:0">If anything isn&rsquo;t right, just reply to this email and we&rsquo;ll make it right.</p>
+</div>
+<p style="color:#66778f;font-size:14px">Complete your experience — grab a refill or filter cartridge anytime.</p>`;
+    const html = emailShell("Order delivered", body);
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "All Things Water <orders@allthingswater.co.za>",
+        to: email,
+        subject: `Order delivered — ${orderRef}`,
+        html,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("Resend delivery email failed:", await res.text());
+    }
+  } catch (err) {
+    console.error("Resend delivery email error:", err);
+  }
+}

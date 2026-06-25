@@ -11,14 +11,18 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiPost<T>(url: string, body: unknown): Promise<T> {
+export async function apiPost<T>(
+  url: string,
+  body: unknown,
+  headers?: Record<string, string>,
+): Promise<T> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), API_TIMEOUT);
 
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...headers },
       body: JSON.stringify(body),
       signal: controller.signal,
     });

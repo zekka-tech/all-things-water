@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { Droplets, Menu, Moon, Settings, ShoppingCart, Sun, X } from "lucide-react";
+import { Droplets, Menu, Moon, Settings, ShoppingCart, Sun, UserCircle, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 import { cx } from "@/lib/format";
 
 const links = [
@@ -15,6 +16,7 @@ const links = [
 export function Navbar() {
   const { count } = useCart();
   const { theme, toggle } = useTheme();
+  const { user, hasConfig } = useAuth();
   const [open, setOpen] = useState(false);
 
   return (
@@ -74,6 +76,17 @@ export function Navbar() {
             )}
           </Link>
 
+          {hasConfig && (
+            <Link
+              to="/account"
+              className="btn-ghost h-10 w-10 rounded-xl p-0"
+              aria-label={user ? "My account" : "Sign in"}
+              title={user ? user.email : "Sign in"}
+            >
+              <UserCircle className="h-5 w-5" />
+            </Link>
+          )}
+
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -107,6 +120,27 @@ export function Navbar() {
                 {l.label}
               </NavLink>
             ))}
+
+            {/* Account link — shown only when accounts are configured */}
+            {hasConfig && (
+              <NavLink
+                to="/account"
+                onClick={() => setOpen(false)}
+                className={({ isActive }) =>
+                  cx(
+                    "block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
+                    isActive
+                      ? "bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-300"
+                      : "text-ink-700 hover:bg-ink-50 dark:text-ink-200 dark:hover:bg-ink-800/60",
+                  )
+                }
+              >
+                <span className="flex items-center gap-2">
+                  <UserCircle className="h-4 w-4" />
+                  {user ? "My Account" : "Sign in"}
+                </span>
+              </NavLink>
+            )}
 
             {/* Admin link — subtle, mobile only */}
             <NavLink

@@ -17,6 +17,7 @@ const Terms = lazy(() => import("@/pages/Terms").then((m) => ({ default: m.Terms
 const Privacy = lazy(() => import("@/pages/Privacy").then((m) => ({ default: m.Privacy })));
 const Returns = lazy(() => import("@/pages/Returns").then((m) => ({ default: m.Returns })));
 const Admin = lazy(() => import("@/pages/Admin").then((m) => ({ default: m.Admin })));
+const Account = lazy(() => import("@/pages/Account").then((m) => ({ default: m.Account })));
 const NotFound = lazy(() => import("@/pages/NotFound").then((m) => ({ default: m.NotFound })));
 
 function PageLoading() {
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/returns" element={<Returns />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/account" element={<Account />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

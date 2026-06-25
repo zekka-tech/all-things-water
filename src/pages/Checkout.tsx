@@ -15,9 +15,11 @@ import {
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { formatZAR, cx } from "@/lib/format";
 import { env } from "@/lib/env";
 import { apiPost, userFriendlyError } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { captureException } from "@/lib/sentry";
 import {
   DELIVERY_THRESHOLD,
@@ -87,6 +89,7 @@ const postalFeedback: Record<
 
 export function Checkout() {
   const { items, subtotal } = useCart();
+  const { user } = useAuth();
   const [form, setForm] = useState<Form>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -96,6 +99,7 @@ export function Checkout() {
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("delivery");
   const [postalStatus, setPostalStatus] = useState<ZoneStatus>("invalid");
   const [postalDebounced, setPostalDebounced] = useState("");
+  const [deliverySlot, setDeliverySlot] = useState("");
   const [whatsappOptIn, setWhatsappOptIn] = useState(() => {
     try {
       return localStorage.getItem(WHATSAPP_OPTIN_KEY) === "true";
@@ -135,6 +139,14 @@ export function Checkout() {
       /* storage may be unavailable */
     }
   }, [whatsappOptIn]);
+
+  // Pre-fill email when a logged-in customer reaches checkout
+  useEffect(() => {
+    if (user && !form.email) {
+      setForm((f) => ({ ...f, email: user.email }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // ── Derived values ──
   const delivery = calculateDelivery(subtotal, deliveryMethod);
@@ -203,6 +215,16 @@ export function Checkout() {
     try {
       const functionsUrl = `${env.supabaseUrl}/functions/v1`;
 
+      // Attach the customer's access token so the Edge Function can link
+      // the order to their account.
+      const { data: sessionData } = supabase
+        ? await supabase.auth.getSession()
+        : { data: null };
+      const authHeaders: Record<string, string> = {};
+      if (sessionData?.session?.access_token) {
+        authHeaders.Authorization = `Bearer ${sessionData.session.access_token}`;
+      }
+
       const orderPayload = {
         items: items.map(({ product, quantity }) => ({
           productId: product.id,
@@ -221,16 +243,19 @@ export function Checkout() {
           method: deliveryMethod,
         },
         whatsappOptin: whatsappOptIn,
+        deliverySlot: deliveryMethod === "delivery" ? deliverySlot || undefined : undefined,
       };
 
       const orderResult = await apiPost<{ orderId: string; orderRef: string }>(
         `${functionsUrl}/orders`,
         orderPayload,
+        authHeaders,
       );
 
       const paymentResult = await apiPost<{ redirectUrl: string }>(
         `${functionsUrl}/payments-payfast-initiate`,
         { orderId: orderResult.orderId },
+        authHeaders,
       );
 
       window.location.href = paymentResult.redirectUrl;
@@ -486,6 +511,36 @@ export function Checkout() {
                       </p>
                     )}
                   </div>
+                </div>
+
+                {/* Delivery slot selection */}
+                <div className="mt-5">
+                  <label htmlFor="slot" className="mb-1.5 block text-sm font-medium text-ink-700 dark:text-ink-200">
+                    Preferred delivery window
+                  </label>
+                  <select
+                    id="slot"
+                    value={deliverySlot}
+                    onChange={(e) => setDeliverySlot(e.target.value)}
+                    className="input"
+                  >
+                    <option value="">Choose a window…</option>
+                    <option value="mon-am">Monday morning (08:00–12:00)</option>
+                    <option value="mon-pm">Monday afternoon (12:00–17:00)</option>
+                    <option value="tue-am">Tuesday morning (08:00–12:00)</option>
+                    <option value="tue-pm">Tuesday afternoon (12:00–17:00)</option>
+                    <option value="wed-am">Wednesday morning (08:00–12:00)</option>
+                    <option value="wed-pm">Wednesday afternoon (12:00–17:00)</option>
+                    <option value="thu-am">Thursday morning (08:00–12:00)</option>
+                    <option value="thu-pm">Thursday afternoon (12:00–17:00)</option>
+                    <option value="fri-am">Friday morning (08:00–12:00)</option>
+                    <option value="fri-pm">Friday afternoon (12:00–17:00)</option>
+                    <option value="sat-am">Saturday morning (08:00–12:00)</option>
+                  </select>
+                  <p className="mt-1 text-xs text-ink-400 dark:text-ink-500">
+                    We&rsquo;ll do our best to deliver in your chosen window. A confirmed
+                    slot will be emailed once your order is processed.
+                  </p>
                 </div>
 
                 {/* Prominent delivery notes */}

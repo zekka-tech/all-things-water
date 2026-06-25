@@ -31,6 +31,7 @@ interface CreateOrderRequest {
   customer: Customer;
   delivery: Delivery;
   whatsappOptin?: boolean;
+  deliverySlot?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -91,6 +92,21 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
+    // Extract user UUID from the caller's JWT (if authenticated). We only
+    // need the sub claim, not full validation — the service-role client
+    // writes the row; the JWT just tells us *which* customer.
+    let userId: string | null = null;
+    const authHeader = req.headers.get("Authorization") || "";
+    if (authHeader.startsWith("Bearer ")) {
+      try {
+        const [, tokenPart] = authHeader.split(" ");
+        const payload = JSON.parse(atob(tokenPart.split(".")[1]));
+        userId = payload?.sub ?? null;
+      } catch {
+        /* not authenticated — guest order */
+      }
+    }
+
     const productIds = body.items.map((i) => i.productId);
     const { data: products, error: fetchErr } = await supabase
       .from("products")
@@ -146,6 +162,8 @@ Deno.serve(async (req: Request) => {
       p_order_ref: orderRef,
       p_items: orderItems,
       p_whatsapp_optin: body.whatsappOptin ?? false,
+      p_user_id: userId ?? undefined,
+      p_delivery_slot: body.deliverySlot || undefined,
     });
 
     if (rpcErr) {

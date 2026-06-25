@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { AuthProvider } from "@/context/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { validateEnv } from "@/lib/validateEnv";
 import { initErrorReporter } from "@/lib/sentry";
@@ -88,9 +89,11 @@ createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
       <ThemeProvider>
         <BrowserRouter>
-          <CartProvider>
-            <App />
-          </CartProvider>
+          <AuthProvider>
+            <CartProvider>
+              <App />
+            </CartProvider>
+          </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>
     </ErrorBoundary>

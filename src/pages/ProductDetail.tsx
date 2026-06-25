@@ -8,6 +8,7 @@ import { QuantityStepper } from "@/components/QuantityStepper";
 import { ProductReviews } from "@/components/ProductReviews";
 import { getProductBySlug, getRelatedProducts } from "@/data/products";
 import { categoryLabel } from "@/data/categories";
+import { BackInStockNotify } from "@/components/BackInStockNotify";
 import { formatZAR } from "@/lib/format";
 import { useCart } from "@/context/CartContext";
 import { NotFound } from "./NotFound";
@@ -129,16 +130,7 @@ export function ProductDetail() {
               </div>
 
               {soldOut && (
-                <p className="mt-4 rounded-xl bg-ink-50 px-4 py-3 text-sm text-ink-500 dark:bg-ink-800/50 dark:text-ink-400">
-                  This item is currently out of stock.{" "}
-                  <Link
-                    to="/contact"
-                    className="font-semibold text-brand-600 hover:underline dark:text-brand-400"
-                  >
-                    Contact us
-                  </Link>{" "}
-                  to be notified when it's back.
-                </p>
+                <BackInStockNotify productId={product.id} />
               )}
             </div>
           </div>

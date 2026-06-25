@@ -1,117 +1,150 @@
-import { useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { formatZAR, cx } from "@/lib/format";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, RefreshCw, Loader2, XCircle, ChevronRight } from "lucide-react";
+import { env } from "@/lib/env";
+import { getAccessToken } from "@/lib/adminAuth";
+import { captureException } from "@/lib/sentry";
 
-// ── Types ──
 interface OrderItem {
-  productName: string;
+  product_name: string;
   quantity: number;
-  price: number;
+  product_price: number;
 }
 
-interface MockOrder {
-  ref: string;
-  date: string;
-  customerName: string;
-  items: OrderItem[];
+interface Order {
+  id: string;
+  order_ref: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string | null;
+  delivery_method: string;
+  delivery_address: string | null;
+  delivery_city: string | null;
+  delivery_postal_code: string | null;
+  delivery_notes: string | null;
+  subtotal: number;
+  delivery_fee: number;
   total: number;
-  status: "pending" | "processing" | "completed";
+  status: string;
+  created_at: string;
+  order_items: OrderItem[];
 }
 
-// ── Mock Orders ──
-const MOCK_ORDERS: MockOrder[] = [
-  {
-    ref: "ATW-2024-001",
-    date: "2024-06-01T10:30:00",
-    customerName: "Thabo Molefe",
-    items: [
-      { productName: "Hot & Cold Water Cooler YLR-805LB", quantity: 1, price: 2645 },
-      { productName: "18.9L Water Dispenser Bottle", quantity: 2, price: 150 },
-    ],
-    total: 2945,
-    status: "completed",
-  },
-  {
-    ref: "ATW-2024-002",
-    date: "2024-06-02T14:15:00",
-    customerName: "Priya Naidoo",
-    items: [
-      { productName: "Aquafria Sparkling 500ml", quantity: 3, price: 120 },
-      { productName: "Aquafria Still 500ml", quantity: 2, price: 120 },
-    ],
-    total: 600,
-    status: "completed",
-  },
-  {
-    ref: "ATW-2024-003",
-    date: "2024-06-03T09:00:00",
-    customerName: "James van der Merwe",
-    items: [
-      { productName: "Counter Top Water Cooler YLR 95TB", quantity: 1, price: 1800 },
-    ],
-    total: 1800,
-    status: "processing",
-  },
-  {
-    ref: "ATW-2024-004",
-    date: "2024-06-03T11:45:00",
-    customerName: "Lerato Khumalo",
-    items: [
-      { productName: "Monate Water 500ml", quantity: 4, price: 175 },
-      { productName: "Caps for 5-Gallon Bottle", quantity: 10, price: 10 },
-    ],
-    total: 800,
-    status: "processing",
-  },
-  {
-    ref: "ATW-2024-005",
-    date: "2024-06-04T08:30:00",
-    customerName: "David Nkosi",
-    items: [{ productName: "Voss Original 800ml", quantity: 1, price: 1500 }],
-    total: 1500,
-    status: "pending",
-  },
-  {
-    ref: "ATW-2024-006",
-    date: "2024-06-04T16:00:00",
-    customerName: "Sarah Williams",
-    items: [
-      { productName: "Aquafria Sparkling 500ml", quantity: 2, price: 120 },
-      { productName: "Monate Water 500ml", quantity: 1, price: 175 },
-      { productName: "Caps for 5-Gallon Bottle", quantity: 5, price: 10 },
-    ],
-    total: 465,
-    status: "pending",
-  },
-  {
-    ref: "ATW-2024-007",
-    date: "2024-06-05T12:00:00",
-    customerName: "Michael Dlamini",
-    items: [
-      { productName: "Hot & Cold Water Cooler YLR-805LB", quantity: 1, price: 2645 },
-      { productName: "18.9L Water Dispenser Bottle", quantity: 3, price: 150 },
-    ],
-    total: 3095,
-    status: "completed",
-  },
-];
+const STATUS_FLOW: Record<string, string[]> = {
+  paid: ["processing", "cancelled"],
+  processing: ["shipped", "cancelled"],
+  shipped: ["delivered"],
+  delivered: [],
+  pending_payment: ["processing", "cancelled"],
+  cancelled: [],
+  expired: [],
+};
 
-// ── Status badge helper ──
-function orderStatusBadge(status: MockOrder["status"]) {
-  const map = {
-    pending: { label: "Pending", color: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400" },
+function statusBadge(status: string) {
+  const map: Record<string, { label: string; color: string }> = {
+    pending_payment: { label: "Pending payment", color: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400" },
+    paid: { label: "Paid", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400" },
     processing: { label: "Processing", color: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400" },
-    completed: { label: "Completed", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400" },
+    shipped: { label: "Shipped", color: "bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300" },
+    delivered: { label: "Delivered", color: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400" },
+    cancelled: { label: "Cancelled", color: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400" },
+    expired: { label: "Expired", color: "bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-400" },
   };
-  return map[status];
+  return map[status] ?? { label: status, color: "bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-400" };
 }
 
 export default function AdminOrders() {
-  // Check if there are any orders (from localStorage or mock data)
-  const orders = useMemo(() => {
-    // In a real app this would come from a backend — using mock data for now
-    return MOCK_ORDERS;
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  const fetchOrders = useCallback(async () => {
+    if (!env.supabaseUrl || !env.supabaseAnonKey) {
+      setError("Supabase is not configured.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        setError("Not authenticated.");
+        return;
+      }
+      const res = await fetch(`${env.supabaseUrl}/functions/v1/admin-orders`, {
+        headers: {
+          apikey: env.supabaseAnonKey,
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch orders (${res.status})`);
+      }
+      const data = await res.json();
+      setOrders(data.orders || []);
+    } catch (err) {
+      setError("Could not load orders. Please refresh.");
+      captureException(err instanceof Error ? err : new Error(String(err)), { action: "adminFetchOrders" });
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  const updateStatus = async (orderId: string, newStatus: string) => {
+    setUpdatingId(orderId);
+    try {
+      const token = await getAccessToken();
+      if (!token) return;
+      const res = await fetch(`${env.supabaseUrl}/functions/v1/order-status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: env.supabaseAnonKey,
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ orderId, status: newStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Failed to update (${res.status})`);
+      }
+      // Update local state
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+      );
+    } catch (err) {
+      captureException(err instanceof Error ? err : new Error(String(err)), { action: "adminUpdateStatus" });
+      setError("Failed to update order status. Please try again.");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  if (loading && orders.length === 0) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+      </div>
+    );
+  }
+
+  if (error && orders.length === 0) {
+    return (
+      <div className="card flex flex-col items-center gap-3 px-6 py-12 text-center">
+        <XCircle className="h-8 w-8 text-red-500" />
+        <p className="text-sm text-ink-500 dark:text-ink-400">{error}</p>
+        <button type="button" onClick={fetchOrders} className="btn-outline px-4 py-2 text-sm">
+          <RefreshCw className="h-4 w-4" /> Try again
+        </button>
+      </div>
+    );
+  }
 
   if (orders.length === 0) {
     return (
@@ -128,57 +161,126 @@ export default function AdminOrders() {
   }
 
   return (
-    <div className="card overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-ink-200 bg-ink-50/50 dark:border-ink-800 dark:bg-ink-800/30">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-ink-500 dark:text-ink-400">Reference</th>
-              <th className="hidden px-4 py-3 text-left text-xs font-semibold text-ink-500 dark:text-ink-400 sm:table-cell">Date</th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-ink-500 dark:text-ink-400">Customer</th>
-              <th className="hidden px-4 py-3 text-left text-xs font-semibold text-ink-500 dark:text-ink-400 lg:table-cell">Items</th>
-              <th className="px-4 py-3 text-right text-xs font-semibold text-ink-500 dark:text-ink-400">Total</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-ink-500 dark:text-ink-400">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-ink-100 dark:divide-ink-800">
-            {orders.map((order) => {
-              const status = orderStatusBadge(order.status);
-              const date = new Date(order.date).toLocaleDateString("en-ZA", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              });
-              const itemSummary = order.items
-                .map((i) => `${i.quantity}× ${i.productName}`)
-                .join(", ");
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-sm text-ink-500 dark:text-ink-400">
+          {orders.length} order{orders.length !== 1 ? "s" : ""}
+        </p>
+        <button type="button" onClick={fetchOrders} className="btn-ghost px-3 py-1.5 text-sm" disabled={loading}>
+          <RefreshCw className={cx("h-4 w-4", loading && "animate-spin")} /> Refresh
+        </button>
+      </div>
 
-              return (
-                <tr
-                  key={order.ref}
-                  className="transition-colors hover:bg-ink-50/50 dark:hover:bg-ink-800/20"
-                >
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs font-semibold text-brand-600 dark:text-brand-400">
-                      {order.ref}
-                    </span>
-                  </td>
-                  <td className="hidden px-4 py-3 text-ink-500 dark:text-ink-400 sm:table-cell">{date}</td>
-                  <td className="px-4 py-3 font-medium text-ink-900 dark:text-white">{order.customerName}</td>
-                  <td className="hidden max-w-[200px] truncate px-4 py-3 text-ink-500 dark:text-ink-400 lg:table-cell">
-                    {itemSummary}
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums font-medium text-ink-900 dark:text-white">
-                    {formatZAR(order.total)}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={cx("badge", status.color)}>{status.label}</span>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+      {error && (
+        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 dark:border-amber-800 dark:bg-amber-500/10">
+          <p className="text-sm text-amber-700 dark:text-amber-400">{error}</p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {orders.map((order) => {
+          const badge = statusBadge(order.status);
+          const isExpanded = expandedId === order.id;
+          const nextStatuses = STATUS_FLOW[order.status] || [];
+          const date = new Date(order.created_at).toLocaleDateString("en-ZA", {
+            day: "numeric", month: "short", year: "numeric",
+          });
+          const itemSummary = order.order_items
+            .map((i) => `${i.quantity}\u00d7 ${i.product_name}`)
+            .join(", ");
+
+          return (
+            <div key={order.id} className="card overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setExpandedId(isExpanded ? null : order.id)}
+                className="flex w-full items-center gap-4 px-4 py-3 text-left"
+              >
+                <span className="font-mono text-xs font-semibold text-brand-600 dark:text-brand-400">
+                  {order.order_ref}
+                </span>
+                <span className="hidden text-xs text-ink-500 dark:text-ink-400 sm:block">{date}</span>
+                <span className="flex-1 truncate text-sm font-medium text-ink-900 dark:text-white">
+                  {order.customer_name}
+                </span>
+                <span className="hidden max-w-[200px] truncate text-xs text-ink-500 dark:text-ink-400 lg:block">
+                  {itemSummary}
+                </span>
+                <span className="tabular-nums text-sm font-medium text-ink-900 dark:text-white">
+                  {formatZAR(order.total)}
+                </span>
+                <span className={cx("badge", badge.color)}>{badge.label}</span>
+                <ChevronRight className={cx("h-4 w-4 shrink-0 text-ink-400 transition-transform", isExpanded && "rotate-90")} />
+              </button>
+
+              {isExpanded && (
+                <div className="border-t border-ink-100 px-4 py-4 dark:border-ink-800">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {/* Items */}
+                    <div>
+                      <h4 className="text-xs font-semibold text-ink-500 dark:text-ink-400">Items</h4>
+                      <ul className="mt-2 space-y-1 text-sm">
+                        {order.order_items.map((item, idx) => (
+                          <li key={idx} className="flex justify-between text-ink-700 dark:text-ink-200">
+                            <span>{item.quantity}{"\u00d7"} {item.product_name}</span>
+                            <span className="tabular-nums">{formatZAR(item.product_price * item.quantity)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Customer + delivery */}
+                    <div>
+                      <h4 className="text-xs font-semibold text-ink-500 dark:text-ink-400">Customer</h4>
+                      <dl className="mt-2 space-y-1 text-sm text-ink-600 dark:text-ink-300">
+                        <div className="flex justify-between"><dt>Email</dt><dd>{order.customer_email}</dd></div>
+                        {order.customer_phone && <div className="flex justify-between"><dt>Phone</dt><dd>{order.customer_phone}</dd></div>}
+                        {order.delivery_method === "delivery" && (
+                          <>
+                            <div className="flex justify-between"><dt>Address</dt><dd className="text-right">{order.delivery_address}</dd></div>
+                            <div className="flex justify-between"><dt>City</dt><dd>{order.delivery_city}</dd></div>
+                            <div className="flex justify-between"><dt>Postal</dt><dd>{order.delivery_postal_code}</dd></div>
+                          </>
+                        )}
+                        <div className="flex justify-between"><dt>Method</dt><dd className="capitalize">{order.delivery_method}</dd></div>
+                      </dl>
+                    </div>
+                  </div>
+
+                  {/* Status actions */}
+                  {nextStatuses.length > 0 && (
+                    <div className="mt-4 border-t border-ink-100 pt-4 dark:border-ink-800">
+                      <p className="text-xs font-semibold text-ink-500 dark:text-ink-400">Update status</p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {nextStatuses.map((s) => {
+                          const sBadge = statusBadge(s);
+                          return (
+                            <button
+                              key={s}
+                              type="button"
+                              disabled={updatingId === order.id}
+                              onClick={() => updateStatus(order.id, s)}
+                              className={cx(
+                                "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50",
+                                sBadge.color,
+                              )}
+                            >
+                              {updatingId === order.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                `Mark as ${sBadge.label}`
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
