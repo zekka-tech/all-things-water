@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 
 // Mock @supabase/supabase-js so we don't need real env vars
 vi.mock("@supabase/supabase-js", () => ({

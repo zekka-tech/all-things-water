@@ -63,9 +63,11 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
+    await supabase.rpc("expire_pending_order_reservations", { p_limit: 100 });
+
     const { data: order, error: fetchErr } = await supabase
       .from("orders")
-      .select("*")
+      .select("id, total, status, customer_name, customer_email, order_ref, checkout_token")
       .eq("id", orderId)
       .single();
 
@@ -73,15 +75,26 @@ Deno.serve(async (req: Request) => {
       return errorResponse("Order not found", 404);
     }
 
+    if (order.status === "expired") {
+      return errorResponse("This payment session has expired. Please place your order again.", 409);
+    }
+
     if (order.status !== "pending_payment") {
       return errorResponse("Order is not pending payment", 400);
     }
 
+    const encodedOrderRef = encodeURIComponent(order.order_ref);
+    const encodedOrderId = encodeURIComponent(order.id);
+    const encodedToken = encodeURIComponent(order.checkout_token);
+
     const params: Param[] = [
       ["merchant_id", merchantId],
       ["merchant_key", merchantKey],
-      ["return_url", `${siteUrl}/checkout/return`],
-      ["cancel_url", `${siteUrl}/checkout/cancel`],
+      ["return_url", `${siteUrl}/checkout/return?orderRef=${encodedOrderRef}`],
+      [
+        "cancel_url",
+        `${siteUrl}/checkout/cancel?orderId=${encodedOrderId}&token=${encodedToken}&orderRef=${encodedOrderRef}`,
+      ],
       ["notify_url", `${functionBaseUrl}/functions/v1/payments-payfast-itn`],
       ["name_first", order.customer_name],
       ["email_address", order.customer_email],

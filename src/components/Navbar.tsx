@@ -3,7 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { Droplets, Menu, Moon, Settings, ShoppingCart, Sun, UserCircle, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useTheme } from "@/context/ThemeContext";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 import { cx } from "@/lib/format";
 
 const links = [

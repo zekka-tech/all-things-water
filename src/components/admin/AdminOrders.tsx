@@ -35,7 +35,7 @@ const STATUS_FLOW: Record<string, string[]> = {
   processing: ["shipped", "cancelled"],
   shipped: ["delivered"],
   delivered: [],
-  pending_payment: ["processing", "cancelled"],
+  pending_payment: ["cancelled"],
   cancelled: [],
   expired: [],
 };

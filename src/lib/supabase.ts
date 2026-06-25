@@ -23,6 +23,7 @@ export interface Database {
           cost: number;
           unit: string;
           stock: number;
+          reserved_stock: number;
           image: string;
           features: string[];
           featured: boolean;
@@ -42,6 +43,7 @@ export interface Database {
           cost?: number;
           unit: string;
           stock?: number;
+          reserved_stock?: number;
           image: string;
           features?: string[];
           featured?: boolean;
@@ -59,6 +61,7 @@ export interface Database {
           cost?: number;
           unit?: string;
           stock?: number;
+          reserved_stock?: number;
           image?: string;
           features?: string[];
           featured?: boolean;
@@ -84,6 +87,8 @@ export interface Database {
           status: "pending_payment" | "paid" | "processing" | "shipped" | "delivered" | "cancelled" | "expired";
           payfast_payment_id: string | null;
           whatsapp_optin: boolean;
+          reservation_expires_at: string | null;
+          checkout_token: string;
           created_at: string;
           updated_at: string;
         };
@@ -104,6 +109,8 @@ export interface Database {
           status?: "pending_payment" | "paid" | "processing" | "shipped" | "delivered" | "cancelled" | "expired";
           payfast_payment_id?: string | null;
           whatsapp_optin?: boolean;
+          reservation_expires_at?: string | null;
+          checkout_token?: string;
         };
         Update: {
           id?: string;
@@ -122,6 +129,8 @@ export interface Database {
           status?: "pending_payment" | "paid" | "processing" | "shipped" | "delivered" | "cancelled" | "expired";
           payfast_payment_id?: string | null;
           whatsapp_optin?: boolean;
+          reservation_expires_at?: string | null;
+          checkout_token?: string;
         };
       };
       order_items: {

@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { useCart } from "@/context/CartContext";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 import { formatZAR, cx } from "@/lib/format";
 import { env } from "@/lib/env";
 import { apiPost, userFriendlyError } from "@/lib/api";

@@ -1,11 +1,13 @@
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { useCart } from "@/context/CartContext";
 
 export function CheckoutReturn() {
   const { clear } = useCart();
+  const [searchParams] = useSearchParams();
+  const orderRef = searchParams.get("orderRef");
 
   useEffect(() => {
     clear();
@@ -25,12 +27,18 @@ export function CheckoutReturn() {
         </h1>
 
         <p className="mt-3 max-w-md text-ink-500 dark:text-ink-400">
-          Your payment is being confirmed. You&rsquo;ll receive a confirmation
+          Your payment is being confirmed. You’ll receive a confirmation
           email shortly with your order details.
         </p>
 
+        {orderRef && (
+          <p className="mt-2 text-sm text-ink-400 dark:text-ink-500">
+            Order reference: <span className="font-mono font-medium">{orderRef}</span>
+          </p>
+        )}
+
         <p className="mt-2 max-w-md text-sm text-ink-400 dark:text-ink-500">
-          If you don&rsquo;t hear from us within 30 minutes, please{" "}
+          If you don’t hear from us within 30 minutes, please {" "}
           <Link
             to="/contact"
             className="font-medium text-brand-600 hover:underline dark:text-brand-400"

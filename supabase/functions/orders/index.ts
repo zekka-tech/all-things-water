@@ -92,9 +92,8 @@ Deno.serve(async (req: Request) => {
       auth: { persistSession: false },
     });
 
-    // Extract user UUID from the caller's JWT (if authenticated). We only
-    // need the sub claim, not full validation — the service-role client
-    // writes the row; the JWT just tells us *which* customer.
+    await supabase.rpc("expire_pending_order_reservations", { p_limit: 100 });
+
     let userId: string | null = null;
     const authHeader = req.headers.get("Authorization") || "";
     if (authHeader.startsWith("Bearer ")) {
@@ -103,14 +102,14 @@ Deno.serve(async (req: Request) => {
         const payload = JSON.parse(atob(tokenPart.split(".")[1]));
         userId = payload?.sub ?? null;
       } catch {
-        /* not authenticated — guest order */
+        /* guest checkout */
       }
     }
 
     const productIds = body.items.map((i) => i.productId);
     const { data: products, error: fetchErr } = await supabase
       .from("products")
-      .select("*")
+      .select("id, name, price, stock, reserved_stock, visible")
       .in("id", productIds)
       .eq("visible", true);
 
@@ -124,11 +123,16 @@ Deno.serve(async (req: Request) => {
       if (!product) {
         throw { status: 400, message: `Product not found: ${item.productId}` };
       }
-      if (product.stock < item.quantity) {
+      const available = Math.max(0, product.stock - product.reserved_stock);
+      if (available < item.quantity) {
         throw {
           status: 409,
           message: `Insufficient stock for ${product.name}`,
-          detail: { productId: item.productId, available: product.stock, requested: item.quantity },
+          detail: {
+            productId: item.productId,
+            available,
+            requested: item.quantity,
+          },
         };
       }
       return {
@@ -189,11 +193,16 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({
       orderId: result.orderId,
       orderRef: result.orderRef,
+      reservationExpiresAt: result.reservationExpiresAt,
     }, 201);
   } catch (err: unknown) {
     if (err && typeof err === "object" && "status" in err) {
-      const { status, message } = err as { status: number; message: string };
-      return errorResponse(message, status);
+      const { status, message, detail } = err as {
+        status: number;
+        message: string;
+        detail?: unknown;
+      };
+      return errorResponse(message, status, detail);
     }
     console.error("Order creation error:", err);
     return errorResponse("Internal server error", 500);

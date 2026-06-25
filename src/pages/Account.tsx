@@ -13,7 +13,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/lib/supabase";
 import { formatZAR } from "@/lib/format";
 import { captureException } from "@/lib/sentry";

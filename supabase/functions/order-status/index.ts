@@ -28,7 +28,6 @@ Deno.serve(async (req: Request) => {
       return errorResponse("Server configuration is incomplete", 500);
     }
 
-    // Verify the caller's Supabase Auth JWT and confirm they are an admin.
     const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     if (!token) return errorResponse("Unauthorized", 401);
 
@@ -66,23 +65,54 @@ Deno.serve(async (req: Request) => {
       return errorResponse("Order not found", 404);
     }
 
-    const { error: updateErr } = await admin
-      .from("orders")
-      .update({ status: body.status, updated_at: new Date().toISOString() })
-      .eq("id", body.orderId);
-
-    if (updateErr) {
-      console.error("Order status update error:", updateErr);
-      return errorResponse("Failed to update order status", 500);
+    if (order.status === body.status) {
+      return jsonResponse({
+        ok: true,
+        orderId: body.orderId,
+        previousStatus: order.status,
+        newStatus: body.status,
+      });
     }
 
-    await admin.from("order_status_events").insert({
-      order_id: body.orderId,
-      status: body.status,
-      note: body.note || null,
-    });
+    if (order.status === "pending_payment" && body.status !== "cancelled") {
+      return errorResponse("Unpaid orders can only be cancelled", 400);
+    }
 
-    // Audit log
+    if (body.status === "cancelled" && order.status === "pending_payment") {
+      const { data: releaseResult, error: releaseErr } = await admin.rpc(
+        "release_order_reservation",
+        {
+          p_order_id: body.orderId,
+          p_target_status: "cancelled",
+          p_note: body.note || "Order cancelled by admin before payment confirmation",
+        },
+      );
+
+      if (releaseErr) {
+        console.error("Order reservation release error:", releaseErr);
+        return errorResponse("Failed to cancel order", 500);
+      }
+      if (releaseResult?.error) {
+        return errorResponse(String(releaseResult.error), 400, releaseResult);
+      }
+    } else {
+      const { error: updateErr } = await admin
+        .from("orders")
+        .update({ status: body.status, updated_at: new Date().toISOString() })
+        .eq("id", body.orderId);
+
+      if (updateErr) {
+        console.error("Order status update error:", updateErr);
+        return errorResponse("Failed to update order status", 500);
+      }
+
+      await admin.from("order_status_events").insert({
+        order_id: body.orderId,
+        status: body.status,
+        note: body.note || null,
+      });
+    }
+
     await admin.from("admin_audit_log").insert({
       action: "order_status_updated",
       changes: { from: order.status, to: body.status },
@@ -90,7 +120,6 @@ Deno.serve(async (req: Request) => {
       performed_at: new Date().toISOString(),
     });
 
-    // Fire the appropriate lifecycle email.
     const emailPromises: Promise<unknown>[] = [];
     if (body.status === "shipped") {
       emailPromises.push(
