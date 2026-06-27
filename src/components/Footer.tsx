@@ -203,7 +203,7 @@ export function Footer() {
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
                   <Phone className="h-3.5 w-3.5" />
                 </span>
-                +27 00 000 0000
+                +27 76 964 1460
               </li>
               <li className="flex items-center gap-2.5">
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">

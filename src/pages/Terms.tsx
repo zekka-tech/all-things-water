@@ -179,7 +179,7 @@ const sections = [
         </p>
         <ul className="mt-2 space-y-1 text-sm text-ink-600 dark:text-ink-400">
           <li>Email: hello@allthingswater.co.za</li>
-          <li>Phone: +27 00 000 0000</li>
+          <li>Phone: +27 76 964 1460</li>
           <li>Address: South Africa</li>
         </ul>
       </>

@@ -6,7 +6,7 @@ import { env } from "@/lib/env";
 import { validateEmail, validatePhone } from "@/lib/validation";
 
 const contactInfo = [
-  { icon: Phone, label: "Phone", value: "+27 00 000 0000" },
+  { icon: Phone, label: "Phone", value: "+27 76 964 1460" },
   { icon: Mail, label: "Email", value: "hello@allthingswater.co.za" },
   { icon: MapPin, label: "Location", value: "South Africa" },
 ];
