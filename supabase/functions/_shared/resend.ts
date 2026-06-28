@@ -202,6 +202,52 @@ export async function sendBusinessQuoteAck(
   }
 }
 
+/** Email a customer a one-click PayFast pay link for their due standing order. */
+export async function sendSubscriptionReorder(
+  email: string,
+  orderRef: string,
+  total: number,
+  payUrl: string,
+): Promise<void> {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) {
+    console.warn("RESEND_API_KEY not set — skipping subscription reorder email");
+    return;
+  }
+
+  try {
+    const body = `
+<div style="background:#f6f7f9;border-radius:12px;padding:20px;margin-bottom:24px">
+<p style="margin:0 0 8px;font-weight:600">Order ${orderRef}</p>
+<p style="margin:0 0 16px">Your standing order is ready — we&rsquo;ve reserved your usual delivery. Tap below to pay and we&rsquo;ll get it on its way.</p>
+<p style="margin:0 0 16px;font-size:18px;font-weight:700">Total: R ${total.toFixed(2)}</p>
+<a href="${payUrl}" style="display:inline-block;background:#06a3f0;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600">Pay now</a>
+<p style="margin:16px 0 0;color:#66778f;font-size:13px">This payment link holds your stock for a limited time. Manage or pause your subscription anytime from your account.</p>
+</div>`;
+    const html = emailShell("Your standing order is ready", body);
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "All Things Water <orders@allthingswater.co.za>",
+        to: email,
+        subject: `Your standing order is ready — ${orderRef}`,
+        html,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("Resend subscription reorder email failed:", await res.text());
+    }
+  } catch (err) {
+    console.error("Resend subscription reorder email error:", err);
+  }
+}
+
 function emailShell(title: string, bodyHtml: string): string {
   return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1f2630">
 <h1 style="color:#06a3f0;margin:0 0 4px">All Things Water</h1>

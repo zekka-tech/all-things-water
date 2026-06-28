@@ -59,6 +59,10 @@ Available functions:
 - `payments-payfast-itn` — handles PayFast ITN (instant transaction
   notification) — verifies signature, validates via server-to-server call,
   marks order as paid, fires Resend email notifications
+- `business-quote` — accepts B2B office-water quote requests, persists the lead
+  (service role), notifies sales + acknowledges the requester via Resend
+- `subscriptions-run` — cron-invoked scheduler for standing orders (see
+  **Subscriptions** below)
 
 Deploy all functions:
 
@@ -87,6 +91,37 @@ supabase secrets set RESEND_API_KEY=...
 supabase secrets set PUBLIC_SITE_URL=https://your-domain.com
 supabase secrets set MERCHANT_EMAIL=orders@allthingswater.co.za
 ```
+
+### Subscriptions (standing orders)
+
+We use a **PCI-safe "standing order with one-click pay"** model — no card tokens
+are ever stored. Migration `009_subscription_scheduler.sql` adds the
+`process_due_subscriptions(p_limit)` RPC (service-role only). When a subscription
+is due (`status = 'active'` and `next_delivery_date <= current_date`) it creates
+a pending order via `create_order` (which reserves inventory), advances
+`next_delivery_date` by the frequency (weekly/fortnightly/monthly), and skips
+products with insufficient stock (recorded in the return summary, never crashes).
+
+The `subscriptions-run` Edge Function calls that RPC, then for each created order
+builds a signed PayFast pay link and emails the customer a "your standing order
+is ready" message via Resend. The customer pays exactly as for a normal
+checkout, and the existing ITN flow marks the order paid.
+
+**Cron setup** — invoke `subscriptions-run` once daily via a Supabase scheduled
+function (pg_cron + pg_net) or any external cron. It requires the shared secret:
+
+```bash
+curl -X POST "$SUPABASE_URL/functions/v1/subscriptions-run" \
+  -H "Authorization: Bearer $SUBSCRIPTION_CRON_SECRET"
+
+# Deploy + secret:
+supabase functions deploy subscriptions-run
+supabase secrets set SUBSCRIPTION_CRON_SECRET=<long-random-string>
+```
+
+The function is idempotent and safe to re-run — advancing `next_delivery_date`
+makes a second run on the same day a no-op for already-processed rows, and the
+RPC uses `for update skip locked` to prevent concurrent double-processing.
 
 ## Testing
 

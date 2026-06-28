@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Check, ShoppingCart, Tag } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Check, Repeat, ShoppingCart, Tag } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ProductCard } from "@/components/ProductCard";
 import { StockBadge } from "@/components/StockBadge";
 import { QuantityStepper } from "@/components/QuantityStepper";
 import { ProductReviews } from "@/components/ProductReviews";
+import { FREQUENCY_OPTIONS, type Frequency } from "@/lib/subscriptions";
 import { getProductBySlug, getRelatedProducts } from "@/data/products";
 import { categoryLabel } from "@/data/categories";
 import { BackInStockNotify } from "@/components/BackInStockNotify";
@@ -15,10 +16,12 @@ import { NotFound } from "./NotFound";
 
 export function ProductDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const product = slug ? getProductBySlug(slug) : undefined;
   const { addItem } = useCart();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [subFrequency, setSubFrequency] = useState<Frequency>("monthly");
 
   if (!product) return <NotFound />;
 
@@ -29,6 +32,18 @@ export function ProductDetail() {
     addItem(product, qty);
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1600);
+  };
+
+  const handleSubscribe = () => {
+    navigate("/account", {
+      state: {
+        newSubscription: {
+          productId: product.id,
+          quantity: qty,
+          frequency: subFrequency,
+        },
+      },
+    });
   };
 
   return (
@@ -131,6 +146,41 @@ export function ProductDetail() {
 
               {soldOut && (
                 <BackInStockNotify productId={product.id} />
+              )}
+
+              {/* Subscribe & save */}
+              {!soldOut && (
+                <div className="mt-5 rounded-xl border border-brand-200 bg-brand-50/60 p-4 dark:border-brand-500/30 dark:bg-brand-500/10">
+                  <p className="flex items-center gap-2 text-sm font-semibold text-ink-900 dark:text-white">
+                    <Repeat className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+                    Subscribe for regular delivery
+                  </p>
+                  <p className="mt-1 text-sm text-ink-500 dark:text-ink-400">
+                    Never run out. We&rsquo;ll email a one-click pay link each time
+                    it&rsquo;s due — no card details stored.
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <select
+                      aria-label="Delivery frequency"
+                      value={subFrequency}
+                      onChange={(e) => setSubFrequency(e.target.value as Frequency)}
+                      className="input max-w-[12rem]"
+                    >
+                      {FREQUENCY_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleSubscribe}
+                      className="btn-outline px-5 py-2.5 text-sm"
+                    >
+                      Subscribe &amp; save
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>

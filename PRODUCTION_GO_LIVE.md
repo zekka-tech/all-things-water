@@ -64,7 +64,12 @@ ALLOWED_ORIGINS=https://allthingswater.co.za,https://all-things-water.pages.dev
 PAYFAST_ITN_IP_CHECK=true
 ALERT_SLACK_WEBHOOK_URL=<incoming-webhook-for-ops-alerts>
 ALERT_EMAIL=ops@allthingswater.co.za
+SALES_EMAIL=sales@allthingswater.co.za
+SUBSCRIPTION_CRON_SECRET=<long-random-string>
 ```
+
+- `SALES_EMAIL` — recipient for B2B office-water quote requests (falls back to `MERCHANT_EMAIL`).
+- `SUBSCRIPTION_CRON_SECRET` — shared secret required to invoke the `subscriptions-run` scheduler. Invoke it daily (Supabase scheduled function/pg_cron or external cron) with `Authorization: Bearer <secret>`. See `supabase/README.md`.
 
 - `ALLOWED_ORIGINS` — comma-separated browser origins permitted to call the Edge Functions. If unset, CORS falls back to `*`; set it in production to lock the browser surface to your real domains.
 - `PAYFAST_ITN_IP_CHECK` — when not `false`, the ITN endpoint rejects POSTs whose source IP is outside PayFast's published ranges (defense in depth on top of signature + server validation). Set to `false` only if a proxy rewrites the source IP.
@@ -94,6 +99,7 @@ If you move from `all-things-water.pages.dev` to a custom domain such as `https:
    - `back-in-stock`
    - `back-in-stock-notify`
    - `business-quote`
+   - `subscriptions-run`
 
 ## Go-Live Validation
 
