@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Mail, MapPin, Phone, Send, CheckCircle2, MessageCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { Seo } from "@/components/Seo";
+import { Turnstile } from "@/components/Turnstile";
+import { turnstileEnabled } from "@/lib/turnstile";
 import { cx } from "@/lib/format";
 import { env } from "@/lib/env";
 import { validateEmail, validatePhone } from "@/lib/validation";
@@ -25,6 +27,7 @@ export function Contact() {
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
   const [errors, setErrors] = useState<{
     name?: string;
@@ -58,6 +61,11 @@ export function Contact() {
       return;
     }
 
+    if (turnstileEnabled() && !turnstileToken) {
+      setSubmitError("Please complete the verification below.");
+      return;
+    }
+
     setSending(true);
 
     try {
@@ -69,6 +77,7 @@ export function Contact() {
           email: form.email.trim(),
           phone: form.phone.trim() || undefined,
           message: form.message.trim(),
+          turnstileToken: turnstileToken || undefined,
         }),
       });
 
@@ -288,6 +297,11 @@ export function Contact() {
                   </p>
                 )}
               </div>
+
+              <Turnstile
+                onVerify={setTurnstileToken}
+                onExpire={() => setTurnstileToken("")}
+              />
 
               <button
                 type="submit"

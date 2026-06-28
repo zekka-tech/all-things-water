@@ -11,4 +11,5 @@ export const env = {
   companyAddress: import.meta.env.VITE_COMPANY_ADDRESS || "",
   supabaseUrl: import.meta.env.VITE_SUPABASE_URL || "",
   supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || "",
+  turnstileSiteKey: import.meta.env.VITE_TURNSTILE_SITE_KEY || "",
 } as const;

@@ -19,7 +19,7 @@
     "lhci": "lhci autorun",
     "generate-sitemap": "npx tsx scripts/generate-sitemap.ts > public/sitemap.xml",
     "deno:check": "cd supabase/functions && deno check **/*.ts",
-    "deno:test": "cd supabase/functions && deno test --allow-env --allow-net _shared/payfast.test.ts _shared/payfast-ip.test.ts _shared/subscription.test.ts"
+    "deno:test": "cd supabase/functions && deno test --allow-env --allow-net _shared/payfast.test.ts _shared/payfast-ip.test.ts _shared/subscription.test.ts _shared/turnstile.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.1",

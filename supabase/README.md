@@ -172,3 +172,7 @@ Set in the Supabase dashboard under **Settings → API** or in `.env.local` for 
 | `PAYFAST_SANDBOX` | server-only | Set to `true` for test mode |
 | `RESEND_API_KEY` | server-only | Resend API key for transactional emails |
 | `PUBLIC_SITE_URL` | server-only | Canonical site URL for return/cancel URLs |
+| `TURNSTILE_SECRET_KEY` | server-only | Cloudflare Turnstile secret; when set, `business-quote` verifies the challenge (fails closed) |
+| `SUBSCRIPTION_CRON_SECRET` | server-only | Shared secret for invoking `subscriptions-run` |
+| `ALLOWED_ORIGINS` | server-only | Comma-separated CORS allowlist for Edge Functions |
+| `ALERT_SLACK_WEBHOOK_URL` / `ALERT_EMAIL` | server-only | Where critical alerts are delivered |

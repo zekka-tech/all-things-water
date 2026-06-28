@@ -27,7 +27,13 @@ VITE_ANALYTICS_ENABLED=true
 VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 VITE_CONTACT_FORM_ENDPOINT=https://<your-form-endpoint>
 VITE_NEWSLETTER_ENDPOINT=https://<your-newsletter-endpoint>
+VITE_TURNSTILE_SITE_KEY=<cloudflare-turnstile-site-key>
 ```
+
+If `VITE_TURNSTILE_SITE_KEY` is set, set the matching `TURNSTILE_SECRET_KEY` in
+the Supabase Edge Function secrets so the `business-quote` function verifies the
+challenge server-side (it fails closed on a bad/missing token; if the secret is
+unset, verification is skipped).
 
 If `VITE_CONTACT_FORM_ENDPOINT` or `VITE_NEWSLETTER_ENDPOINT` are unset, the site fails gracefully rather than reporting false success.
 

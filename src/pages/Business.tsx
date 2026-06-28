@@ -10,6 +10,8 @@ import {
   ReceiptText,
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
+import { Turnstile } from "@/components/Turnstile";
+import { turnstileEnabled } from "@/lib/turnstile";
 import { cx } from "@/lib/format";
 import { env } from "@/lib/env";
 import { apiPost } from "@/lib/api";
@@ -45,6 +47,7 @@ export function Business() {
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [form, setForm] = useState({
     companyName: "",
     contactName: "",
@@ -85,6 +88,11 @@ export function Business() {
       return;
     }
 
+    if (turnstileEnabled() && !turnstileToken) {
+      setSubmitError("Please complete the verification below.");
+      return;
+    }
+
     setSending(true);
     try {
       await apiPost(
@@ -97,6 +105,7 @@ export function Business() {
           teamSize: form.teamSize.trim() || undefined,
           interest: form.interest || undefined,
           message: form.message.trim() || undefined,
+          turnstileToken: turnstileToken || undefined,
         },
         {
           apikey: env.supabaseAnonKey,
@@ -322,6 +331,11 @@ export function Business() {
                   className="input resize-none"
                 />
               </div>
+
+              <Turnstile
+                onVerify={setTurnstileToken}
+                onExpire={() => setTurnstileToken("")}
+              />
 
               <button type="submit" disabled={sending} className="btn-primary w-full py-3 text-base">
                 {sending ? (

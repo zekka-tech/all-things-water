@@ -2,6 +2,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handleCors, errorResponse, jsonResponse } from "../_shared/cors.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { alert, logInfo, toErrorFields } from "../_shared/log.ts";
+import { verifyTurnstile } from "../_shared/turnstile.ts";
 import {
   sendBusinessQuoteAck,
   sendBusinessQuoteNotification,
@@ -15,6 +16,7 @@ interface QuoteBody {
   teamSize?: string;
   interest?: string;
   message?: string;
+  turnstileToken?: string;
 }
 
 const MAX_LEN = 2000;
@@ -42,6 +44,12 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body: QuoteBody = await req.json();
+
+    // Bot protection (no-op unless TURNSTILE_SECRET_KEY is configured).
+    const human = await verifyTurnstile(body.turnstileToken, clientIp);
+    if (!human) {
+      return errorResponse("Verification failed. Please try again.", 400, undefined, req);
+    }
 
     const companyName = clip(body.companyName);
     const contactName = clip(body.contactName);
