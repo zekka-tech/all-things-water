@@ -9,7 +9,7 @@ import {
   getProcessUrl,
   type Param,
 } from "../_shared/payfast.ts";
-import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { checkRateLimit, checkRateLimitDb } from "../_shared/rate-limit.ts";
 
 Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
@@ -65,6 +65,16 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
+
+    const dbLimit = await checkRateLimitDb(supabase, `payfast-initiate:${clientIp}`, {
+      max: 10,
+      windowSeconds: 60,
+    });
+    if (!dbLimit.allowed) {
+      return errorResponse("Too many requests. Please try again later.", 429, {
+        retryAfter: dbLimit.retryAfter,
+      });
+    }
 
     await supabase.rpc("expire_pending_order_reservations", { p_limit: 100 });
 

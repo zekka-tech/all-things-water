@@ -1,6 +1,6 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handleCors, errorResponse, jsonResponse } from "../_shared/cors.ts";
-import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { checkRateLimit, checkRateLimitDb } from "../_shared/rate-limit.ts";
 import { alert, logInfo, toErrorFields } from "../_shared/log.ts";
 import { verifyTurnstile } from "../_shared/turnstile.ts";
 import {
@@ -80,6 +80,16 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
+
+    const dbLimit = await checkRateLimitDb(supabase, `business-quote:${clientIp}`, {
+      max: 5,
+      windowSeconds: 60,
+    });
+    if (!dbLimit.allowed) {
+      return errorResponse("Too many requests. Please try again later.", 429, {
+        retryAfter: dbLimit.retryAfter,
+      }, req);
+    }
 
     const { error: insertErr } = await supabase.from("business_quotes").insert({
       company_name: quote.companyName,

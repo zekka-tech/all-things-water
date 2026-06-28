@@ -4,7 +4,7 @@ import {
   errorResponse,
   jsonResponse,
 } from "../_shared/cors.ts";
-import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { checkRateLimit, checkRateLimitDb } from "../_shared/rate-limit.ts";
 
 interface SubscribeBody {
   email: string;
@@ -51,6 +51,16 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
+
+    const dbLimit = await checkRateLimitDb(supabase, `backinstock:${clientIp}`, {
+      max: 10,
+      windowSeconds: 60,
+    });
+    if (!dbLimit.allowed) {
+      return errorResponse("Too many requests. Please try again later.", 429, {
+        retryAfter: dbLimit.retryAfter,
+      });
+    }
 
     const { data: product } = await supabase
       .from("products")

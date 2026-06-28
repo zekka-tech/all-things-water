@@ -5,7 +5,7 @@ import {
   errorResponse,
 } from "../_shared/cors.ts";
 import { calculateDelivery, isDeliverablePostalCode } from "../_shared/delivery.ts";
-import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { checkRateLimit, checkRateLimitDb } from "../_shared/rate-limit.ts";
 import { alert, logInfo, toErrorFields } from "../_shared/log.ts";
 
 interface OrderItem {
@@ -92,6 +92,17 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },
     });
+
+    // Authoritative cross-instance rate limit (L2) on top of the in-memory L1.
+    const dbLimit = await checkRateLimitDb(supabase, `order:${clientIp}`, {
+      max: 10,
+      windowSeconds: 60,
+    });
+    if (!dbLimit.allowed) {
+      return errorResponse("Too many requests. Please try again later.", 429, {
+        retryAfter: dbLimit.retryAfter,
+      }, req);
+    }
 
     await supabase.rpc("expire_pending_order_reservations", { p_limit: 100 });
 
