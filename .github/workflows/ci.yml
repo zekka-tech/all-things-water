@@ -1,0 +1,102 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Core quality gate (blocking) ───────────────────────────────────────
+  build-test:
+    name: typecheck · lint · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7
+
+  # ── Edge Function checks (blocking) ────────────────────────────────────
+  deno:
+    name: deno check · deno test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: npm run deno:check
+      - run: npm run deno:test
+
+  # ── Dependency audit (blocking on production deps) ─────────────────────
+  audit:
+    name: npm audit (prod, high+)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Only production dependencies gate the build; known dev-server-only
+      # advisories (esbuild via Vite) are tracked in SECURITY_AUDIT.md.
+      - run: npm audit --omit=dev --audit-level=high
+
+  # ── End-to-end purchase funnel + a11y (informational until tuned) ──────
+  e2e:
+    name: playwright e2e + axe a11y
+    runs-on: ubuntu-latest
+    # Flip continue-on-error to false once green in your environment to make
+    # this a hard gate.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
+
+  # ── Lighthouse / Core Web Vitals budget (informational) ────────────────
+  lighthouse:
+    name: lighthouse CWV budget
+    runs-on: ubuntu-latest
+    needs: build-test
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - run: npm run lhci

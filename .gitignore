@@ -10,4 +10,9 @@ npm-debug.log*
 yarn-error.log*
 *.tsbuildinfo
 .tmp/
+.claude/
 coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+.lighthouseci/
