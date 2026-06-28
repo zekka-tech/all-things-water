@@ -13,6 +13,7 @@ const CheckoutReturn = lazy(() => import("@/pages/CheckoutReturn").then((m) => (
 const CheckoutCancel = lazy(() => import("@/pages/CheckoutCancel").then((m) => ({ default: m.CheckoutCancel })));
 const About = lazy(() => import("@/pages/About").then((m) => ({ default: m.About })));
 const Contact = lazy(() => import("@/pages/Contact").then((m) => ({ default: m.Contact })));
+const Business = lazy(() => import("@/pages/Business").then((m) => ({ default: m.Business })));
 const Terms = lazy(() => import("@/pages/Terms").then((m) => ({ default: m.Terms })));
 const Privacy = lazy(() => import("@/pages/Privacy").then((m) => ({ default: m.Privacy })));
 const Returns = lazy(() => import("@/pages/Returns").then((m) => ({ default: m.Returns })));
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/checkout/cancel" element={<CheckoutCancel />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/business" element={<Business />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/returns" element={<Returns />} />

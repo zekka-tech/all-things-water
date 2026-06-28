@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Mail, MapPin, Phone, Send, CheckCircle2, MessageCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { cx } from "@/lib/format";
@@ -124,15 +125,18 @@ export function Contact() {
             ))}
           </ul>
 
-          <div className="mt-10 rounded-2xl bg-brand-50 p-5 dark:bg-brand-900/20">
+          <Link
+            to="/business"
+            className="mt-10 block rounded-2xl bg-brand-50 p-5 transition-colors hover:bg-brand-100 dark:bg-brand-900/20 dark:hover:bg-brand-900/30"
+          >
             <p className="text-sm font-semibold text-ink-800 dark:text-ink-200">
-              Bulk orders &amp; business accounts
+              Bulk orders &amp; business accounts &rarr;
             </p>
             <p className="mt-1 text-sm leading-relaxed text-ink-500 dark:text-ink-400">
               Setting up a full office? We offer volume pricing and recurring delivery schedules.
-              Reach out and let's build a plan that works for you.
+              Request a tailored quote on our business page.
             </p>
-          </div>
+          </Link>
 
           {/* WhatsApp CTA */}
           {waUrl && (

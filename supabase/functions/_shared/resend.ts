@@ -109,6 +109,99 @@ export async function sendMerchantNotification(
   }
 }
 
+export interface BusinessQuote {
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone?: string;
+  teamSize?: string;
+  interest?: string;
+  message?: string;
+}
+
+/** Notify the sales inbox of a new B2B office-water quote request. */
+export async function sendBusinessQuoteNotification(
+  quote: BusinessQuote,
+): Promise<void> {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) {
+    console.warn("RESEND_API_KEY not set — skipping B2B quote notification");
+    return;
+  }
+  const to =
+    Deno.env.get("SALES_EMAIL") ||
+    Deno.env.get("MERCHANT_EMAIL") ||
+    "orders@allthingswater.co.za";
+
+  try {
+    const lines = [
+      `Company: ${quote.companyName}`,
+      `Contact: ${quote.contactName}`,
+      `Email: ${quote.email}`,
+      quote.phone ? `Phone: ${quote.phone}` : "",
+      quote.teamSize ? `Team size: ${quote.teamSize}` : "",
+      quote.interest ? `Interested in: ${quote.interest}` : "",
+      quote.message ? `\nMessage:\n${quote.message}` : "",
+    ].filter(Boolean);
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "All Things Water <orders@allthingswater.co.za>",
+        to,
+        reply_to: quote.email,
+        subject: `New B2B quote request — ${quote.companyName}`,
+        text: `New office-water quote request\n\n${lines.join("\n")}`,
+      }),
+    });
+    if (!res.ok) {
+      console.error("Resend B2B notification failed:", await res.text());
+    }
+  } catch (err) {
+    console.error("Resend B2B notification error:", err);
+  }
+}
+
+/** Acknowledge a B2B quote request to the requester. */
+export async function sendBusinessQuoteAck(
+  email: string,
+  contactName: string,
+): Promise<void> {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) return;
+  try {
+    const body = `
+<div style="background:#f6f7f9;border-radius:12px;padding:20px;margin-bottom:24px">
+<p style="margin:0 0 12px">Hi ${contactName},</p>
+<p style="margin:0 0 12px">Thanks for your interest in an All Things Water business account. We've received your request and a member of our team will be in touch within one business day with a tailored quote.</p>
+<p style="margin:0">In the meantime, feel free to reply to this email with any questions.</p>
+</div>`;
+    const html = emailShell("We've received your request", body);
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "All Things Water <orders@allthingswater.co.za>",
+        to: email,
+        subject: "Your All Things Water business enquiry",
+        html,
+      }),
+    });
+    if (!res.ok) {
+      console.error("Resend B2B ack failed:", await res.text());
+    }
+  } catch (err) {
+    console.error("Resend B2B ack error:", err);
+  }
+}
+
 function emailShell(title: string, bodyHtml: string): string {
   return `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1f2630">
 <h1 style="color:#06a3f0;margin:0 0 4px">All Things Water</h1>

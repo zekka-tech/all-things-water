@@ -93,6 +93,7 @@ If you move from `all-things-water.pages.dev` to a custom domain such as `https:
    - `admin-sync`
    - `back-in-stock`
    - `back-in-stock-notify`
+   - `business-quote`
 
 ## Go-Live Validation
 

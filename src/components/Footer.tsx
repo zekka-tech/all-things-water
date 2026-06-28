@@ -178,6 +178,7 @@ export function Footer() {
             <ul className="mt-4 space-y-2.5 text-sm">
               {[
                 { to: "/about", label: "About us" },
+                { to: "/business", label: "For business" },
                 { to: "/contact", label: "Contact" },
                 { to: "/cart", label: "Your cart" },
               ].map((l) => (
