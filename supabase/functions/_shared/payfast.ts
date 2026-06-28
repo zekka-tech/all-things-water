@@ -42,7 +42,7 @@ export function pfEncode(value: string): string {
     .replace(/%[0-9a-f]{2}/g, (m) => m.toUpperCase());
 }
 
-function md5Hex(input: string): string {
+export function md5Hex(input: string): string {
   const digest = crypto.subtle.digestSync(
     "MD5",
     new TextEncoder().encode(input),

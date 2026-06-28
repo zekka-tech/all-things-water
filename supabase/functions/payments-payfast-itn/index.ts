@@ -147,6 +147,31 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ received: true });
     }
 
+    // Capture a card token from a tokenizing checkout (subscription_type=2) so
+    // future auto-pay cycles can be charged ad-hoc. Best-effort; never blocks.
+    const cardToken = getParam(formParams, "token");
+    if (cardToken && order.user_id) {
+      const { error: tokenErr } = await supabase.rpc("store_payment_token", {
+        p_user_id: order.user_id,
+        p_token: cardToken,
+        p_last_four: null,
+      });
+      if (tokenErr) {
+        logWarn("failed to store payment token", {
+          event: "payfast.itn.token_store_failed",
+          fn: "payments-payfast-itn",
+          ref: order.order_ref,
+          ...toErrorFields(tokenErr),
+        });
+      } else {
+        logInfo("payment token stored", {
+          event: "payfast.itn.token_stored",
+          fn: "payments-payfast-itn",
+          ref: order.order_ref,
+        });
+      }
+    }
+
     const items = (order.order_items || []).map(
       (i: { product_name: string; quantity: number; product_price: number }) => ({
         name: i.product_name,

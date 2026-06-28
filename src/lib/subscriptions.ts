@@ -17,6 +17,7 @@ export interface SubscriptionRow {
   frequency: Frequency;
   status: SubscriptionStatus;
   next_delivery_date: string;
+  auto_pay: boolean;
 }
 
 /** Router state shape used to deep-link the creator open (e.g. from a PDP). */
