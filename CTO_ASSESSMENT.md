@@ -1,7 +1,10 @@
 # All Things Water — CTO Advisor Assessment & Investment Case
 
 *Prepared: June 2026 · Scope: storefront repo (`all-things-water` branch) + South African
-/ African market context · Status: post production-readiness hardening + P0/P1 customer features (commits `eb39954`, `6d62bbb`)*
+/ African market context · Status: post production-readiness hardening + P0/P1 customer
+features + subscription engine, B2B quote flow, edge-function security hardening,
+observability, and a CI/e2e/a11y pipeline. See `SECURITY_AUDIT.md` for the full
+security review.*
 
 This document is a senior engineering + commercial review. It is written for the founder
 and for prospective investors. It is deliberately honest about both strengths and gaps:
@@ -68,13 +71,14 @@ economics are concrete; not yet a Series-A case.
 
 | Gap | Impact | Priority | Status |
 | --- | --- | --- | --- |
-| **Recurring/subscription orders** | Bottled water + filters are inherently replenishment purchases | **P0 for retention** | Schema ready (`subscriptions` table in migration 007); subscription-creation UI + scheduler pending |
+| **Recurring/subscription orders** | Bottled water + filters are inherently replenishment purchases | **P0 for retention** | ✅ **Implemented** — PCI-safe standing-order engine: `process_due_subscriptions` RPC + `subscriptions-run` scheduler, account management UI (create/pause/resume/cancel), PDP "Subscribe & save", one-click PayFast pay-link emails (migration 009) |
 | **Customer accounts / order history** | Logged-out-only purchase caps LTV | **P0** | ✅ **Implemented** — Supabase Auth account page with real order history |
 | **Lifecycle email** | No order shipping/delivery email to customers | **P0** | ✅ **Implemented** — shipping + delivery templates via Resend, admin-triggered |
 | **Reviews/ratings on PDPs** | Reviews exist in data model but the storefront PDP review widget was broken | P1 | ✅ **Fixed** (prior phase) |
 | **Delivery-area + scheduling self-service** | No date/time slot selection | P1 | ✅ **Implemented** — delivery window picker in checkout |
 | **Back-in-stock notifications** | No way to capture demand for sold-out SKUs | P1 | ✅ **Implemented** — table + edge fn + PDP widget |
 | **Admin order management with real orders** | Admin used mock data only | P0 | ✅ **Implemented** — real order fetch + status updates + lifecycle email triggers |
+| **B2B office-water contracts** | Highest-LTV segment; previously guest-checkout only | P2 | ✅ **Implemented (MVP)** — `/business` quote-request flow + `business-quote` Edge Function (lead capture, sales + requester email), service-role-only `business_quotes` table (migration 010) |
 | **Loyalty / referral** | No program; LTV tooling absent | P2 | Pending |
 | **Inventory multi-warehouse** | Single stock count; no branch-level allocation | P2 | Pending |
 | **Marketing stack confirmed** | Analytics is consent-gated and generic GA/GTM; no CDP/klaviyo email lifecycle | P1 | Lifecycle email ✅; marketing CDP pending |
@@ -87,30 +91,31 @@ economics are concrete; not yet a Series-A case.
 
 | Dimension | Grade | Notes |
 | --- | --- | --- |
-| Code quality / typing | **B+** | TS strict, colocated tests, `@/` alias; some `any` leakage in edge function bodies |
-| Test coverage | **B** | Cart, theme, validation, admin-auth, env, format, analytics, components. No e2e (Playwright) yet. |
-| Security posture | **A−** (post-hardening) | RLS, service-role mediation, CSP, nosniff, frame-ancestors none, rate-limit on order/payfast endpoints |
-| Reliability / observability | **B−** | Sentry consent-gated; no structured edge-function logging/alerting beyond `console.error`; no uptime/SLA SLOs |
-| Deployment | **B+** | Cloudflare Pages + Supabase; reproducible `npm run build`; sitemap generated |
-| Performance | **B** | Code-split vendor/Admin chunks, lazy images; no Lighthouse/Core Web Vitals budget enforced in CI |
-| Accessibility | **B** | Semantic markup, focus states; needs a formal a11y audit (axe) in CI |
-| Payment integration | **A−** | PayFast signed query, ITN endpoint, hosted checkout (PCI scope minimised) |
-| Documentation | **B** | README + DO_NOT_MERGE; no runbook, no env matrix documented in repo |
+| Code quality / typing | **A−** | TS strict, colocated tests, `@/` alias; pure logic extracted from components; structured edge-fn logging |
+| Test coverage | **B+** | 187 Vitest + 38 Deno tests; **Playwright e2e** purchase-funnel smoke (desktop+mobile) + **axe a11y** gate added |
+| Security posture | **A−** | RLS, service-role mediation, CSP+HSTS+COOP, **ITN source-IP allowlist**, **CORS allowlist**, **structured logging + alerting**, rate-limits. See `SECURITY_AUDIT.md` |
+| Reliability / observability | **B** | Sentry consent-gated; **structured JSON logging + Slack/email alerting** on order/ITN/subscription failures; no uptime SLO yet |
+| Deployment | **A−** | Cloudflare Pages + Supabase; reproducible `npm run build`; **GitHub Actions CI** (typecheck/lint/test/build/deno/audit) |
+| Performance | **B+** | Code-split vendor/Admin chunks, lazy images; **Lighthouse/CWV budget** in CI (LCP/CLS/TBT) |
+| Accessibility | **B+** | Semantic markup, focus states; **axe-core gate** over primary routes in CI |
+| Payment integration | **A** | PayFast signed query, ITN (signature + validation callback + amount check + idempotency + **source-IP allowlist**), hosted checkout (PCI scope minimised) |
+| Documentation | **A−** | README, DO_NOT_MERGE, PRODUCTION_GO_LIVE, **SECURITY_AUDIT**, supabase runbook + env matrix |
 
 ### 3.2 Residual risks (production)
 
-1. **Edge-function observability.** `console.error` to stdout is not enough for an order-
-   taking store. Add structured JSON logging + an alert channel (Resend/Slack) for failed
-   order creation and PayFast ITN failures.
-2. **No e2e test for the purchase funnel.** A single Playwright journey
-   (browse → add → checkout → PayFast sandbox → return) would catch regressions the unit
-   suite cannot.
+1. ~~**Edge-function observability.**~~ ✅ Addressed — structured JSON logging + Slack/email
+   alerting on order-creation, PayFast ITN, and subscription failures (`_shared/log.ts`).
+2. ~~**No e2e test for the purchase funnel.**~~ ✅ Addressed — Playwright funnel smoke
+   (browse → add → cart → checkout) + axe a11y, in CI. Full PayFast-sandbox journey still
+   needs CI secrets to run end-to-end.
 3. **Supabase migration hygiene.** Migrations are authored but there is no CI gate proving
-   they are idempotent / apply cleanly. Add a `supabase db reset` step in CI.
-4. **Core Web Vitals budget.** The Admin chunk is 215 kB (gzip 57 kB); a per-route budget in
-   CI would prevent regressions on storefront entry.
-5. **Secrets posture.** Ensure service-role key, PayFast passphrase, and Resend key live
-   only in Supabase Edge Function secrets — never in `VITE_`-prefixed browser env.
+   they are idempotent / apply cleanly. Add a `supabase db reset` step in CI. *(Open — see
+   SECURITY_AUDIT O7.)*
+4. ~~**Core Web Vitals budget.**~~ ✅ Addressed — Lighthouse CI budget (LCP/CLS/TBT +
+   category scores) gating the storefront entry (`lighthouserc.json`).
+5. **Secrets posture.** ✅ Verified — service-role key, PayFast passphrase, Resend key, and
+   the subscription cron secret live only in Edge Function secrets, never `VITE_`-prefixed
+   (documented in `.env.example` / `PRODUCTION_GO_LIVE.md`).
 
 ---
 
@@ -270,24 +275,30 @@ business” and the moat becomes the recurring revenue + delivery UX, not the co
 
 ---
 
-## 8. Recommended next engineering actions (post-commit `6d62bbb`)
+## 8. Recommended next engineering actions
 
-</parameter>
-Ranked by ROI on the investment case, items 1–4 from the prior list are now ✅ complete:
+Ranked by ROI on the investment case. Items 1–5 (prior phases) and 6–10 (this
+phase) are now ✅ complete:
 
-1. ~~**Customer accounts + standing orders / subscriptions**~~ (✅ P0 — accounts + order history shipped; subscription engine schema ready, creation UI pending)
+1. ~~**Customer accounts + order history**~~ (✅ P0 — Supabase Auth accounts + real order history)
 2. ~~**Lifecycle email via Resend**~~ (✅ P0 — shipping + delivery templates, admin-triggered via order-status Edge Function)
 3. ~~**Back-in-stock notifications**~~ (✅ P1 — table + edge fn + PDP widget shipped)
 4. ~~**Delivery slot selection**~~ (✅ P1 — window picker in checkout)
 5. ~~**Admin order management**~~ (✅ P0 — real orders + status advancement + lifecycle email triggers)
 
-Remaining:
-6. **Subscription creation UI + payment scheduler** (P1 — schema ready in migration 007, needs storefront CRUD + cron)
-7. **Playwright e2e of the purchase funnel** against PayFast sandbox (P1 — regression safety)
-8. **Structured logging + alerting** on `orders` and `payments-payfast-itn` Edge Functions (P1)
-9. **Core Web Vitals budget** in CI + axe a11y check on storefront routes (P2)
-10. **B2B invoicing flow** for office-water contracts (P2 — highest-LTV segment)
+Now complete (this phase):
+6. ~~**Subscription creation UI + payment scheduler**~~ ✅ — standing-order engine (migration 009), account CRUD, PDP "Subscribe & save", `subscriptions-run` scheduler with one-click PayFast pay-link emails.
+7. ~~**Playwright e2e of the purchase funnel**~~ ✅ — funnel smoke + axe a11y in CI (full PayFast-sandbox leg needs CI secrets).
+8. ~~**Structured logging + alerting**~~ ✅ — `_shared/log.ts` on `orders`, `payments-payfast-itn`, `business-quote`, `subscriptions-run`.
+9. ~~**Core Web Vitals budget + axe a11y**~~ ✅ — `lighthouserc.json` + axe gate in CI.
+10. ~~**B2B office-water flow**~~ ✅ (MVP) — `/business` quote capture + `business-quote` Edge Function + `business_quotes` table.
+
+Remaining (next phase):
+11. **Marketing CDP + lifecycle automation** (P1) — beyond transactional email; segment-driven re-order nudges.
+12. **True recurring auto-billing** (P2, optional) — PayFast tokenization if the one-click-pay model underperforms on conversion.
+13. **Migration CI gate** (`supabase db reset`), **Dependabot + secret scanning**, **Turnstile on public forms** (see `SECURITY_AUDIT.md` O5–O7).
+14. **Loyalty / referral** and **multi-warehouse inventory** (P2).
 
 ---
 
-*End of assessment.*
+*End of assessment. Companion document: `SECURITY_AUDIT.md`.*
