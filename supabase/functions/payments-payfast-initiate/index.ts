@@ -33,9 +33,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { orderId } = await req.json();
+    const { orderId, token } = await req.json();
     if (!orderId) {
       return errorResponse("orderId is required", 400);
+    }
+    if (!token) {
+      return errorResponse("token is required", 400);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -73,6 +76,12 @@ Deno.serve(async (req: Request) => {
 
     if (fetchErr || !order) {
       return errorResponse("Order not found", 404);
+    }
+
+    // Bind initiation to the order's checkout_token — only the order's creator
+    // (who received the token from the orders endpoint) can start payment.
+    if (order.checkout_token !== token) {
+      return errorResponse("Invalid checkout token", 403);
     }
 
     if (order.status === "expired") {

@@ -200,6 +200,15 @@ Deno.serve(async (req: Request) => {
       return errorResponse(String(err.error || "Order creation failed"), 400);
     }
 
+    // Return the order's checkout_token to its creator so the subsequent
+    // payment-initiate call can be bound to it (defence in depth: an actor who
+    // only knows the orderId cannot initiate payment for someone else's order).
+    const { data: created } = await supabase
+      .from("orders")
+      .select("checkout_token")
+      .eq("id", result.orderId)
+      .single();
+
     logInfo("order created", {
       event: "order.create.ok",
       fn: "orders",
@@ -211,6 +220,7 @@ Deno.serve(async (req: Request) => {
       orderId: result.orderId,
       orderRef: result.orderRef,
       reservationExpiresAt: result.reservationExpiresAt,
+      checkoutToken: created?.checkout_token ?? null,
     }, 201, req);
   } catch (err: unknown) {
     if (err && typeof err === "object" && "status" in err) {

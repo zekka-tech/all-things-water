@@ -246,7 +246,11 @@ export function Checkout() {
         deliverySlot: deliveryMethod === "delivery" ? deliverySlot || undefined : undefined,
       };
 
-      const orderResult = await apiPost<{ orderId: string; orderRef: string }>(
+      const orderResult = await apiPost<{
+        orderId: string;
+        orderRef: string;
+        checkoutToken: string;
+      }>(
         `${functionsUrl}/orders`,
         orderPayload,
         authHeaders,
@@ -254,7 +258,7 @@ export function Checkout() {
 
       const paymentResult = await apiPost<{ redirectUrl: string }>(
         `${functionsUrl}/payments-payfast-initiate`,
-        { orderId: orderResult.orderId },
+        { orderId: orderResult.orderId, token: orderResult.checkoutToken },
         authHeaders,
       );
 
