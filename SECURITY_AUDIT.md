@@ -53,13 +53,13 @@ open. Residual items are Low/Info and have documented mitigations.
 | R7 | Info | **No bot protection on public forms** (was O5). | Cloudflare Turnstile wired into Contact + Business forms (env-gated) with server-side `siteverify` in `business-quote` (fails closed when `TURNSTILE_SECRET_KEY` is set). |
 | R8 | Info | **No automated dependency/secret scanning** (was O6). | `.github/dependabot.yml` (npm + actions, grouped) + a blocking **gitleaks** CI job. |
 | R9 | Info | **Migrations not CI-gated** (was O7). | CI `supabase db reset` job applies all migrations from scratch (informational until verified, then a hard gate). |
+| R10 | Low (dev-only) | **`esbuild` dev-server advisory** (was O1). | Upgraded to **Vite 8** (Rolldown) — advisory cleared. Also dropped the `@lhci/cli` dep (Lighthouse now runs via the GitHub Action), bringing `npm audit` to **0 vulnerabilities** across all deps. |
+| R11 | Low | **CSP `script-src 'unsafe-inline'`** (was O2). | Removed. The only inline script (SW registration) was externalised (`/register-sw.js`) and Vite's inline module-preload polyfill disabled, so the built HTML carries no inline scripts. |
 
 ### Open / accepted (with mitigations)
 
 | # | Severity | Finding | Recommendation / mitigation |
 | --- | --- | --- | --- |
-| O1 | Low (dev-only) | **`esbuild` advisory** via Vite's dev server (`GHSA-67mh-4wv8-2f99`) lets any site POST to the dev server. Affects `npm run dev` only — **not** the production bundle or runtime. | Do not run the dev server on untrusted networks. Fix requires Vite 8 (breaking major); schedule the upgrade. CI gates only on production deps (`npm audit --omit=dev`). |
-| O2 | Low | **CSP allows `'unsafe-inline'` for scripts** (GA/GTM requirement on static hosting). | Bounded risk: the app renders no inline user content. Hardening path: nonce/hash-based CSP or self-host analytics; or drop GTM. |
 | O4 | Low | **In-memory rate limiter is per-instance** (Edge Functions are distributed), so limits are best-effort. | Acceptable given signature + validation defences on the money path. For stronger guarantees use a shared store (Supabase table or Upstash Redis). |
 
 ---
