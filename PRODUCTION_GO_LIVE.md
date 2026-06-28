@@ -106,6 +106,7 @@ If you move from `all-things-water.pages.dev` to a custom domain such as `https:
    - `back-in-stock-notify`
    - `business-quote`
    - `subscriptions-run`
+   - `admin-warehouses`
 
 ## Continuous integration
 

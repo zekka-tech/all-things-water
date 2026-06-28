@@ -80,7 +80,7 @@ economics are concrete; not yet a Series-A case.
 | **Admin order management with real orders** | Admin used mock data only | P0 | ✅ **Implemented** — real order fetch + status updates + lifecycle email triggers |
 | **B2B office-water contracts** | Highest-LTV segment; previously guest-checkout only | P2 | ✅ **Implemented (MVP)** — `/business` quote-request flow + `business-quote` Edge Function (lead capture, sales + requester email), service-role-only `business_quotes` table (migration 010) |
 | **Loyalty / referral** | No program; LTV tooling absent | P2 | ✅ **Implemented (MVP)** — points (1/R10) auto-awarded on paid orders, referral codes + 100-pt bonus, account Rewards UI (migration 012) |
-| **Inventory multi-warehouse** | Single stock count; no branch-level allocation | P2 | Pending |
+| **Inventory multi-warehouse** | Single stock count; no branch-level allocation | P2 | ✅ **Implemented** — per-warehouse on-hand, region-based fulfilment routing at order time, dispatch decrement on ship, admin warehouse/stock UI (migration 014). Reservations remain global (documented MVP limit) |
 | **Marketing stack confirmed** | Analytics is consent-gated and generic GA/GTM; no CDP/klaviyo email lifecycle | P1 | ✅ Lifecycle email + **consent-gated marketing event layer** (GA4 + Meta Pixel + CDP webhook), funnel instrumented |
 
 ---
@@ -300,9 +300,11 @@ Now complete (follow-up phases):
 
 Plus security/infra hardening: **Vite 8** upgrade (0 npm-audit vulnerabilities), **strict script CSP** (no `unsafe-inline`), **shared-store rate limiting**, and **PayFast token-bound initiation** (`SECURITY_AUDIT.md` R6, R10–R12).
 
+12. ~~**True recurring auto-billing**~~ ✅ — PayFast tokenized ad-hoc charging for opt-in subscriptions (migration 013); first cycle tokenizes, later cycles bill hands-off.
+15. ~~**Multi-warehouse inventory**~~ ✅ — per-warehouse on-hand + region-based fulfilment routing + dispatch decrement + admin UI (migration 014).
+
 Remaining (next phase):
-12. **True recurring auto-billing** (P2, optional) — PayFast tokenization if the one-click-pay model underperforms on conversion.
-15. **Multi-warehouse inventory** and **uptime/SLO monitoring** (P2).
+16. **Uptime/SLO monitoring** (P2) — external uptime checks + edge-function latency/error SLOs (alerting plumbing already exists via `_shared/log.ts`).
 
 ---
 

@@ -122,6 +122,13 @@ Deno.serve(async (req: Request) => {
 
     const emailPromises: Promise<unknown>[] = [];
     if (body.status === "shipped") {
+      // Decrement the dispatched order's on-hand at its fulfilment warehouse.
+      const { error: dispatchErr } = await admin.rpc("dispatch_order_stock", {
+        p_order_id: body.orderId,
+      });
+      if (dispatchErr) {
+        console.error("dispatch_order_stock error:", dispatchErr);
+      }
       emailPromises.push(
         sendShippingNotification(order.customer_email, order.order_ref, body.note),
       );

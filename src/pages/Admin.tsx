@@ -3,6 +3,7 @@ import { Seo } from "@/components/Seo";
 import AdminProducts from "@/components/admin/AdminProducts";
 import AdminOrders from "@/components/admin/AdminOrders";
 import AdminStock from "@/components/admin/AdminStock";
+import AdminWarehouses from "@/components/admin/AdminWarehouses";
 import { products } from "@/data/products";
 import { cx } from "@/lib/format";
 import {
@@ -19,6 +20,7 @@ import {
   Lock,
   ClipboardList,
   PackageOpen,
+  Warehouse,
 } from "lucide-react";
 
 // ── Constants ──
@@ -26,7 +28,7 @@ const STORAGE_STOCK = "atw.admin.stock";
 const STORAGE_VISIBILITY = "atw.admin.visibility";
 const STORAGE_PRODUCTS = "atw.admin.products";
 
-type Tab = "products" | "orders" | "stock";
+type Tab = "products" | "orders" | "stock" | "warehouses";
 
 // ── LocalStorage helpers ──
 function loadJson<T>(key: string, fallback: T): T {
@@ -368,6 +370,7 @@ export function Admin() {
             { key: "products" as Tab, icon: Package, label: "Products" },
             { key: "orders" as Tab, icon: ClipboardList, label: "Orders" },
             { key: "stock" as Tab, icon: PackageOpen, label: "Stock" },
+            { key: "warehouses" as Tab, icon: Warehouse, label: "Warehouses" },
           ]).map((t) => (
             <button
               key={t.key}
@@ -416,6 +419,8 @@ export function Admin() {
               onReset={resetStockChanges}
             />
           )}
+
+          {tab === "warehouses" && <AdminWarehouses />}
         </div>
       </div>
     </>

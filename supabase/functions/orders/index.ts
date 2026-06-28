@@ -220,6 +220,24 @@ Deno.serve(async (req: Request) => {
       .eq("id", result.orderId)
       .single();
 
+    // Route the order to a fulfilment warehouse by delivery region (best-effort;
+    // never blocks checkout). Decremented from on-hand on dispatch.
+    if (deliveryMethod === "delivery") {
+      try {
+        const { data: warehouseId } = await supabase.rpc("pick_fulfillment_warehouse", {
+          p_postal_code: body.delivery?.postalCode || "",
+        });
+        if (warehouseId) {
+          await supabase
+            .from("orders")
+            .update({ fulfillment_warehouse_id: warehouseId })
+            .eq("id", result.orderId);
+        }
+      } catch (_err) {
+        /* warehouse routing is non-critical */
+      }
+    }
+
     logInfo("order created", {
       event: "order.create.ok",
       fn: "orders",
