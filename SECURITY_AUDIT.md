@@ -45,17 +45,22 @@ open. Residual items are Low/Info and have documented mitigations.
 | R4 | Low | **Missing transport-hardening headers** (HSTS, COOP). | Added `Strict-Transport-Security` (preload) and `Cross-Origin-Opener-Policy` to `public/_headers`. |
 | R5 | Low | **`js-yaml` advisory** (quadratic DoS via merge keys) in the dependency tree. | `npm audit fix` (non-breaking). |
 
+### Resolved in follow-up pass
+
+| # | Severity | Finding | Remediation |
+| --- | --- | --- | --- |
+| R6 | Low | **`payments-payfast-initiate` keyed by `orderId` only** (was O3). | The `orders` endpoint now returns the order's `checkout_token` to its creator and `payments-payfast-initiate` requires + verifies it (403 on mismatch). |
+| R7 | Info | **No bot protection on public forms** (was O5). | Cloudflare Turnstile wired into Contact + Business forms (env-gated) with server-side `siteverify` in `business-quote` (fails closed when `TURNSTILE_SECRET_KEY` is set). |
+| R8 | Info | **No automated dependency/secret scanning** (was O6). | `.github/dependabot.yml` (npm + actions, grouped) + a blocking **gitleaks** CI job. |
+| R9 | Info | **Migrations not CI-gated** (was O7). | CI `supabase db reset` job applies all migrations from scratch (informational until verified, then a hard gate). |
+
 ### Open / accepted (with mitigations)
 
 | # | Severity | Finding | Recommendation / mitigation |
 | --- | --- | --- | --- |
 | O1 | Low (dev-only) | **`esbuild` advisory** via Vite's dev server (`GHSA-67mh-4wv8-2f99`) lets any site POST to the dev server. Affects `npm run dev` only — **not** the production bundle or runtime. | Do not run the dev server on untrusted networks. Fix requires Vite 8 (breaking major); schedule the upgrade. CI gates only on production deps (`npm audit --omit=dev`). |
 | O2 | Low | **CSP allows `'unsafe-inline'` for scripts** (GA/GTM requirement on static hosting). | Bounded risk: the app renders no inline user content. Hardening path: nonce/hash-based CSP or self-host analytics; or drop GTM. |
-| O3 | Low | **`payments-payfast-initiate` is keyed by `orderId` only** — an actor who guesses/learns a pending order id can regenerate its pay link. No new data is exposed (name/email are already in the order and the payment still settles to the legitimate merchant). | Bind initiation to the order's `checkout_token` (already issued) for defence in depth. |
 | O4 | Low | **In-memory rate limiter is per-instance** (Edge Functions are distributed), so limits are best-effort. | Acceptable given signature + validation defences on the money path. For stronger guarantees use a shared store (Supabase table or Upstash Redis). |
-| O5 | Info | **No bot/abuse protection** on public forms (contact, newsletter, business quote). | Add Cloudflare Turnstile to public POST forms; the B2B/quote function already rate-limits and length-caps input. |
-| O6 | Info | **No automated dependency/secret scanning** beyond `npm audit`. | Enable GitHub Dependabot + secret scanning; add `gitleaks` to CI. |
-| O7 | Info | **Migrations are not CI-gated for idempotency.** | Add a `supabase db reset` job in CI to prove migrations apply cleanly from scratch. |
 
 ---
 
@@ -96,11 +101,13 @@ open. Residual items are Low/Info and have documented mitigations.
 
 ## 5. Prioritised next actions
 
-1. **(Low)** Bind `payments-payfast-initiate` to `checkout_token` (O3).
-2. **(Low)** Add Cloudflare Turnstile to public forms (O5).
-3. **(Info)** Enable Dependabot + secret scanning; add `gitleaks` to CI (O6).
-4. **(Info)** Add `supabase db reset` migration-apply gate to CI (O7).
+1. ✅ Bind `payments-payfast-initiate` to `checkout_token` (R6).
+2. ✅ Cloudflare Turnstile on public forms (R7).
+3. ✅ Dependabot + gitleaks secret scanning in CI (R8).
+4. ✅ `supabase db reset` migration-apply gate in CI (R9 — verify, then make blocking).
 5. **(Planned)** Schedule the Vite 8 upgrade to clear the dev-server advisory (O1).
+6. **(Low)** Move the rate limiter to a shared store if abuse appears (O4).
+7. **(Low)** Tighten CSP to nonce/hash-based script policy or self-host analytics (O2).
 
 ---
 
