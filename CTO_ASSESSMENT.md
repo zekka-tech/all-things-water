@@ -79,9 +79,9 @@ economics are concrete; not yet a Series-A case.
 | **Back-in-stock notifications** | No way to capture demand for sold-out SKUs | P1 | ✅ **Implemented** — table + edge fn + PDP widget |
 | **Admin order management with real orders** | Admin used mock data only | P0 | ✅ **Implemented** — real order fetch + status updates + lifecycle email triggers |
 | **B2B office-water contracts** | Highest-LTV segment; previously guest-checkout only | P2 | ✅ **Implemented (MVP)** — `/business` quote-request flow + `business-quote` Edge Function (lead capture, sales + requester email), service-role-only `business_quotes` table (migration 010) |
-| **Loyalty / referral** | No program; LTV tooling absent | P2 | Pending |
+| **Loyalty / referral** | No program; LTV tooling absent | P2 | ✅ **Implemented (MVP)** — points (1/R10) auto-awarded on paid orders, referral codes + 100-pt bonus, account Rewards UI (migration 012) |
 | **Inventory multi-warehouse** | Single stock count; no branch-level allocation | P2 | Pending |
-| **Marketing stack confirmed** | Analytics is consent-gated and generic GA/GTM; no CDP/klaviyo email lifecycle | P1 | Lifecycle email ✅; marketing CDP pending |
+| **Marketing stack confirmed** | Analytics is consent-gated and generic GA/GTM; no CDP/klaviyo email lifecycle | P1 | ✅ Lifecycle email + **consent-gated marketing event layer** (GA4 + Meta Pixel + CDP webhook), funnel instrumented |
 
 ---
 
@@ -93,7 +93,7 @@ economics are concrete; not yet a Series-A case.
 | --- | --- | --- |
 | Code quality / typing | **A−** | TS strict, colocated tests, `@/` alias; pure logic extracted from components; structured edge-fn logging |
 | Test coverage | **B+** | 187 Vitest + 38 Deno tests; **Playwright e2e** purchase-funnel smoke (desktop+mobile) + **axe a11y** gate added |
-| Security posture | **A−** | RLS, service-role mediation, CSP+HSTS+COOP, **ITN source-IP allowlist**, **CORS allowlist**, **structured logging + alerting**, rate-limits. See `SECURITY_AUDIT.md` |
+| Security posture | **A** | RLS, service-role mediation, **strict CSP** (no script `unsafe-inline`)+HSTS+COOP, ITN source-IP allowlist, token-bound payment init, Turnstile, **shared-store rate limits**, structured logging+alerting, **0 npm-audit vulns**. See `SECURITY_AUDIT.md` |
 | Reliability / observability | **B** | Sentry consent-gated; **structured JSON logging + Slack/email alerting** on order/ITN/subscription failures; no uptime SLO yet |
 | Deployment | **A−** | Cloudflare Pages + Supabase; reproducible `npm run build`; **GitHub Actions CI** (typecheck/lint/test/build/deno/audit) |
 | Performance | **B+** | Code-split vendor/Admin chunks, lazy images; **Lighthouse/CWV budget** in CI (LCP/CLS/TBT) |
@@ -293,11 +293,16 @@ Now complete (this phase):
 9. ~~**Core Web Vitals budget + axe a11y**~~ ✅ — `lighthouserc.json` + axe gate in CI.
 10. ~~**B2B office-water flow**~~ ✅ (MVP) — `/business` quote capture + `business-quote` Edge Function + `business_quotes` table.
 
+Now complete (follow-up phases):
+11. ~~**Marketing event layer / CDP**~~ ✅ — consent-gated GA4 + Meta Pixel + first-party CDP webhook (`src/lib/marketing.ts`); funnel instrumented (add_to_cart → begin_checkout → purchase, plus generate_lead and subscribe).
+13. ~~**Migration CI gate, Dependabot + secret scanning, Turnstile**~~ ✅ — see `SECURITY_AUDIT.md` R7–R9.
+14. ~~**Loyalty / referral**~~ ✅ (MVP) — points (1/R10) awarded server-side on paid orders via trigger, referral codes + 100-pt referral bonus, account Rewards UI (migration 012).
+
+Plus security/infra hardening: **Vite 8** upgrade (0 npm-audit vulnerabilities), **strict script CSP** (no `unsafe-inline`), **shared-store rate limiting**, and **PayFast token-bound initiation** (`SECURITY_AUDIT.md` R6, R10–R12).
+
 Remaining (next phase):
-11. **Marketing CDP + lifecycle automation** (P1) — beyond transactional email; segment-driven re-order nudges.
 12. **True recurring auto-billing** (P2, optional) — PayFast tokenization if the one-click-pay model underperforms on conversion.
-13. **Migration CI gate** (`supabase db reset`), **Dependabot + secret scanning**, **Turnstile on public forms** (see `SECURITY_AUDIT.md` O5–O7).
-14. **Loyalty / referral** and **multi-warehouse inventory** (P2).
+15. **Multi-warehouse inventory** and **uptime/SLO monitoring** (P2).
 
 ---
 

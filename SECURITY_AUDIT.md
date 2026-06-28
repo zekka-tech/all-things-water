@@ -28,7 +28,7 @@ open. Residual items are Low/Info and have documented mitigations.
 | Transport & headers | A | Strict CSP, **HSTS**, nosniff, frame-ancestors none, COOP, Referrer/Permissions policy |
 | Secrets management | A | Server secrets never `VITE_`-exposed; documented split |
 | Observability & alerting | B+ | **Structured JSON logs + critical alerting** added; no APM/uptime SLO yet |
-| Dependency hygiene | B+ | Prod deps clean; one dev-server-only advisory tracked |
+| Dependency hygiene | A | `npm audit` 0 vulnerabilities (all deps); Dependabot + gitleaks in CI |
 | Input validation | A− | Client + server validation; length caps; SA-format validators |
 
 ---
@@ -55,12 +55,16 @@ open. Residual items are Low/Info and have documented mitigations.
 | R9 | Info | **Migrations not CI-gated** (was O7). | CI `supabase db reset` job applies all migrations from scratch (informational until verified, then a hard gate). |
 | R10 | Low (dev-only) | **`esbuild` dev-server advisory** (was O1). | Upgraded to **Vite 8** (Rolldown) — advisory cleared. Also dropped the `@lhci/cli` dep (Lighthouse now runs via the GitHub Action), bringing `npm audit` to **0 vulnerabilities** across all deps. |
 | R11 | Low | **CSP `script-src 'unsafe-inline'`** (was O2). | Removed. The only inline script (SW registration) was externalised (`/register-sw.js`) and Vite's inline module-preload polyfill disabled, so the built HTML carries no inline scripts. |
+| R12 | Low | **Per-instance in-memory rate limiter** (was O4). | Added a Postgres `check_rate_limit` RPC (migration 011) as an authoritative cross-instance L2 on `orders`, `payments-payfast-initiate`, `business-quote`, and `back-in-stock`; the in-memory limiter remains a cheap L1. Fails open on limiter error. |
 
 ### Open / accepted (with mitigations)
 
 | # | Severity | Finding | Recommendation / mitigation |
 | --- | --- | --- | --- |
-| O4 | Low | **In-memory rate limiter is per-instance** (Edge Functions are distributed), so limits are best-effort. | Acceptable given signature + validation defences on the money path. For stronger guarantees use a shared store (Supabase table or Upstash Redis). |
+| A1 | Info (accepted) | **`style-src 'unsafe-inline'`** retained — required by React/Tailwind runtime inline styles on static hosting. | Standard for this stack; no script execution vector. Revisit only if moving to a server that can emit per-request style nonces. |
+
+**All previously identified Low/Info script- and dependency-level items are now
+resolved; `npm audit` reports 0 vulnerabilities across all dependencies.**
 
 ---
 
@@ -105,9 +109,12 @@ open. Residual items are Low/Info and have documented mitigations.
 2. ✅ Cloudflare Turnstile on public forms (R7).
 3. ✅ Dependabot + gitleaks secret scanning in CI (R8).
 4. ✅ `supabase db reset` migration-apply gate in CI (R9 — verify, then make blocking).
-5. **(Planned)** Schedule the Vite 8 upgrade to clear the dev-server advisory (O1).
-6. **(Low)** Move the rate limiter to a shared store if abuse appears (O4).
-7. **(Low)** Tighten CSP to nonce/hash-based script policy or self-host analytics (O2).
+5. ✅ Vite 8 upgrade — dev-server advisory cleared; `npm audit` 0 vulns (R10).
+6. ✅ Shared-store rate limiter (R12).
+7. ✅ Strict script CSP — `script-src 'unsafe-inline'` removed (R11).
+
+All audit findings are now resolved or accepted (A1). Next security work is
+operational: uptime/SLO monitoring and periodic dependency review via Dependabot.
 
 ---
 

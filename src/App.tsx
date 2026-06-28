@@ -1,8 +1,9 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { JsonLdOrganization } from "@/components/JsonLd";
+import { captureReferralFromUrl } from "@/lib/referral";
 
 const Home = lazy(() => import("@/pages/Home").then((m) => ({ default: m.Home })));
 const Shop = lazy(() => import("@/pages/Shop").then((m) => ({ default: m.Shop })));
@@ -30,6 +31,11 @@ function PageLoading() {
 }
 
 export default function App() {
+  // Persist a ?ref=CODE referral once per load; applied at next loyalty fetch.
+  useEffect(() => {
+    captureReferralFromUrl(window.location.search);
+  }, []);
+
   return (
     <>
       <JsonLdOrganization />

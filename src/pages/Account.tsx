@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { Subscriptions } from "@/components/Subscriptions";
+import { Loyalty } from "@/components/Loyalty";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/lib/supabase";
 import { formatZAR } from "@/lib/format";
@@ -365,6 +366,9 @@ export function Account() {
 
         {/* Subscriptions */}
         <Subscriptions />
+
+        {/* Rewards & referrals */}
+        <Loyalty />
       </div>
     </>
   );
