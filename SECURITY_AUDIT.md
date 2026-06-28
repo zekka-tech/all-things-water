@@ -61,10 +61,10 @@ open. Residual items are Low/Info and have documented mitigations.
 
 | # | Severity | Finding | Recommendation / mitigation |
 | --- | --- | --- | --- |
-| A1 | Info (accepted) | **`style-src 'unsafe-inline'`** retained — required by React/Tailwind runtime inline styles on static hosting. | Standard for this stack; no script execution vector. Revisit only if moving to a server that can emit per-request style nonces. |
+| R13 | Info | **`style-src 'unsafe-inline'`** (was A1). | Hardened via `style-src-elem 'self'` (blocks injected inline `<style>` elements — the built output has none, CSS is external) + `style-src-attr 'unsafe-inline'` (kept for the handful of legitimate runtime `style={{}}` attributes). `style-src 'self' 'unsafe-inline'` remains only as a fallback for browsers without `-elem`/`-attr` support, so there is no regression. No script-execution vector either way. |
 
-**All previously identified Low/Info script- and dependency-level items are now
-resolved; `npm audit` reports 0 vulnerabilities across all dependencies.**
+**All identified findings are now resolved; `npm audit` reports 0
+vulnerabilities across all dependencies.**
 
 ---
 
