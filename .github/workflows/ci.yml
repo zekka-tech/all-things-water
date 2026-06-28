@@ -59,6 +59,35 @@ jobs:
       # advisories (esbuild via Vite) are tracked in SECURITY_AUDIT.md.
       - run: npm audit --omit=dev --audit-level=high
 
+  # ── Secret scanning (blocking) ─────────────────────────────────────────
+  secret-scan:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ── Migration apply gate (proves migrations apply cleanly from scratch) ─
+  migrations:
+    name: supabase db reset
+    runs-on: ubuntu-latest
+    # Spins up the full local Supabase stack (Docker). Informational until
+    # verified green in your environment; flip to false to make it a hard gate.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase start
+      - run: supabase db reset --no-seed
+      - if: always()
+        run: supabase stop --no-backup
+
   # ── End-to-end purchase funnel + a11y (informational until tuned) ──────
   e2e:
     name: playwright e2e + axe a11y
