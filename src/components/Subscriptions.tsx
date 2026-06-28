@@ -14,6 +14,7 @@ import { supabase } from "@/lib/supabase";
 import { products } from "@/data/products";
 import { cx, formatZAR } from "@/lib/format";
 import { captureException } from "@/lib/sentry";
+import { trackMarketing } from "@/lib/marketing";
 import {
   FREQUENCY_OPTIONS,
   frequencyLabel,
@@ -197,6 +198,7 @@ export function Subscriptions() {
         frequency,
       });
       if (err) throw err;
+      trackMarketing({ type: "subscribe", productId: product.id, frequency });
       setCreating(false);
       setQuantity(1);
       setNotes("");

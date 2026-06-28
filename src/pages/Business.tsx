@@ -15,6 +15,7 @@ import { turnstileEnabled } from "@/lib/turnstile";
 import { cx } from "@/lib/format";
 import { env } from "@/lib/env";
 import { apiPost } from "@/lib/api";
+import { trackMarketing } from "@/lib/marketing";
 import { validateEmail, validatePhone } from "@/lib/validation";
 
 const benefits = [
@@ -112,6 +113,7 @@ export function Business() {
           Authorization: `Bearer ${env.supabaseAnonKey}`,
         },
       );
+      trackMarketing({ type: "generate_lead", company: form.companyName.trim() });
       setSent(true);
     } catch {
       setSubmitError(

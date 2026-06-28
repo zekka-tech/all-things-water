@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Product } from "@/types";
 import { formatZAR } from "@/lib/format";
 import { useCart } from "@/context/CartContext";
+import { trackMarketing } from "@/lib/marketing";
 import { StockBadge } from "./StockBadge";
 import { OptimizedImage } from "./OptimizedImage";
 
@@ -14,6 +15,13 @@ export function ProductCard({ product }: { product: Product }) {
 
   const handleAdd = () => {
     addItem(product, 1);
+    trackMarketing({
+      type: "add_to_cart",
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+    });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1400);
   };

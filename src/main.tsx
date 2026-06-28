@@ -9,6 +9,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { validateEnv } from "@/lib/validateEnv";
 import { initErrorReporter } from "@/lib/sentry";
 import { setTracker } from "@/lib/analytics";
+import { initMarketing } from "@/lib/marketing";
 import { CONSENT_EVENT, hasTrackingConsent } from "@/lib/consent";
 import "./index.css";
 
@@ -58,6 +59,9 @@ ${body}`;
       },
     });
   }
+
+  // Load configured marketing destinations (GA4 / Meta Pixel / CDP webhook).
+  initMarketing();
 
   if (analyticsEnabled && gaId) {
     setTracker({

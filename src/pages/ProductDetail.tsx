@@ -12,6 +12,7 @@ import { categoryLabel } from "@/data/categories";
 import { BackInStockNotify } from "@/components/BackInStockNotify";
 import { formatZAR } from "@/lib/format";
 import { useCart } from "@/context/CartContext";
+import { trackMarketing } from "@/lib/marketing";
 import { NotFound } from "./NotFound";
 
 export function ProductDetail() {
@@ -30,6 +31,13 @@ export function ProductDetail() {
 
   const handleAdd = () => {
     addItem(product, qty);
+    trackMarketing({
+      type: "add_to_cart",
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: qty,
+    });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1600);
   };

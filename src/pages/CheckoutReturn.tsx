@@ -1,17 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ShoppingBag } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { useCart } from "@/context/CartContext";
+import { trackMarketing } from "@/lib/marketing";
 
 export function CheckoutReturn() {
-  const { clear } = useCart();
+  const { clear, subtotal } = useCart();
   const [searchParams] = useSearchParams();
   const orderRef = searchParams.get("orderRef");
+  const tracked = useRef(false);
 
   useEffect(() => {
+    // Fire the purchase event with the order value before the cart is cleared.
+    if (!tracked.current && orderRef) {
+      tracked.current = true;
+      trackMarketing({ type: "purchase", orderRef, value: subtotal });
+    }
     clear();
-  }, [clear]);
+  }, [clear, orderRef, subtotal]);
 
   return (
     <>

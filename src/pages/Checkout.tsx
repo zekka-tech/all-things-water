@@ -21,6 +21,7 @@ import { env } from "@/lib/env";
 import { apiPost, userFriendlyError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { captureException } from "@/lib/sentry";
+import { trackMarketing } from "@/lib/marketing";
 import {
   DELIVERY_THRESHOLD,
   DELIVERY_FEE,
@@ -202,6 +203,8 @@ export function Checkout() {
   const placeOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
+
+    trackMarketing({ type: "begin_checkout", value: total, items: items.length });
 
     setSubmitting(true);
     setSubmitError(null);
