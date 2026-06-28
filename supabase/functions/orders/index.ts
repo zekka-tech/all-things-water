@@ -6,6 +6,7 @@ import {
 } from "../_shared/cors.ts";
 import { calculateDelivery, isDeliverablePostalCode } from "../_shared/delivery.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { alert, logInfo, toErrorFields } from "../_shared/log.ts";
 
 interface OrderItem {
   productId: string;
@@ -114,8 +115,12 @@ Deno.serve(async (req: Request) => {
       .eq("visible", true);
 
     if (fetchErr) {
-      console.error("Product fetch error:", fetchErr);
-      return errorResponse("Failed to retrieve products", 500);
+      await alert("product fetch failed during order", {
+        event: "order.create.product_fetch_failed",
+        fn: "orders",
+        ...toErrorFields(fetchErr),
+      });
+      return errorResponse("Failed to retrieve products", 500, undefined, req);
     }
 
     const orderItems = body.items.map((item) => {
@@ -171,8 +176,13 @@ Deno.serve(async (req: Request) => {
     });
 
     if (rpcErr) {
-      console.error("RPC error:", rpcErr);
-      return errorResponse("Failed to create order", 500);
+      await alert("create_order RPC failed", {
+        event: "order.create.rpc_failed",
+        fn: "orders",
+        ref: orderRef,
+        ...toErrorFields(rpcErr),
+      });
+      return errorResponse("Failed to create order", 500, undefined, req);
     }
 
     if (result?.error) {
@@ -190,11 +200,18 @@ Deno.serve(async (req: Request) => {
       return errorResponse(String(err.error || "Order creation failed"), 400);
     }
 
+    logInfo("order created", {
+      event: "order.create.ok",
+      fn: "orders",
+      ref: result.orderRef,
+      total,
+    });
+
     return jsonResponse({
       orderId: result.orderId,
       orderRef: result.orderRef,
       reservationExpiresAt: result.reservationExpiresAt,
-    }, 201);
+    }, 201, req);
   } catch (err: unknown) {
     if (err && typeof err === "object" && "status" in err) {
       const { status, message, detail } = err as {
@@ -202,9 +219,13 @@ Deno.serve(async (req: Request) => {
         message: string;
         detail?: unknown;
       };
-      return errorResponse(message, status, detail);
+      return errorResponse(message, status, detail, req);
     }
-    console.error("Order creation error:", err);
-    return errorResponse("Internal server error", 500);
+    await alert("unhandled order creation error", {
+      event: "order.create.exception",
+      fn: "orders",
+      ...toErrorFields(err),
+    });
+    return errorResponse("Internal server error", 500, undefined, req);
   }
 });

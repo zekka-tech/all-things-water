@@ -57,6 +57,19 @@ MERCHANT_EMAIL=orders@allthingswater.co.za
 
 Without `RESEND_API_KEY` and `MERCHANT_EMAIL`, checkout can still run, but confirmation, merchant notification, and back-in-stock emails will be degraded.
 
+Security & observability hardening (recommended for production):
+
+```text
+ALLOWED_ORIGINS=https://allthingswater.co.za,https://all-things-water.pages.dev
+PAYFAST_ITN_IP_CHECK=true
+ALERT_SLACK_WEBHOOK_URL=<incoming-webhook-for-ops-alerts>
+ALERT_EMAIL=ops@allthingswater.co.za
+```
+
+- `ALLOWED_ORIGINS` — comma-separated browser origins permitted to call the Edge Functions. If unset, CORS falls back to `*`; set it in production to lock the browser surface to your real domains.
+- `PAYFAST_ITN_IP_CHECK` — when not `false`, the ITN endpoint rejects POSTs whose source IP is outside PayFast's published ranges (defense in depth on top of signature + server validation). Set to `false` only if a proxy rewrites the source IP.
+- `ALERT_SLACK_WEBHOOK_URL` / `ALERT_EMAIL` — where critical alerts (failed order creation, ITN signature/amount anomalies, payment-confirmed-but-update-failed) are delivered. If unset, alerts still land in structured logs.
+
 ## Production Rules
 
 - Never put `SUPABASE_SERVICE_ROLE_KEY`, PayFast credentials, or `RESEND_API_KEY` in any `VITE_` variable.

@@ -11,16 +11,24 @@ import {
   verifySignature,
 } from "../_shared/payfast.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { alert, logInfo, logWarn, toErrorFields } from "../_shared/log.ts";
+import { clientIpFrom, isAllowedPayfastIp } from "../_shared/payfast-ip.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return errorResponse("Method not allowed", 405);
   }
 
-  const clientIp =
-    req.headers.get("x-forwarded-for") ||
-    req.headers.get("cf-connecting-ip") ||
-    "unknown";
+  if (!isAllowedPayfastIp(req)) {
+    logWarn("ITN rejected: source IP not in PayFast allowlist", {
+      event: "payfast.itn.ip_rejected",
+      fn: "payments-payfast-itn",
+      ip: clientIpFrom(req),
+    });
+    return errorResponse("Forbidden", 403);
+  }
+
+  const clientIp = clientIpFrom(req) || "unknown";
   const rateLimit = checkRateLimit(`payfast-itn:${clientIp}`);
   if (!rateLimit.allowed) {
     return errorResponse(
@@ -37,7 +45,12 @@ Deno.serve(async (req: Request) => {
     const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "";
     const signature = getParam(formParams, "signature") || "";
     if (!verifySignature(formParams, signature, passphrase)) {
-      console.error("ITN signature mismatch");
+      await alert("ITN signature mismatch", {
+        event: "payfast.itn.signature_mismatch",
+        fn: "payments-payfast-itn",
+        ip: clientIp,
+        ref: getParam(formParams, "m_payment_id") || "",
+      });
       return errorResponse("Invalid signature", 400);
     }
 
@@ -89,9 +102,13 @@ Deno.serve(async (req: Request) => {
 
     const amountGross = parseFloat(getParam(formParams, "amount_gross") || "0");
     if (Math.abs(amountGross - Number(order.total)) > 0.01) {
-      console.error(
-        `Amount mismatch for order ${orderId}: expected ${order.total}, got ${amountGross}`,
-      );
+      await alert("ITN amount mismatch — possible tampering", {
+        event: "payfast.itn.amount_mismatch",
+        fn: "payments-payfast-itn",
+        ref: order.order_ref,
+        expected: Number(order.total),
+        got: amountGross,
+      });
       return errorResponse("Amount mismatch", 400);
     }
 
@@ -104,12 +121,24 @@ Deno.serve(async (req: Request) => {
     });
 
     if (markPaidErr) {
-      console.error("mark_order_paid RPC error:", markPaidErr);
+      await alert("payment received but mark_order_paid RPC failed", {
+        event: "payfast.itn.mark_paid_failed",
+        fn: "payments-payfast-itn",
+        ref: order.order_ref,
+        pfPaymentId,
+        ...toErrorFields(markPaidErr),
+      });
       return errorResponse("Failed to update order", 500);
     }
 
     if (result?.error) {
-      console.error("mark_order_paid business error:", result);
+      await alert("payment received but order needs manual review", {
+        event: "payfast.itn.manual_review",
+        fn: "payments-payfast-itn",
+        ref: order.order_ref,
+        pfPaymentId,
+        detail: result,
+      });
       return jsonResponse({ received: true, manualReview: true });
     }
 
@@ -131,10 +160,19 @@ Deno.serve(async (req: Request) => {
       sendMerchantNotification(order.order_ref, order.customer_name, order.total, items),
     ]);
 
-    console.log(`Order ${order.order_ref} marked as paid`);
+    logInfo("order marked as paid via ITN", {
+      event: "payfast.itn.paid",
+      fn: "payments-payfast-itn",
+      ref: order.order_ref,
+      pfPaymentId,
+    });
     return jsonResponse({ received: true });
   } catch (err) {
-    console.error("ITN handler error:", err);
+    await alert("unhandled ITN handler error", {
+      event: "payfast.itn.exception",
+      fn: "payments-payfast-itn",
+      ...toErrorFields(err),
+    });
     return errorResponse("Internal server error", 500);
   }
 });
