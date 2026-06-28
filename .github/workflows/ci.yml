@@ -111,6 +111,35 @@ jobs:
           path: playwright-report
           retention-days: 7
 
+  # ── Full PayFast-sandbox funnel (opt-in; needs a configured backend) ────
+  e2e-payfast:
+    name: e2e → PayFast sandbox
+    runs-on: ubuntu-latest
+    # Enable by setting repo variable RUN_PAYFAST_E2E=true and the two secrets
+    # below (a Supabase project with the Edge Functions deployed + sandbox PayFast).
+    if: ${{ vars.RUN_PAYFAST_E2E == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Run full funnel against PayFast sandbox
+        env:
+          E2E_PAYFAST: "1"
+          # Baked into the build by Vite (the webServer builds before serving).
+          VITE_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+        run: npx playwright test funnel-payfast.spec.ts --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-payfast-report
+          path: playwright-report
+          retention-days: 7
+
   # ── Lighthouse / Core Web Vitals budget (informational) ────────────────
   lighthouse:
     name: lighthouse CWV budget

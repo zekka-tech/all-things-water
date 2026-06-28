@@ -107,6 +107,23 @@ If you move from `all-things-water.pages.dev` to a custom domain such as `https:
    - `business-quote`
    - `subscriptions-run`
 
+## Continuous integration
+
+CI (`.github/workflows/ci.yml`) gates every push/PR with typecheck, lint, unit
+tests, build, Deno checks/tests, and a production-dependency audit. Secret
+scanning (gitleaks) is blocking. The Playwright e2e + axe, Lighthouse CWV, and
+`supabase db reset` migration jobs run as informational until verified green in
+your environment (flip `continue-on-error: false` to make them hard gates).
+
+To run the **full PayFast-sandbox funnel** in CI, set repository variable
+`RUN_PAYFAST_E2E=true` and add secrets `E2E_SUPABASE_URL` and
+`E2E_SUPABASE_ANON_KEY` pointing at a Supabase project that has the Edge
+Functions deployed with `PAYFAST_SANDBOX=true`. Locally:
+
+```bash
+E2E_PAYFAST=1 VITE_SUPABASE_URL=... VITE_SUPABASE_ANON_KEY=... npm run e2e
+```
+
 ## Go-Live Validation
 
 Verify these before announcing production:
