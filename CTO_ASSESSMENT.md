@@ -94,7 +94,7 @@ economics are concrete; not yet a Series-A case.
 | Code quality / typing | **A−** | TS strict, colocated tests, `@/` alias; pure logic extracted from components; structured edge-fn logging |
 | Test coverage | **B+** | 187 Vitest + 38 Deno tests; **Playwright e2e** purchase-funnel smoke (desktop+mobile) + **axe a11y** gate added |
 | Security posture | **A** | RLS, service-role mediation, **strict CSP** (no script `unsafe-inline`)+HSTS+COOP, ITN source-IP allowlist, token-bound payment init, Turnstile, **shared-store rate limits**, structured logging+alerting, **0 npm-audit vulns**. See `SECURITY_AUDIT.md` |
-| Reliability / observability | **B** | Sentry consent-gated; **structured JSON logging + Slack/email alerting** on order/ITN/subscription failures; no uptime SLO yet |
+| Reliability / observability | **B+** | Sentry consent-gated; structured JSON logging + Slack/email alerting; **public health probe + scheduled SLO monitor** (DB latency + order-flow) with env-tunable thresholds (`OBSERVABILITY.md`) |
 | Deployment | **A−** | Cloudflare Pages + Supabase; reproducible `npm run build`; **GitHub Actions CI** (typecheck/lint/test/build/deno/audit) |
 | Performance | **B+** | Code-split vendor/Admin chunks, lazy images; **Lighthouse/CWV budget** in CI (LCP/CLS/TBT) |
 | Accessibility | **B+** | Semantic markup, focus states; **axe-core gate** over primary routes in CI |
@@ -303,8 +303,9 @@ Plus security/infra hardening: **Vite 8** upgrade (0 npm-audit vulnerabilities),
 12. ~~**True recurring auto-billing**~~ ✅ — PayFast tokenized ad-hoc charging for opt-in subscriptions (migration 013); first cycle tokenizes, later cycles bill hands-off.
 15. ~~**Multi-warehouse inventory**~~ ✅ — per-warehouse on-hand + region-based fulfilment routing + dispatch decrement + admin UI (migration 014).
 
-Remaining (next phase):
-16. **Uptime/SLO monitoring** (P2) — external uptime checks + edge-function latency/error SLOs (alerting plumbing already exists via `_shared/log.ts`).
+16. ~~**Uptime/SLO monitoring**~~ ✅ — public `health` probe for external uptime monitors + scheduled `monitor` SLO check (DB latency + order-flow), `slo_samples` history, env-tunable thresholds, alerting via `_shared/log.ts` (migration 015, see `OBSERVABILITY.md`).
+
+The engineering backlog from this assessment is now fully cleared.
 
 ---
 
