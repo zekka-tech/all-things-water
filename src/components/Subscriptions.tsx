@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import {
   Repeat,
   Loader2,
@@ -72,7 +72,8 @@ export function Subscriptions() {
         .select(
           "id, product_id, product_name, quantity, unit_price, frequency, status, next_delivery_date, auto_pay",
         )
-        .or(`user_id.eq.${user.id},customer_email.eq.${user.email}`)
+        // Row-level security scopes rows to this user (by id, or by a
+        // verified email for guest orders) — no client-side filter needed.
         .order("next_delivery_date", { ascending: true });
       if (err) throw err;
       setSubs((data ?? []) as SubscriptionRow[]);
@@ -96,7 +97,8 @@ export function Subscriptions() {
         .select(
           "customer_name, customer_phone, delivery_address, delivery_city, delivery_postal_code",
         )
-        .or(`user_id.eq.${user.id},customer_email.eq.${user.email}`)
+        // Row-level security scopes rows to this user (by id, or by a
+        // verified email for guest orders) — no client-side filter needed.
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();

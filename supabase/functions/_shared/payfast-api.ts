@@ -89,6 +89,7 @@ export async function chargeAdhoc(
         "content-type": "application/x-www-form-urlencoded",
       },
       body: new URLSearchParams(data).toString(),
+      signal: AbortSignal.timeout(15_000),
     });
     const raw = await res.text();
     let ok = res.ok;

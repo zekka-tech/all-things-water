@@ -1,4 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { hasSharedSecret } from "../_shared/http.ts";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { alert, logInfo, toErrorFields } from "../_shared/log.ts";
 import { evaluateSlo, thresholdsFromEnv, type HealthInputs } from "../_shared/slo.ts";
@@ -14,10 +15,9 @@ Deno.serve(async (req: Request) => {
   if (corsResponse) return corsResponse;
   if (req.method !== "POST") return errorResponse("Method not allowed", 405);
 
-  const secret = Deno.env.get("MONITOR_CRON_SECRET");
-  const authHeader = req.headers.get("Authorization") || "";
-  if (!secret || authHeader !== `Bearer ${secret}`) {
-    return errorResponse("Unauthorized", 401);
+  // Shared-secret auth (constant-time; secret must be >= 16 chars).
+  if (!hasSharedSecret(req, Deno.env.get("MONITOR_CRON_SECRET"))) {
+    return errorResponse("Unauthorized", 401, undefined, req);
   }
 
   try {
@@ -90,8 +90,10 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // 5. Opportunistic retention.
+    // 5. Opportunistic retention (SLO samples, rate-limit buckets, and
+    //    POPIA retention for stale back-in-stock requests).
     await supabase.rpc("prune_slo_samples", { p_older_than_days: 30 });
+    await supabase.rpc("prune_stale_personal_data");
 
     return jsonResponse(
       {

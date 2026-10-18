@@ -1,127 +1,51 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
-import {
-  handleCors,
-  jsonResponse,
-  errorResponse,
-} from "../_shared/cors.ts";
-import { calculateDelivery, isDeliverablePostalCode } from "../_shared/delivery.ts";
+import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { calculateDelivery } from "../_shared/delivery.ts";
 import { checkRateLimit, checkRateLimitDb } from "../_shared/rate-limit.ts";
 import { alert, logInfo, toErrorFields } from "../_shared/log.ts";
-
-interface OrderItem {
-  productId: string;
-  quantity: number;
-}
-
-interface Customer {
-  name: string;
-  email: string;
-  phone?: string;
-}
-
-interface Delivery {
-  address?: string;
-  city?: string;
-  postalCode?: string;
-  notes?: string;
-  method: "delivery" | "collection";
-}
-
-interface CreateOrderRequest {
-  items: OrderItem[];
-  customer: Customer;
-  delivery: Delivery;
-  whatsappOptin?: boolean;
-  deliverySlot?: string;
-}
+import { clientIp, HttpError, readJson } from "../_shared/http.ts";
+import { getVerifiedUser, serviceClient } from "../_shared/auth.ts";
+import { newOrderRef, validateOrderRequest } from "../_shared/order-validation.ts";
 
 Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
   if (req.method !== "POST") {
-    return errorResponse("Method not allowed", 405);
+    return errorResponse("Method not allowed", 405, undefined, req);
   }
 
-  const clientIp =
-    req.headers.get("x-forwarded-for") ||
-    req.headers.get("cf-connecting-ip") ||
-    "unknown";
-  const rateLimit = checkRateLimit(`order:${clientIp}`);
+  const ip = clientIp(req);
+  const rateLimit = checkRateLimit(`order:${ip}`);
   if (!rateLimit.allowed) {
-    return errorResponse(
-      "Too many requests. Please try again later.",
-      429,
-      { retryAfter: rateLimit.retryAfter },
-    );
+    return errorResponse("Too many requests. Please try again later.", 429, {
+      retryAfter: rateLimit.retryAfter,
+    }, req);
   }
 
   try {
-    const body: CreateOrderRequest = await req.json();
-
-    if (!body.customer?.name?.trim()) {
-      return errorResponse("Customer name is required", 400);
+    const parsed = validateOrderRequest(await readJson(req));
+    if (!parsed.ok) {
+      return errorResponse(parsed.message, parsed.status, parsed.details, req);
     }
-    if (
-      !body.customer?.email?.trim() ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.customer.email)
-    ) {
-      return errorResponse("Valid customer email is required", 400);
-    }
-    if (!body.items?.length) {
-      return errorResponse("At least one item is required", 400);
-    }
+    const order = parsed.value;
 
-    const deliveryMethod = body.delivery?.method || "delivery";
-    if (deliveryMethod === "delivery") {
-      if (!body.delivery?.address?.trim() || !body.delivery?.city?.trim()) {
-        return errorResponse("Delivery address and city are required", 400);
-      }
-      if (!body.delivery?.postalCode?.trim()) {
-        return errorResponse("Delivery postal code is required", 400);
-      }
-      const zone = isDeliverablePostalCode(body.delivery.postalCode.trim());
-      if (!zone.deliverable) {
-        return errorResponse("We cannot deliver to this postal code", 400, zone);
-      }
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false },
-    });
+    const supabase = serviceClient();
 
     // Authoritative cross-instance rate limit (L2) on top of the in-memory L1.
-    const dbLimit = await checkRateLimitDb(supabase, `order:${clientIp}`, {
-      max: 10,
-      windowSeconds: 60,
-    });
+    const dbLimit = await checkRateLimitDb(supabase, `order:${ip}`, { max: 10, windowSeconds: 60 });
     if (!dbLimit.allowed) {
       return errorResponse("Too many requests. Please try again later.", 429, {
         retryAfter: dbLimit.retryAfter,
       }, req);
     }
 
-    await supabase.rpc("expire_pending_order_reservations", { p_limit: 100 });
+    // Link the order to an account only for a token Supabase Auth verifies.
+    const user = await getVerifiedUser(req);
 
-    let userId: string | null = null;
-    const authHeader = req.headers.get("Authorization") || "";
-    if (authHeader.startsWith("Bearer ")) {
-      try {
-        const [, tokenPart] = authHeader.split(" ");
-        const payload = JSON.parse(atob(tokenPart.split(".")[1]));
-        userId = payload?.sub ?? null;
-      } catch {
-        /* guest checkout */
-      }
-    }
-
-    const productIds = body.items.map((i) => i.productId);
+    const productIds = order.items.map((i) => i.productId);
     const { data: products, error: fetchErr } = await supabase
       .from("products")
-      .select("id, name, price, stock, reserved_stock, visible")
+      .select("id, name, price, stock, reserved_stock")
       .in("id", productIds)
       .eq("visible", true);
 
@@ -134,56 +58,47 @@ Deno.serve(async (req: Request) => {
       return errorResponse("Failed to retrieve products", 500, undefined, req);
     }
 
-    const orderItems = body.items.map((item) => {
+    // Pre-check stock for a friendly 409; create_order re-checks under lock.
+    let subtotal = 0;
+    for (const item of order.items) {
       const product = products?.find((p) => p.id === item.productId);
       if (!product) {
-        throw { status: 400, message: `Product not found: ${item.productId}` };
+        return errorResponse(`Product not found: ${item.productId}`, 400, {
+          productId: item.productId,
+        }, req);
       }
       const available = Math.max(0, product.stock - product.reserved_stock);
       if (available < item.quantity) {
-        throw {
-          status: 409,
-          message: `Insufficient stock for ${product.name}`,
-          detail: {
-            productId: item.productId,
-            available,
-            requested: item.quantity,
-          },
-        };
+        return errorResponse(`Insufficient stock for ${product.name}`, 409, {
+          productId: item.productId,
+          available,
+          requested: item.quantity,
+        }, req);
       }
-      return {
-        productId: item.productId,
-        quantity: item.quantity,
-        price: product.price,
-        name: product.name,
-      };
-    });
+      subtotal += product.price * item.quantity;
+    }
 
-    const subtotal = orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-    const deliveryFee = calculateDelivery(subtotal, deliveryMethod);
+    const deliveryFee = calculateDelivery(subtotal, order.delivery.method);
     const total = subtotal + deliveryFee;
-
-    const orderRef =
-      "ATW-" +
-      crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase();
+    const orderRef = newOrderRef();
 
     const { data: result, error: rpcErr } = await supabase.rpc("create_order", {
-      p_customer_name: body.customer.name.trim(),
-      p_customer_email: body.customer.email.trim(),
-      p_customer_phone: body.customer.phone || "",
-      p_delivery_address: body.delivery?.address || "",
-      p_delivery_city: body.delivery?.city || "",
-      p_delivery_postal_code: body.delivery?.postalCode || "",
-      p_delivery_notes: body.delivery?.notes || "",
-      p_delivery_method: deliveryMethod,
+      p_customer_name: order.customer.name,
+      p_customer_email: order.customer.email,
+      p_customer_phone: order.customer.phone,
+      p_delivery_address: order.delivery.address,
+      p_delivery_city: order.delivery.city,
+      p_delivery_postal_code: order.delivery.postalCode,
+      p_delivery_notes: order.delivery.notes,
+      p_delivery_method: order.delivery.method,
       p_subtotal: subtotal,
       p_delivery_fee: deliveryFee,
       p_total: total,
       p_order_ref: orderRef,
-      p_items: orderItems,
-      p_whatsapp_optin: body.whatsappOptin ?? false,
-      p_user_id: userId ?? undefined,
-      p_delivery_slot: body.deliverySlot || undefined,
+      p_items: order.items,
+      p_whatsapp_optin: order.whatsappOptin,
+      p_user_id: user?.id ?? undefined,
+      p_delivery_slot: order.deliverySlot,
     });
 
     if (rpcErr) {
@@ -199,33 +114,37 @@ Deno.serve(async (req: Request) => {
     if (result?.error) {
       const err = result as Record<string, unknown>;
       if (err.error === "Insufficient stock") {
-        return errorResponse(
-          `Insufficient stock for ${err.productId}`,
-          409,
-          { productId: err.productId, available: err.available, requested: err.requested },
-        );
+        return errorResponse(`Insufficient stock for ${err.productId}`, 409, {
+          productId: err.productId,
+          available: err.available,
+          requested: err.requested,
+        }, req);
       }
       if (err.error === "Product not found") {
-        return errorResponse(`Product not found: ${err.productId}`, 400, { productId: err.productId });
+        return errorResponse(`Product not found: ${err.productId}`, 400, {
+          productId: err.productId,
+        }, req);
       }
-      return errorResponse(String(err.error || "Order creation failed"), 400);
+      if (err.error === "Price mismatch") {
+        // Prices changed between our read and the locked read — ask to retry.
+        return errorResponse("Prices have changed. Please review your cart.", 409, undefined, req);
+      }
+      return errorResponse(String(err.error || "Order creation failed"), 400, undefined, req);
     }
 
-    // Return the order's checkout_token to its creator so the subsequent
-    // payment-initiate call can be bound to it (defence in depth: an actor who
-    // only knows the orderId cannot initiate payment for someone else's order).
+    // Return the checkout_token to the order's creator only, so payment
+    // initiation is bound to whoever placed the order.
     const { data: created } = await supabase
       .from("orders")
       .select("checkout_token")
       .eq("id", result.orderId)
       .single();
 
-    // Route the order to a fulfilment warehouse by delivery region (best-effort;
-    // never blocks checkout). Decremented from on-hand on dispatch.
-    if (deliveryMethod === "delivery") {
+    // Route to a fulfilment warehouse (best-effort; never blocks checkout).
+    if (order.delivery.method === "delivery") {
       try {
         const { data: warehouseId } = await supabase.rpc("pick_fulfillment_warehouse", {
-          p_postal_code: body.delivery?.postalCode || "",
+          p_postal_code: order.delivery.postalCode,
         });
         if (warehouseId) {
           await supabase
@@ -233,7 +152,7 @@ Deno.serve(async (req: Request) => {
             .update({ fulfillment_warehouse_id: warehouseId })
             .eq("id", result.orderId);
         }
-      } catch (_err) {
+      } catch {
         /* warehouse routing is non-critical */
       }
     }
@@ -243,6 +162,7 @@ Deno.serve(async (req: Request) => {
       fn: "orders",
       ref: result.orderRef,
       total,
+      account: Boolean(user),
     });
 
     return jsonResponse({
@@ -252,13 +172,8 @@ Deno.serve(async (req: Request) => {
       checkoutToken: created?.checkout_token ?? null,
     }, 201, req);
   } catch (err: unknown) {
-    if (err && typeof err === "object" && "status" in err) {
-      const { status, message, detail } = err as {
-        status: number;
-        message: string;
-        detail?: unknown;
-      };
-      return errorResponse(message, status, detail, req);
+    if (err instanceof HttpError) {
+      return errorResponse(err.message, err.status, err.details, req);
     }
     await alert("unhandled order creation error", {
       event: "order.create.exception",

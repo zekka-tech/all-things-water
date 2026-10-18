@@ -1,0 +1,73 @@
+# Supabase CLI configuration (local stack + per-function deploy settings).
+# Only non-default values are listed; the CLI fills in everything else.
+project_id = "all-things-water"
+
+[auth]
+site_url = "http://localhost:5180"
+additional_redirect_urls = ["http://localhost:5180"]
+
+# Same login protects customer and admin accounts. Mirror these in the hosted
+# project (Authentication → Policies) and enable leaked-password protection.
+# The sign-up form enforces the same rule (src/lib/validation.ts).
+minimum_password_length = 10
+password_requirements = "letters_digits"
+
+[auth.email]
+# Customers must prove they own an address before guest orders placed with
+# it become visible in their account (see current_user_verified_email()).
+# Keep this ON in the hosted project too: Authentication → Providers → Email.
+enable_confirmations = true
+# Changing a password requires a recent sign-in (re-authentication).
+secure_password_change = true
+
+# ── Edge Function gateway JWT checks ─────────────────────────────────────
+# verify_jwt = true  → the Supabase gateway rejects requests without a valid
+#                      user/anon JWT before our code runs (defence in depth).
+# verify_jwt = false → the function is called by guests, PayFast or a cron
+#                      job; it authenticates the caller itself (checkout
+#                      token, PayFast signature + validation, shared secret,
+#                      or requireAdmin()).
+
+[functions.orders]
+verify_jwt = false
+
+[functions.payments-payfast-initiate]
+verify_jwt = false
+
+[functions.payments-payfast-itn]
+verify_jwt = false
+
+[functions.order-cancel]
+verify_jwt = false
+
+[functions.back-in-stock]
+verify_jwt = false
+
+[functions.business-quote]
+verify_jwt = false
+
+[functions.health]
+verify_jwt = false
+
+[functions.monitor]
+verify_jwt = false
+
+[functions.subscriptions-run]
+verify_jwt = false
+
+# Admin + cron: authenticates via requireAdmin() or BACK_IN_STOCK_CRON_SECRET.
+[functions.back-in-stock-notify]
+verify_jwt = false
+
+# Admin-only: callers always send a signed-in user's JWT.
+[functions.admin-orders]
+verify_jwt = true
+
+[functions.admin-sync]
+verify_jwt = true
+
+[functions.admin-warehouses]
+verify_jwt = true
+
+[functions.order-status]
+verify_jwt = true

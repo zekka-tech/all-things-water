@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import {
   Package,
   LogIn,
@@ -20,6 +20,7 @@ import { supabase } from "@/lib/supabase";
 import { formatZAR } from "@/lib/format";
 import { captureException } from "@/lib/sentry";
 import { cx } from "@/lib/format";
+import { passwordProblem } from "@/lib/validation";
 
 interface OrderRow {
   id: string;
@@ -57,7 +58,8 @@ export function Account() {
       const { data, error } = await supabase
         .from("orders")
         .select("id, order_ref, status, total, created_at, delivery_method")
-        .or(`user_id.eq.${user.id},customer_email.eq.${user.email}`)
+        // Row-level security scopes rows to this user (by id, or by a
+        // verified email for guest orders) — no client-side filter needed.
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -88,8 +90,9 @@ export function Account() {
           setError("Please enter your name.");
           return;
         }
-        if (password.length < 6) {
-          setError("Password must be at least 6 characters.");
+        const weak = passwordProblem(password);
+        if (weak) {
+          setError(weak);
           return;
         }
         const res = await signUp(email.trim(), password, name.trim());

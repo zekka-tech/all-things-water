@@ -1,27 +1,28 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handleCors, errorResponse, jsonResponse } from "../_shared/cors.ts";
 import { checkRateLimit, checkRateLimitDb } from "../_shared/rate-limit.ts";
 import { alert, logInfo, toErrorFields } from "../_shared/log.ts";
 import { verifyTurnstile } from "../_shared/turnstile.ts";
+import { serviceClient } from "../_shared/auth.ts";
+import { clientIp as getClientIp, HttpError, isValidEmail, readJson } from "../_shared/http.ts";
 import {
   sendBusinessQuoteAck,
   sendBusinessQuoteNotification,
 } from "../_shared/resend.ts";
 
 interface QuoteBody {
-  companyName: string;
-  contactName: string;
-  email: string;
-  phone?: string;
-  teamSize?: string;
-  interest?: string;
-  message?: string;
-  turnstileToken?: string;
+  companyName?: unknown;
+  contactName?: unknown;
+  email?: unknown;
+  phone?: unknown;
+  teamSize?: unknown;
+  interest?: unknown;
+  message?: unknown;
+  turnstileToken?: unknown;
 }
 
 const MAX_LEN = 2000;
-const clip = (v: string | undefined): string | undefined =>
-  v?.trim() ? v.trim().slice(0, MAX_LEN) : undefined;
+const clip = (v: unknown, max = MAX_LEN): string | undefined =>
+  typeof v === "string" && v.trim() ? v.trim().slice(0, max) : undefined;
 
 Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
@@ -31,10 +32,7 @@ Deno.serve(async (req: Request) => {
     return errorResponse("Method not allowed", 405, undefined, req);
   }
 
-  const clientIp =
-    req.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-    req.headers.get("cf-connecting-ip") ||
-    "unknown";
+  const clientIp = getClientIp(req);
   const rateLimit = checkRateLimit(`business-quote:${clientIp}`);
   if (!rateLimit.allowed) {
     return errorResponse("Too many requests. Please try again later.", 429, {
@@ -43,21 +41,24 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const body: QuoteBody = await req.json();
+    const body = await readJson<QuoteBody>(req);
 
     // Bot protection (no-op unless TURNSTILE_SECRET_KEY is configured).
-    const human = await verifyTurnstile(body.turnstileToken, clientIp);
+    const human = await verifyTurnstile(
+      typeof body.turnstileToken === "string" ? body.turnstileToken : undefined,
+      clientIp === "unknown" ? undefined : clientIp,
+    );
     if (!human) {
       return errorResponse("Verification failed. Please try again.", 400, undefined, req);
     }
 
-    const companyName = clip(body.companyName);
-    const contactName = clip(body.contactName);
-    const email = body.email?.trim().toLowerCase();
+    const companyName = clip(body.companyName, 200);
+    const contactName = clip(body.contactName, 200);
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
 
     if (!companyName) return errorResponse("Company name is required", 400, undefined, req);
     if (!contactName) return errorResponse("Contact name is required", 400, undefined, req);
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!isValidEmail(email)) {
       return errorResponse("A valid email is required", 400, undefined, req);
     }
 
@@ -65,21 +66,13 @@ Deno.serve(async (req: Request) => {
       companyName,
       contactName,
       email,
-      phone: clip(body.phone),
-      teamSize: clip(body.teamSize),
-      interest: clip(body.interest),
+      phone: clip(body.phone, 30),
+      teamSize: clip(body.teamSize, 50),
+      interest: clip(body.interest, 200),
       message: clip(body.message),
     };
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !serviceRoleKey) {
-      return errorResponse("Server configuration is incomplete", 500, undefined, req);
-    }
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false },
-    });
+    const supabase = serviceClient();
 
     const dbLimit = await checkRateLimitDb(supabase, `business-quote:${clientIp}`, {
       max: 5,
@@ -125,6 +118,7 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ ok: true }, 201, req);
   } catch (err) {
+    if (err instanceof HttpError) return errorResponse(err.message, err.status, err.details, req);
     await alert("unhandled B2B quote error", {
       event: "business_quote.exception",
       fn: "business-quote",

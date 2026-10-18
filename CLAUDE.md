@@ -14,12 +14,18 @@ npm run build      # type-check (tsc -b) then Vite production build → dist/
 npm run preview    # serve the production build locally
 npm run lint       # ESLint across all source files (excludes supabase/)
 npm run typecheck  # tsc -b --noEmit (type-check without emitting)
-npm test           # Vitest unit tests (149 tests, 11 files)
+npm test           # Vitest unit tests
+npm run test:db    # apply all migrations to a throwaway Postgres (Docker) + run supabase/tests/security.sql
 npm run deno:check # Deno type-check of supabase/functions/
 npm run deno:test  # Deno unit tests for PayFast signature builder
 ```
 
-**Tests:** 149 Vitest tests in `src/` (utilities, data, contexts, components). Deno tests for Edge Function shared utilities in `supabase/functions/_shared/payfast.test.ts`.
+**Tests:** Vitest tests colocated in `src/`. Deno tests for Edge Function shared utilities in `supabase/functions/_shared/*.test.ts`. SQL security regression tests (RLS, grants, pricing, loyalty) in `supabase/tests/security.sql`.
+
+**Security conventions** (see `SECURITY_AUDIT.md`):
+- New Postgres functions are not executable by `anon`/`authenticated` by default (migration 016); grant explicitly and add a test to `security.sql`.
+- Table grants are least-privilege (migration 017); a new table gets no client access until you grant it.
+- Edge Functions: parse bodies with `readJson`, identify users with `getVerifiedUser`/`requireAdmin` (never decode JWTs by hand), compare secrets with `timingSafeEqual`, escape email HTML with `escapeHtml`.
 
 ## Architecture
 
@@ -50,8 +56,8 @@ ThemeProvider → BrowserRouter → CartProvider → App
 - `formatZAR(amount)` — formats numbers as South African Rand using `Intl.NumberFormat`.
 - `cx(...classes)` — lightweight classname joiner.
 
-**Delivery logic** (in `src/pages/Checkout.tsx`): free delivery above R500; R75 fee below. `DELIVERY_THRESHOLD` and `DELIVERY_FEE` are constants at the top of that file.
+**Delivery logic** (`src/lib/delivery.ts`, mirrored in `supabase/functions/_shared/delivery.ts` and in `create_order` SQL): free delivery from R500; R75 fee below.
 
 **SEO:** The `<Seo>` component (`src/components/Seo.tsx`) imperatively updates `document.title` and the meta description tag — it renders nothing to the DOM.
 
-**Build output:** Vendor chunks are manually split — `react`/`react-dom`/`react-router-dom` into one chunk, `lucide-react` into another (`vite.config.ts`).
+**Build output:** Vendor chunks are manually split — `react`/`react-dom`/`react-router` into one chunk, `lucide-react` into another (`vite.config.ts`).

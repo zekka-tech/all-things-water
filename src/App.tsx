@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router";
 import { Layout } from "@/components/Layout";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { JsonLdOrganization } from "@/components/JsonLd";

@@ -10,7 +10,9 @@ function JsonLdScript({ data }: { data: object }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      // Escape "<" so a product field containing "</script>" cannot break
+      // out of the JSON-LD block.
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }}
     />
   );
 }

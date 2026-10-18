@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+# Least privilege for the workflow token; no job needs to write.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -19,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run typecheck
@@ -52,11 +56,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
-      # Only production dependencies gate the build; known dev-server-only
-      # advisories (esbuild via Vite) are tracked in SECURITY_AUDIT.md.
+      # Only production dependencies gate the build; build-tool-only
+      # advisories (braces via Tailwind 3) are tracked in SECURITY_AUDIT.md.
       - run: npm audit --omit=dev --audit-level=high
 
   # ── Secret scanning (blocking) ─────────────────────────────────────────
@@ -71,22 +75,15 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # ── Migration apply gate (proves migrations apply cleanly from scratch) ─
-  migrations:
-    name: supabase db reset
+  # ── Database: migrations from scratch + RLS/privilege tests (blocking) ─
+  database:
+    name: migrations · security.sql
     runs-on: ubuntu-latest
-    # Spins up the full local Supabase stack (Docker). Informational until
-    # verified green in your environment; flip to false to make it a hard gate.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      - run: supabase start
-      - run: supabase db reset --no-seed
-      - if: always()
-        run: supabase stop --no-backup
+      # Applies every migration to a fresh supabase/postgres container, then
+      # runs supabase/tests/security.sql (RLS, grants, pricing, loyalty).
+      - run: npm run test:db
 
   # ── End-to-end purchase funnel + a11y (informational until tuned) ──────
   e2e:
@@ -99,7 +96,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
@@ -122,7 +119,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium

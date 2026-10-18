@@ -86,6 +86,7 @@ async function notifySlack(message: string, ctx: LogContext): Promise<void> {
       .map(([k, v]) => `*${k}:* ${typeof v === "string" ? v : JSON.stringify(v)}`)
       .join("\n");
     await fetch(webhook, {
+      signal: AbortSignal.timeout(5_000),
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: `:rotating_light: *ATW alert* — ${message}\n${fields}` }),
@@ -101,6 +102,7 @@ async function notifyEmail(message: string, ctx: LogContext): Promise<void> {
   if (!key || !to) return;
   try {
     await fetch("https://api.resend.com/emails", {
+      signal: AbortSignal.timeout(5_000),
       method: "POST",
       headers: {
         Authorization: `Bearer ${key}`,
