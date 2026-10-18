@@ -10,7 +10,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-IMAGE="${SUPABASE_PG_IMAGE:-public.ecr.aws/supabase/postgres:15.8.1.085}"
+# Docker Hub mirror of public.ecr.aws/supabase/postgres (same digest); ECR
+# Public rate-limits anonymous pulls from CI runners.
+IMAGE="${SUPABASE_PG_IMAGE:-supabase/postgres:15.8.1.085}"
 CONTAINER=""
 
 cleanup() {
@@ -24,6 +26,12 @@ if [[ -z "${DB_URL:-}" ]]; then
   PORT="${PG_PORT:-55499}"
   CONTAINER="atw-test-db-$$"
   echo "Starting $IMAGE on 127.0.0.1:$PORT ..."
+  for attempt in 1 2 3; do
+    docker image inspect "$IMAGE" >/dev/null 2>&1 && break
+    docker pull -q "$IMAGE" && break
+    [[ $attempt -eq 3 ]] && { echo "Could not pull $IMAGE" >&2; exit 1; }
+    sleep $((attempt * 10))
+  done
   docker run -d --name "$CONTAINER" -e POSTGRES_PASSWORD=postgres \
     -p "127.0.0.1:$PORT:5432" "$IMAGE" >/dev/null
   DB_URL="postgresql://postgres:postgres@127.0.0.1:$PORT/postgres"
