@@ -72,11 +72,14 @@ ALERT_SLACK_WEBHOOK_URL=<incoming-webhook-for-ops-alerts>
 ALERT_EMAIL=ops@allthingswater.co.za
 SALES_EMAIL=sales@allthingswater.co.za
 SUBSCRIPTION_CRON_SECRET=<long-random-string>
+MONITOR_CRON_SECRET=<long-random-string>
+BACK_IN_STOCK_CRON_SECRET=<long-random-string>
 ```
 
 - `SALES_EMAIL` — recipient for B2B office-water quote requests (falls back to `MERCHANT_EMAIL`).
 - `SUBSCRIPTION_CRON_SECRET` — shared secret required to invoke the `subscriptions-run` scheduler. Invoke it daily (Supabase scheduled function/pg_cron or external cron) with `Authorization: Bearer <secret>`. See `supabase/README.md`.
 - `MONITOR_CRON_SECRET` — shared secret for the `monitor` SLO check (invoke every 5–15 min). Point an external uptime monitor at the public `health` endpoint. See `OBSERVABILITY.md`.
+- `BACK_IN_STOCK_CRON_SECRET` — shared secret that lets a scheduler invoke `back-in-stock-notify` with `Authorization: Bearer <secret>` (admins can also trigger it while signed in).
 
 - `ALLOWED_ORIGINS` — comma-separated browser origins permitted to call the Edge Functions. If unset, CORS falls back to `*`; set it in production to lock the browser surface to your real domains.
 - `PAYFAST_ITN_IP_CHECK` — when not `false`, the ITN endpoint rejects POSTs whose source IP is outside PayFast's published ranges (defense in depth on top of signature + server validation). Set to `false` only if a proxy rewrites the source IP.
