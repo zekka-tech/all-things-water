@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ProductCard } from "@/components/ProductCard";

@@ -1,12 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { ArrowRight, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { QuantityStepper } from "@/components/QuantityStepper";
 import { useCart } from "@/context/CartContext";
 import { formatZAR } from "@/lib/format";
-
-const DELIVERY_THRESHOLD = 500;
-const DELIVERY_FEE = 75;
+import { DELIVERY_FEE, DELIVERY_THRESHOLD } from "@/lib/delivery";
 
 export function Cart() {
   const { items, subtotal, setQuantity, removeItem, clear } = useCart();

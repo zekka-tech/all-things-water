@@ -1,4 +1,5 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { hasSharedSecret } from "../_shared/http.ts";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { buildSignedQuery, getProcessUrl } from "../_shared/payfast.ts";
 import {
@@ -41,11 +42,9 @@ Deno.serve(async (req: Request) => {
     return errorResponse("Method not allowed", 405);
   }
 
-  // Shared-secret auth: this endpoint is invoked by a trusted scheduler only.
-  const cronSecret = Deno.env.get("SUBSCRIPTION_CRON_SECRET");
-  const authHeader = req.headers.get("Authorization") || "";
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return errorResponse("Unauthorized", 401);
+  // Shared-secret auth (constant-time; secret must be >= 16 chars).
+  if (!hasSharedSecret(req, Deno.env.get("SUBSCRIPTION_CRON_SECRET"))) {
+    return errorResponse("Unauthorized", 401, undefined, req);
   }
 
   try {

@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "All Things Water — standalone storefront for bottled water, coolers & dispensers. Forked from water-filter-company. DO NOT MERGE INTO master.",
+  "description": "All Things Water \u2014 standalone storefront for bottled water, coolers & dispensers. Forked from water-filter-company. DO NOT MERGE INTO master.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -12,44 +12,55 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:db": "bash scripts/test-db.sh",
     "typecheck": "tsc -b --noEmit",
     "e2e": "playwright test",
     "e2e:install": "playwright install --with-deps chromium",
     "e2e:ui": "playwright test --ui",
     "generate-sitemap": "npx tsx scripts/generate-sitemap.ts > public/sitemap.xml",
     "deno:check": "cd supabase/functions && deno check **/*.ts",
-    "deno:test": "cd supabase/functions && deno test --allow-env --allow-net _shared/payfast.test.ts _shared/payfast-ip.test.ts _shared/subscription.test.ts _shared/turnstile.test.ts _shared/payfast-api.test.ts _shared/slo.test.ts"
+    "deno:test": "cd supabase/functions && deno test --allow-env --allow-net _shared/payfast.test.ts _shared/payfast-ip.test.ts _shared/subscription.test.ts _shared/turnstile.test.ts _shared/payfast-api.test.ts _shared/slo.test.ts _shared/http.test.ts _shared/order-validation.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.100.1",
     "lucide-react": "^0.453.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
+    "react-router": "^7.18.4"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^9.12.0",
     "@playwright/test": "^1.61.1",
+    "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/react": "^18.3.11",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^6.0.3",
-    "@vitest/coverage-v8": "^4.1.8",
-    "autoprefixer": "^10.4.20",
-    "eslint": "^9.12.0",
+    "@vitest/coverage-v8": "^4.1.12",
+    "autoprefixer": "^10.6.1",
+    "eslint": "^9.39.5",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.12",
     "globals": "^15.11.0",
     "jsdom": "^29.1.1",
-    "postcss": "^8.4.47",
+    "postcss": "^8.5.30",
     "tailwindcss": "^3.4.13",
     "typescript": "^5.6.2",
-    "typescript-eslint": "^8.8.1",
+    "typescript-eslint": "^8.71.2",
     "vite": "^8.1.0",
-    "vitest": "^4.1.8",
-    "wrangler": "^4.103.0"
+    "vitest": "^4.1.12",
+    "wrangler": "^4.151.1"
+  },
+  "overrides": {
+    "minimatch@3": {
+      "brace-expansion": "^1.1.21"
+    },
+    "postcss-selector-parser": "^7.1.6"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { Cookie } from "lucide-react";
 import { getConsentStatus, setConsentStatus } from "@/lib/consent";
 

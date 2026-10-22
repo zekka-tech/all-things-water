@@ -163,3 +163,13 @@ describe("validateRequired", () => {
     expect(validateRequired("\t\n")).toBe(false);
   });
 });
+
+describe("passwordProblem", () => {
+  it("requires length, letters and digits", async () => {
+    const { passwordProblem } = await import("./validation");
+    expect(passwordProblem("short1")).toMatch(/at least 10/);
+    expect(passwordProblem("onlyletterslong")).toMatch(/letters and numbers/);
+    expect(passwordProblem("1234567890")).toMatch(/letters and numbers/);
+    expect(passwordProblem("water4life2026")).toBeNull();
+  });
+});

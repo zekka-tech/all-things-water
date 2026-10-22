@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import {
   CheckCircle2,
   CreditCard,
@@ -18,7 +18,7 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/useAuth";
 import { formatZAR, cx } from "@/lib/format";
 import { env } from "@/lib/env";
-import { apiPost, userFriendlyError } from "@/lib/api";
+import { apiPost, isPayfastUrl, userFriendlyError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { captureException } from "@/lib/sentry";
 import { trackMarketing } from "@/lib/marketing";
@@ -265,6 +265,10 @@ export function Checkout() {
         authHeaders,
       );
 
+      // Only ever navigate to PayFast's hosted checkout.
+      if (!isPayfastUrl(paymentResult.redirectUrl)) {
+        throw new Error("Unexpected payment redirect");
+      }
       window.location.href = paymentResult.redirectUrl;
     } catch (err) {
       captureException(err instanceof Error ? err : new Error(String(err)), {

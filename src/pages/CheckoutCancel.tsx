@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router";
 import { XCircle, ArrowLeft, ShoppingBag, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { env } from "@/lib/env";
 import { apiPost } from "@/lib/api";
+import { getSensitiveParam } from "@/lib/sensitiveParams";
 
 type ReleaseState = "idle" | "releasing" | "released" | "error";
 
@@ -12,7 +13,8 @@ export function CheckoutCancel() {
   const [releaseState, setReleaseState] = useState<ReleaseState>("idle");
 
   const orderId = searchParams.get("orderId");
-  const token = searchParams.get("token");
+  // Stripped from the URL at startup (see sensitiveParams.ts).
+  const token = getSensitiveParam("token") ?? searchParams.get("token");
   const orderRef = searchParams.get("orderRef");
 
   useEffect(() => {
