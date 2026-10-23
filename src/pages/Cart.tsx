@@ -65,7 +65,7 @@ export function Cart() {
                   </span>
                 )}
               </div>
-              <span className="shrink-0 text-xs text-ink-400">{formatZAR(DELIVERY_THRESHOLD)}</span>
+              <span className="shrink-0 text-xs text-ink-500">{formatZAR(DELIVERY_THRESHOLD)}</span>
             </div>
             <div className="progress-track mt-2">
               <div
@@ -108,7 +108,7 @@ export function Cart() {
                       type="button"
                       onClick={() => removeItem(product.id)}
                       aria-label={`Remove ${product.name}`}
-                      className="btn-ghost h-8 w-8 shrink-0 rounded-lg p-0 text-ink-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                      className="btn-ghost h-8 w-8 shrink-0 rounded-lg p-0 text-ink-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -131,7 +131,7 @@ export function Cart() {
             <button
               type="button"
               onClick={clear}
-              className="text-sm font-medium text-ink-400 transition-colors hover:text-red-600 dark:hover:text-red-400"
+              className="text-sm font-medium text-ink-500 transition-colors hover:text-red-600 dark:hover:text-red-400"
             >
               Clear cart
             </button>

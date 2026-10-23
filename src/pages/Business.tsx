@@ -267,7 +267,7 @@ export function Business() {
 
                 <div>
                   <label htmlFor="b-phone" className="mb-1.5 block text-sm font-medium text-ink-700 dark:text-ink-200">
-                    Phone <span className="font-normal text-ink-400 dark:text-ink-500">(optional)</span>
+                    Phone <span className="font-normal text-ink-500 dark:text-ink-400">(optional)</span>
                   </label>
                   <input
                     id="b-phone"
@@ -290,7 +290,7 @@ export function Business() {
               <div className="grid gap-5 sm:grid-cols-2">
                 <div>
                   <label htmlFor="b-size" className="mb-1.5 block text-sm font-medium text-ink-700 dark:text-ink-200">
-                    Team size <span className="font-normal text-ink-400 dark:text-ink-500">(optional)</span>
+                    Team size <span className="font-normal text-ink-500 dark:text-ink-400">(optional)</span>
                   </label>
                   <input
                     id="b-size"
@@ -322,7 +322,7 @@ export function Business() {
 
               <div>
                 <label htmlFor="b-msg" className="mb-1.5 block text-sm font-medium text-ink-700 dark:text-ink-200">
-                  Anything else? <span className="font-normal text-ink-400 dark:text-ink-500">(optional)</span>
+                  Anything else? <span className="font-normal text-ink-500 dark:text-ink-400">(optional)</span>
                 </label>
                 <textarea
                   id="b-msg"

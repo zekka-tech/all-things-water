@@ -135,12 +135,12 @@ export default function AdminWarehouses() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-ink-200 text-left text-xs uppercase tracking-wide text-ink-400 dark:border-ink-800">
+              <tr className="border-b border-ink-200 text-left text-xs uppercase tracking-wide text-ink-500 dark:border-ink-800">
                 <th className="py-2 pr-4">Product</th>
                 {warehouses.map((w) => (
                   <th key={w.id} className="px-2 py-2 text-center">
                     {w.code}
-                    {!w.active && <span className="ml-1 text-ink-400">(off)</span>}
+                    {!w.active && <span className="ml-1 text-ink-500">(off)</span>}
                   </th>
                 ))}
               </tr>

@@ -172,7 +172,7 @@ export function Returns() {
             Returns &amp;{" "}
             <span className="gradient-text">Refunds</span>
           </h1>
-          <p className="mt-3 text-sm text-ink-400 dark:text-ink-500">
+          <p className="mt-3 text-sm text-ink-500 dark:text-ink-400">
             Last updated: June 2026
           </p>
           <p className="mt-4 text-lg leading-relaxed text-ink-600 dark:text-ink-300">

@@ -121,7 +121,7 @@ export default function AdminProducts({
                               {p.name}
                             </span>
                           )}
-                          <span className="text-xs text-ink-400 dark:text-ink-500">{p.unit}</span>
+                          <span className="text-xs text-ink-500 dark:text-ink-400">{p.unit}</span>
                         </div>
                       </div>
                     </td>
@@ -192,7 +192,7 @@ export default function AdminProducts({
                           {isVisible ? (
                             <Eye className="h-4 w-4" />
                           ) : (
-                            <EyeOff className="h-4 w-4 text-ink-400" />
+                            <EyeOff className="h-4 w-4 text-ink-500" />
                           )}
                         </button>
 
