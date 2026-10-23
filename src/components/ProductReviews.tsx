@@ -64,7 +64,7 @@ export function ProductReviews({ productId }: { productId: string }) {
                 {review.author}
               </span>
               <StarRating rating={review.rating} />
-              <span className="text-xs text-ink-400 dark:text-ink-500">
+              <span className="text-xs text-ink-500 dark:text-ink-400">
                 {review.date}
               </span>
             </div>

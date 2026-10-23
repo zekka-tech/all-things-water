@@ -109,7 +109,7 @@ export function Loyalty() {
           </div>
 
           <div className="rounded-xl border border-ink-200 p-5 dark:border-ink-800">
-            <p className="text-xs font-semibold uppercase tracking-widest text-ink-400 dark:text-ink-500">
+            <p className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
               Your referral link
             </p>
             <p className="mt-2 break-all font-mono text-sm text-ink-700 dark:text-ink-200">

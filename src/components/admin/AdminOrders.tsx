@@ -149,7 +149,7 @@ export default function AdminOrders() {
   if (orders.length === 0) {
     return (
       <div className="card flex flex-col items-center gap-3 px-6 py-16 text-center">
-        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-ink-100 text-ink-400 dark:bg-ink-800 dark:text-ink-500">
+        <div className="grid h-14 w-14 place-items-center rounded-2xl bg-ink-100 text-ink-500 dark:bg-ink-800 dark:text-ink-400">
           <ClipboardList className="h-7 w-7" />
         </div>
         <h3 className="font-display font-semibold text-ink-700 dark:text-ink-200">No orders yet</h3>
@@ -210,7 +210,7 @@ export default function AdminOrders() {
                   {formatZAR(order.total)}
                 </span>
                 <span className={cx("badge", badge.color)}>{badge.label}</span>
-                <ChevronRight className={cx("h-4 w-4 shrink-0 text-ink-400 transition-transform", isExpanded && "rotate-90")} />
+                <ChevronRight className={cx("h-4 w-4 shrink-0 text-ink-500 transition-transform", isExpanded && "rotate-90")} />
               </button>
 
               {isExpanded && (

@@ -29,7 +29,7 @@ export function CookieConsent() {
       <div className="border-t border-ink-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-sm dark:border-ink-700 dark:bg-ink-900/95 sm:px-6">
         <div className="container-page flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-2.5 text-sm text-ink-600 dark:text-ink-300">
-            <Cookie className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
+            <Cookie className="mt-0.5 h-4 w-4 shrink-0 text-ink-500" />
             <span>
               We use cookies for analytics and service monitoring only if you accept them. See our{" "}
               <Link to="/privacy" className="font-medium text-brand-600 underline hover:text-brand-700 dark:text-brand-400">
