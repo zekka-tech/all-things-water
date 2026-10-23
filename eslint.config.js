@@ -19,6 +19,10 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      // react-hooks v7 adds React Compiler rules. The remaining hits are
+      // effects that load data or sync with external systems, which is a
+      // valid use; keep them visible as warnings rather than blocking CI.
+      "react-hooks/set-state-in-effect": "warn",
       "react-refresh/only-export-components": [
         "warn",
         { allowConstantExport: true },

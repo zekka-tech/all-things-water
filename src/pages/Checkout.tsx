@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router";
 import {
   CheckCircle2,
@@ -98,7 +98,6 @@ export function Checkout() {
 
   // ── New state for enhancements ──
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("delivery");
-  const [postalStatus, setPostalStatus] = useState<ZoneStatus>("invalid");
   const [postalDebounced, setPostalDebounced] = useState("");
   const [deliverySlot, setDeliverySlot] = useState("");
   const [whatsappOptIn, setWhatsappOptIn] = useState(() => {
@@ -122,15 +121,11 @@ export function Checkout() {
     };
   }, [form.postal]);
 
-  // Re-run zone check when debounced value settles
-  useEffect(() => {
-    if (postalDebounced.length === 0) {
-      setPostalStatus("invalid");
-      return;
-    }
-    const { zone } = isDeliverablePostalCode(postalDebounced);
-    setPostalStatus(zone);
-  }, [postalDebounced]);
+  // Zone check derived from the debounced value
+  const postalStatus: ZoneStatus = useMemo(
+    () => (postalDebounced.length === 0 ? "invalid" : isDeliverablePostalCode(postalDebounced).zone),
+    [postalDebounced],
+  );
 
   // Persist WhatsApp opt-in preference
   useEffect(() => {

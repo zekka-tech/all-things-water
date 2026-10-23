@@ -1,16 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router";
 import { Cookie } from "lucide-react";
 import { getConsentStatus, setConsentStatus } from "@/lib/consent";
 
 export function CookieConsent() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (!getConsentStatus()) {
-      setVisible(true);
-    }
-  }, []);
+  const [visible, setVisible] = useState(() => !getConsentStatus());
 
   const accept = () => {
     setConsentStatus("accepted");
