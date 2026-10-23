@@ -89,7 +89,7 @@ export default function AdminStock({
                     </td>
 
                     {/* Original stock */}
-                    <td className="hidden px-4 py-3 text-right tabular-nums text-ink-400 dark:text-ink-500 sm:table-cell">
+                    <td className="hidden px-4 py-3 text-right tabular-nums text-ink-500 dark:text-ink-400 sm:table-cell">
                       {p.stock}
                     </td>
 
