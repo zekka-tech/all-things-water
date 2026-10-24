@@ -103,6 +103,7 @@ advisory — and documents the residual, lower-risk items with recommendations.
 | R37 | Low | CI ran Node 20 against `engines: >=22`. The workflow token had default scope. The migration job was non-blocking and ran no security tests. | Node 22, `permissions: contents: read`, blocking `database` job running `npm run test:db`. |
 | R38 | Info | Order IDs reached UUID columns unvalidated (database errors instead of clean 400/404). Sentry `setUser` logged user PII to the console. | `isUuid()` in `order-cancel`, `order-status`, `payments-payfast-initiate`, `payments-payfast-itn`. `setUser` is a no-op. |
 | R39 | Low (dev-only) | **`braces` ≤3.0.3 stack-exhaustion DoS** (GHSA-vfj7-8cjw-p6xm), pulled in by Tailwind 3's file watcher and glob libraries. No patched release existed. | Removed by upgrading to Tailwind 4, which no longer depends on `braces`. |
+| R42 | High (dev-only) | **`undici` ≤7.30.0** (DoS in EventSource parser, SRI bypass, DoS via content-encodings), pulled in by `jsdom` (unit tests) and `wrangler`/`miniflare`, which pins 7.29.1 exactly. **`vite` 8.0.0–8.1.5** (cross-origin script execution and `server.fs.allow` bypass in the dev server, `launch-editor` command injection). | `vite` upgraded to 8.3.4. `undici@7` forced to 7.30.1 via `overrides` (patch release, same major). `npm audit` (all deps): 0 vulnerabilities. |
 
 ### Open / accepted (with mitigations)
 
