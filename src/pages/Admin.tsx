@@ -162,7 +162,8 @@ export function Admin() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Partial<Product>>({});
 
-  // Stock tab: local adjustments (not yet saved)
+  // Stock tab: unsaved edits only, keyed by product id. Products without an
+  // entry show their current stock. Cleared on save, reset and tab switch.
   const [stockDraft, setStockDraft] = useState<Record<string, number>>({});
 
   // Merge static products with overrides
@@ -183,14 +184,13 @@ export function Admin() {
     return { totalProducts, totalStock, totalValue, outOfStock };
   }, [mergedProducts]);
 
-  // Init stock draft when switching to stock tab
-  useEffect(() => {
-    const initial: Record<string, number> = {};
-    mergedProducts.forEach((p) => {
-      initial[p.id] = p.stock;
-    });
-    setStockDraft(initial);
-  }, [tab, mergedProducts]);
+  const currentStock = (id: string) =>
+    stockDraft[id] ?? mergedProducts.find((p) => p.id === id)?.stock ?? 0;
+
+  const switchTab = (next: Tab) => {
+    setTab(next);
+    setStockDraft({}); // discard unsaved stock edits
+  };
 
   // ── Handlers ──
   const handleLogout = () => {
@@ -267,10 +267,8 @@ export function Admin() {
   };
 
   const adjustStock = (id: string, delta: number) => {
-    setStockDraft((prev) => {
-      const current = prev[id] ?? 0;
-      return { ...prev, [id]: Math.max(0, current + delta) };
-    });
+    const current = currentStock(id);
+    setStockDraft((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? current) + delta) }));
   };
 
   const setStockDirect = (id: string, value: number) => {
@@ -281,8 +279,8 @@ export function Admin() {
     // Only save values that differ from static data
     const clean: Record<string, number> = {};
     for (const p of products) {
-      const draftVal = stockDraft[p.id];
-      if (draftVal !== undefined && draftVal !== p.stock) {
+      const draftVal = currentStock(p.id);
+      if (draftVal !== p.stock) {
         clean[p.id] = draftVal;
       }
     }
@@ -292,8 +290,8 @@ export function Admin() {
     const updates: Record<string, number> = {};
     const events: Parameters<typeof logAuditEvent>[0][] = [];
     for (const p of products) {
-      const draftVal = stockDraft[p.id];
-      if (draftVal !== undefined && draftVal !== p.stock) {
+      const draftVal = currentStock(p.id);
+      if (draftVal !== p.stock) {
         updates[p.id] = draftVal;
         events.push({
           action: "stock_adjusted",
@@ -307,14 +305,11 @@ export function Admin() {
     if (Object.keys(updates).length > 0) {
       syncToSupabase(updates, events).catch(() => {});
     }
+    setStockDraft({});
   };
 
   const resetStockChanges = () => {
-    const initial: Record<string, number> = {};
-    mergedProducts.forEach((p) => {
-      initial[p.id] = p.stock;
-    });
-    setStockDraft(initial);
+    setStockDraft({});
   };
 
   const hasStockChanges = useMemo(() => {
@@ -375,7 +370,7 @@ export function Admin() {
             <button
               key={t.key}
               type="button"
-              onClick={() => setTab(t.key)}
+              onClick={() => switchTab(t.key)}
               className={cx(
                 "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                 tab === t.key

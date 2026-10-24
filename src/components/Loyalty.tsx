@@ -12,46 +12,63 @@ interface LoyaltyState {
   referred: boolean;
 }
 
+type Client = NonNullable<typeof supabase>;
+
+async function fetchLoyalty(client: Client): Promise<LoyaltyState> {
+  const { data: result, error } = await client.rpc("get_or_create_loyalty", {
+    p_ref_code: getStoredReferral(),
+  });
+  if (error) throw error;
+  const r = result as LoyaltyState & { error?: string };
+  if (r?.error) throw new Error(r.error);
+  return {
+    points: r.points ?? 0,
+    lifetimePoints: r.lifetimePoints ?? 0,
+    referralCode: r.referralCode,
+    referred: Boolean(r.referred),
+  };
+}
+
 export function Loyalty() {
   const { user } = useAuth();
   const [data, setData] = useState<LoyaltyState | null>(null);
-  const [loading, setLoading] = useState(false);
+  // Starts true when there is something to load, so the first render shows
+  // the spinner instead of an empty state.
+  const [loading, setLoading] = useState(Boolean(user && supabase));
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const load = useCallback(async () => {
+  // State is only set in promise callbacks (after the request settles), so
+  // this is safe to call from an effect.
+  const load = useCallback(() => {
     if (!user || !supabase) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const refCode = getStoredReferral();
-      const { data: result, error: err } = await supabase.rpc("get_or_create_loyalty", {
-        p_ref_code: refCode,
-      });
-      if (err) throw err;
-      const r = result as LoyaltyState & { error?: string };
-      if (r?.error) throw new Error(r.error);
-      setData({
-        points: r.points ?? 0,
-        lifetimePoints: r.lifetimePoints ?? 0,
-        referralCode: r.referralCode,
-        referred: Boolean(r.referred),
-      });
-      // Referral is linked server-side once; don't reapply on later visits.
-      clearStoredReferral();
-    } catch (err) {
-      setError("Could not load your rewards. Please try again.");
-      captureException(err instanceof Error ? err : new Error(String(err)), {
-        action: "loadLoyalty",
-      });
-    } finally {
-      setLoading(false);
-    }
+    void fetchLoyalty(supabase)
+      .then(
+        (rewards) => {
+          setData(rewards);
+          setError(null);
+          // Referral is linked server-side once; don't reapply on later visits.
+          clearStoredReferral();
+        },
+        (err: unknown) => {
+          setError("Could not load your rewards. Please try again.");
+          captureException(err instanceof Error ? err : new Error(String(err)), {
+            action: "loadLoyalty",
+          });
+        },
+      )
+      .finally(() => setLoading(false));
   }, [user]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const reload = () => {
+    setLoading(true);
+    setError(null);
+    load();
+  };
 
   const referralLink = data
     ? `${window.location.origin}/?ref=${data.referralCode}`
@@ -88,7 +105,7 @@ export function Loyalty() {
           <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
           <button
             type="button"
-            onClick={load}
+            onClick={reload}
             className="mt-2 text-sm font-medium text-red-600 hover:underline dark:text-red-400"
           >
             Try again

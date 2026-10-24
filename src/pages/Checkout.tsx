@@ -136,13 +136,14 @@ export function Checkout() {
     }
   }, [whatsappOptIn]);
 
-  // Pre-fill email when a logged-in customer reaches checkout
-  useEffect(() => {
-    if (user && !form.email) {
-      setForm((f) => ({ ...f, email: user.email }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  // Pre-fill email when a logged-in customer reaches checkout (once per
+  // signed-in user; never overwrites what they've typed). Done during render
+  // rather than in an effect.
+  const [emailPrefilledFor, setEmailPrefilledFor] = useState<string | null>(null);
+  if (user && user.id !== emailPrefilledFor) {
+    setEmailPrefilledFor(user.id);
+    if (!form.email) setForm((f) => ({ ...f, email: user.email }));
+  }
 
   // ── Derived values ──
   const delivery = calculateDelivery(subtotal, deliveryMethod);
