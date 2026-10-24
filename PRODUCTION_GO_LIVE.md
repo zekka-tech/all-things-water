@@ -14,9 +14,9 @@ VITE_SUPABASE_URL=https://<your-project>.supabase.co
 VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
 VITE_SITE_URL=https://all-things-water.pages.dev
 VITE_COMPANY_EMAIL=info@allthingswater.co.za
-VITE_COMPANY_PHONE=+27...
+VITE_COMPANY_PHONE=+27769641460
 VITE_COMPANY_ADDRESS=Your real business address
-VITE_WHATSAPP_NUMBER=+27...
+VITE_WHATSAPP_NUMBER=+27769641460
 ```
 
 Optional frontend integrations:

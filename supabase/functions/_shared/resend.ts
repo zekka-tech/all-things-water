@@ -8,6 +8,7 @@
  */
 import { escapeHtml, safeHref } from "./http.ts";
 import { logError, logWarn } from "./log.ts";
+import { CONTACT_PHONE } from "./contact.ts";
 
 export interface OrderItem {
   name: string;
@@ -79,7 +80,7 @@ export function emailShell(title: string, bodyHtml: string): string {
 <h1 style="color:#06a3f0;margin:0 0 4px">All Things Water</h1>
 <p style="margin:0 0 24px;color:#66778f">${escapeHtml(title)}</p>
 ${bodyHtml}
-<p style="color:#66778f;font-size:14px;margin-top:24px">Questions? Reply to this email or WhatsApp us.</p>
+<p style="color:#66778f;font-size:14px;margin-top:24px">Questions? Reply to this email, or call or WhatsApp us on ${escapeHtml(CONTACT_PHONE)}.</p>
 </body></html>`;
 }
 

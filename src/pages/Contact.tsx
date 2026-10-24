@@ -7,19 +7,14 @@ import { turnstileEnabled } from "@/lib/turnstile";
 import { cx } from "@/lib/format";
 import { env } from "@/lib/env";
 import { validateEmail, validatePhone } from "@/lib/validation";
+import { CONTACT_PHONE, CONTACT_PHONE_HREF } from "@/lib/contact";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 const contactInfo = [
-  { icon: Phone, label: "Phone", value: "+27 76 964 1460" },
+  { icon: Phone, label: "Phone", value: CONTACT_PHONE, href: CONTACT_PHONE_HREF },
   { icon: Mail, label: "Email", value: "hello@allthingswater.co.za" },
   { icon: MapPin, label: "Location", value: "South Africa" },
 ];
-
-/* ── Helpers ── */
-
-function whatsappUrl(number: string, message: string): string {
-  const body = encodeURIComponent(message);
-  return `https://wa.me/${number}?text=${body}`;
-}
 
 /* ── Component ── */
 
@@ -95,7 +90,7 @@ export function Contact() {
 
   const whatsappMessage = "Hi All Things Water! I'd like to get in touch.";
   const waUrl = env.whatsappNumber
-    ? whatsappUrl(env.whatsappNumber, whatsappMessage)
+    ? buildWhatsAppUrl(whatsappMessage)
     : "";
 
   return (
@@ -117,7 +112,7 @@ export function Contact() {
           </p>
 
           <ul className="mt-8 space-y-4">
-            {contactInfo.map(({ icon: Icon, label, value }) => (
+            {contactInfo.map(({ icon: Icon, label, value, href }) => (
               <li key={label} className="flex items-center gap-4">
                 <div className="icon-wrap">
                   <Icon className="h-5 w-5" />
@@ -127,7 +122,13 @@ export function Contact() {
                     {label}
                   </p>
                   <p className="mt-0.5 text-sm font-medium text-ink-700 dark:text-ink-200">
-                    {value}
+                    {href ? (
+                      <a href={href} className="transition-colors hover:text-brand-600 dark:hover:text-brand-400">
+                        {value}
+                      </a>
+                    ) : (
+                      value
+                    )}
                   </p>
                 </div>
               </li>

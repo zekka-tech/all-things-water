@@ -1,5 +1,6 @@
 import { Shield, FileText, Eye, Database, Lock, Cookie, Server, UserCheck, Baby, RefreshCw, Mail } from "lucide-react";
 import { Seo } from "@/components/Seo";
+import { CONTACT_PHONE } from "@/lib/contact";
 
 const sections = [
   {
@@ -194,7 +195,7 @@ const sections = [
         </p>
         <ul className="mt-2 space-y-1 text-sm text-ink-600 dark:text-ink-400">
           <li>Email: hello@allthingswater.co.za</li>
-          <li>Phone: +27 76 964 1460</li>
+          <li>Phone: {CONTACT_PHONE}</li>
           <li>Address: South Africa</li>
         </ul>
         <p>
