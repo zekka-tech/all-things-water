@@ -394,7 +394,7 @@ export function Subscriptions() {
                 type="checkbox"
                 checked={autoPay}
                 onChange={(e) => setAutoPay(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500"
+                className="mt-0.5 h-4 w-4 rounded-sm border-ink-300 text-brand-600 focus:ring-brand-500"
               />
               <span className="text-sm text-ink-600 dark:text-ink-300">
                 <span className="font-medium text-ink-800 dark:text-ink-100">Auto-pay</span> — pay

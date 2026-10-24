@@ -22,7 +22,7 @@ export function OptimizedImage({
   return (
     <div className="relative overflow-hidden bg-ink-100 dark:bg-ink-800">
       {!loaded && (
-        <div className="absolute inset-0 animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        <div className="absolute inset-0 animate-shimmer bg-linear-to-r from-transparent via-white/20 to-transparent" />
       )}
       {webpSrc ? (
         <picture>

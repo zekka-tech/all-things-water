@@ -102,17 +102,17 @@ advisory — and documents the residual, lower-risk items with recommendations.
 | R36 | Low | Password minimum was 6 characters (Supabase default), and the same login protects admins. | 10 characters with letters and digits (`config.toml` + sign-up form). Hosted settings listed in `PRODUCTION_GO_LIVE.md`. |
 | R37 | Low | CI ran Node 20 against `engines: >=22`. The workflow token had default scope. The migration job was non-blocking and ran no security tests. | Node 22, `permissions: contents: read`, blocking `database` job running `npm run test:db`. |
 | R38 | Info | Order IDs reached UUID columns unvalidated (database errors instead of clean 400/404). Sentry `setUser` logged user PII to the console. | `isUuid()` in `order-cancel`, `order-status`, `payments-payfast-initiate`, `payments-payfast-itn`. `setUser` is a no-op. |
+| R39 | Low (dev-only) | **`braces` ≤3.0.3 stack-exhaustion DoS** (GHSA-vfj7-8cjw-p6xm), pulled in by Tailwind 3's file watcher and glob libraries. No patched release existed. | Removed by upgrading to Tailwind 4, which no longer depends on `braces`. |
 
 ### Open / accepted (with mitigations)
 
 | # | Severity | Finding | Recommendation / mitigation |
 | --- | --- | --- | --- |
 | R13 | Info | **`style-src 'unsafe-inline'`** (was A1). | Hardened via `style-src-elem 'self'` (blocks injected inline `<style>` elements — the built output has none, CSS is external) + `style-src-attr 'unsafe-inline'` (kept for the handful of legitimate runtime `style={{}}` attributes). `style-src 'self' 'unsafe-inline'` remains only as a fallback for browsers without `-elem`/`-attr` support, so there is no regression. No script-execution vector either way. |
-| R39 | Low (dev-only) | **`braces` ≤3.0.3 stack-exhaustion DoS** (GHSA-vfj7-8cjw-p6xm), pulled in by Tailwind 3's file watcher and glob libraries. **No patched release exists.** | Accepted. Build-time only, never shipped to browsers. It processes only glob patterns from our own `tailwind.config.js`. Clears when moving to Tailwind 4 (a design-system migration). CI audits production deps only. |
 | R40 | Low | Subscription postal codes are not checked for deliverability server-side (checkout orders are). | Admin reviews subscription orders before dispatch. Fix: port the `_shared/delivery.ts` zones into `enforce_subscription_integrity()`. |
 | R41 | Info | The cancel URL still carries `checkout_token` in browser history (it is removed from the address bar on load). | Low value: the token can only cancel or restart payment for an unpaid order, and it expires with the reservation (30 min). |
 
-**Production dependencies: 0 vulnerabilities.** R39 is the only remaining advisory.
+**Production dependencies: 0 vulnerabilities.**
 
 ---
 

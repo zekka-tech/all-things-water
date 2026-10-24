@@ -658,7 +658,7 @@ export function Checkout() {
                 type="checkbox"
                 checked={whatsappOptIn}
                 onChange={(e) => setWhatsappOptIn(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500 dark:border-ink-600 dark:bg-ink-800"
+                className="mt-0.5 h-4 w-4 rounded-sm border-ink-300 text-brand-600 focus:ring-brand-500 dark:border-ink-600 dark:bg-ink-800"
               />
               <span className="text-xs leading-relaxed text-ink-500 dark:text-ink-400">
                 Send order updates via <strong className="text-ink-700 dark:text-ink-200">WhatsApp</strong>{" "}

@@ -45,7 +45,7 @@ export function Footer() {
   return (
     <footer className="mt-20 border-t border-ink-200 dark:border-ink-800">
       {/* Brand gradient accent */}
-      <div className="h-1 bg-gradient-to-r from-brand-500 via-brand-400 to-brand-600" />
+      <div className="h-1 bg-linear-to-r from-brand-500 via-brand-400 to-brand-600" />
 
       <div className="bg-ink-50 dark:bg-ink-950">
         {/* Newsletter strip */}
@@ -90,7 +90,7 @@ export function Footer() {
                       <button
                         type="button"
                         onClick={reset}
-                        className="btn-ghost ml-auto !px-2 !py-1 text-xs"
+                        className="btn-ghost ml-auto px-2! py-1! text-xs"
                       >
                         <RefreshCw className="h-3 w-3" />
                         Try again
@@ -136,7 +136,7 @@ export function Footer() {
           {/* Brand */}
           <div>
             <Link to="/" className="flex items-center gap-2.5 font-extrabold">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-sm">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-linear-to-br from-brand-500 to-brand-700 text-white shadow-xs">
                 <Droplets className="h-5 w-5" />
               </span>
               <span className="font-display text-base">All Things Water</span>

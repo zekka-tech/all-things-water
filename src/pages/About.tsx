@@ -31,7 +31,7 @@ export function About() {
       <Seo title="About us" description="Who we are and why we started All Things Water." />
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-white dark:from-ink-900 dark:to-ink-950">
+      <section className="relative overflow-hidden bg-linear-to-b from-brand-50 to-white dark:from-ink-900 dark:to-ink-950">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-brand-300/20 blur-3xl dark:bg-brand-700/15"
@@ -72,7 +72,7 @@ export function About() {
 
       {/* Stats */}
       <section className="container-page pb-16">
-        <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 to-brand-800 text-white">
+        <div className="overflow-hidden rounded-3xl bg-linear-to-br from-brand-600 to-brand-800 text-white">
           <div className="grid divide-y divide-white/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
             {stats.map((s) => (
               <div key={s.label} className="flex flex-col items-center gap-2 px-6 py-10 text-center">

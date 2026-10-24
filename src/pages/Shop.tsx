@@ -165,7 +165,7 @@ export function Shop() {
                     }}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 hover:bg-ink-50 dark:text-ink-200 dark:hover:bg-ink-800"
                   >
-                    <img src={p.image} alt="" className="h-8 w-8 rounded object-cover" />
+                    <img src={p.image} alt="" className="h-8 w-8 rounded-sm object-cover" />
                     <span className="truncate">{p.name}</span>
                   </button>
                 ))}
@@ -268,7 +268,7 @@ export function Shop() {
                 type="checkbox"
                 checked={inStockOnly}
                 onChange={(e) => setInStockOnly(e.target.checked)}
-                className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500 dark:border-ink-600"
+                className="h-4 w-4 rounded-sm border-ink-300 text-brand-600 focus:ring-brand-500 dark:border-ink-600"
               />
               In stock only
             </label>

@@ -31,7 +31,7 @@ export function ProductCard({ product }: { product: Product }) {
       {/* Image */}
       <Link
         to={`/product/${product.slug}`}
-        className="relative block aspect-square overflow-hidden bg-gradient-to-b from-brand-50 via-brand-50/60 to-white dark:from-ink-800 dark:via-ink-800/60 dark:to-ink-900"
+        className="relative block aspect-square overflow-hidden bg-linear-to-b from-brand-50 via-brand-50/60 to-white dark:from-ink-800 dark:via-ink-800/60 dark:to-ink-900"
       >
         <OptimizedImage
           src={product.image}
