@@ -379,7 +379,7 @@ export function Admin() {
               className={cx(
                 "flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all",
                 tab === t.key
-                  ? "bg-white text-ink-900 shadow-sm dark:bg-ink-700 dark:text-white"
+                  ? "bg-white text-ink-900 shadow-xs dark:bg-ink-700 dark:text-white"
                   : "text-ink-500 hover:text-ink-700 dark:text-ink-400 dark:hover:text-ink-200",
               )}
             >

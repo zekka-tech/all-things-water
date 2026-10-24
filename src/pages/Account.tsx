@@ -169,7 +169,7 @@ export function Account() {
                   className={cx(
                     "flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors",
                     mode === "login"
-                      ? "bg-white text-ink-900 shadow-sm dark:bg-ink-900 dark:text-white"
+                      ? "bg-white text-ink-900 shadow-xs dark:bg-ink-900 dark:text-white"
                       : "text-ink-500 hover:text-ink-700 dark:text-ink-400",
                   )}
                 >
@@ -181,7 +181,7 @@ export function Account() {
                   className={cx(
                     "flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors",
                     mode === "register"
-                      ? "bg-white text-ink-900 shadow-sm dark:bg-ink-900 dark:text-white"
+                      ? "bg-white text-ink-900 shadow-xs dark:bg-ink-900 dark:text-white"
                       : "text-ink-500 hover:text-ink-700 dark:text-ink-400",
                   )}
                 >

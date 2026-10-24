@@ -196,7 +196,7 @@ export function Terms() {
       />
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-white dark:from-ink-900 dark:to-ink-950">
+      <section className="relative overflow-hidden bg-linear-to-b from-brand-50 to-white dark:from-ink-900 dark:to-ink-950">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-brand-300/20 blur-3xl dark:bg-brand-700/15"

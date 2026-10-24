@@ -1,6 +1,269 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-brand-50: #eff9ff;
+  --color-brand-100: #dff2ff;
+  --color-brand-200: #b8e7ff;
+  --color-brand-300: #78d4ff;
+  --color-brand-400: #32bdff;
+  --color-brand-500: #06a3f0;
+  --color-brand-600: #0071b3;
+  --color-brand-700: #0067a6;
+  --color-brand-800: #055789;
+  --color-brand-900: #0a4971;
+  --color-brand-950: #072e4b;
+
+  --color-ink-50: #f6f7f9;
+  --color-ink-100: #eceef2;
+  --color-ink-200: #d5dae2;
+  --color-ink-300: #b0bac9;
+  --color-ink-400: #8595aa;
+  --color-ink-500: #5c6d85;
+  --color-ink-600: #516076;
+  --color-ink-700: #424e60;
+  --color-ink-800: #394251;
+  --color-ink-900: #1f2630;
+  --color-ink-950: #13181f;
+
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-display: ui-rounded, ui-sans-serif, system-ui, sans-serif;
+
+  --shadow-glow-brand: 0 0 32px -4px rgba(6, 163, 240, 0.35);
+  --shadow-glow-sm: 0 0 16px -2px rgba(6, 163, 240, 0.2);
+  --shadow-card-hover: 0 8px 30px -4px rgba(31, 38, 48, 0.12);
+
+  --background-image-brand-gradient: linear-gradient(
+    135deg,
+    #06a3f0 0%,
+    #0067a6 100%
+  );
+  --background-image-hero-gradient: radial-gradient(
+    ellipse 80% 60% at 50% -10%,
+    #dff2ff 0%,
+    transparent 70%
+  );
+
+  --animate-fade-in: fade-in 0.5s ease-out both;
+  --animate-fade-in-delay: fade-in 0.5s 0.15s ease-out both;
+  --animate-slide-up: slide-up 0.35s ease-out both;
+  --animate-scale-in: scale-in 0.2s ease-out both;
+  --animate-ripple: ripple 2.6s ease-out infinite;
+  --animate-bounce-once: bounce-once 0.4s ease-out;
+
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slide-up {
+    0% {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes scale-in {
+    0% {
+      opacity: 0;
+      transform: scale(0.85);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes ripple {
+    0% {
+      transform: scale(0.9);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+  }
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  @keyframes bounce-once {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    30% {
+      transform: scale(1.35);
+    }
+    60% {
+      transform: scale(0.9);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility container-page {
+  /* ── Layout ── */
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+@utility btn {
+  /* ── Buttons ── */
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
+           transition-all duration-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand-500
+           focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50
+           dark:focus-visible:ring-offset-ink-950;
+}
+
+@utility btn-primary {
+  /* Avoid @apply with custom boxShadow variants — use theme() in :hover rule instead */
+  @apply btn bg-brand-600 text-white shadow-xs hover:bg-brand-700 active:scale-[0.98];
+  &:hover:not(:disabled) {
+    box-shadow: 0 0 32px -4px rgba(6, 163, 240, 0.35);
+  }
+}
+
+@utility btn-ghost {
+  @apply btn bg-transparent text-ink-700 hover:bg-ink-100
+           dark:text-ink-200 dark:hover:bg-ink-800;
+}
+
+@utility btn-outline {
+  @apply btn border border-ink-200 bg-white text-ink-800
+           hover:border-brand-400 hover:text-brand-700
+           dark:border-ink-700 dark:bg-ink-900 dark:text-ink-100
+           dark:hover:border-brand-500 dark:hover:text-brand-300;
+}
+
+@utility card {
+  /* ── Cards ── */
+  @apply rounded-2xl border border-ink-200/70 bg-white shadow-xs transition-all duration-200
+           dark:border-ink-800 dark:bg-ink-900;
+}
+
+@utility card-hover {
+  @apply hover:-translate-y-1 hover:border-brand-200/60
+           dark:hover:border-brand-800/60;
+  &:hover {
+    box-shadow: 0 8px 30px -4px rgba(31, 38, 48, 0.12);
+  }
+}
+
+@utility badge {
+  /* ── Badges ── */
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs leading-4 font-semibold;
+}
+
+@utility input {
+  /* ── Form inputs ── */
+  @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900
+           placeholder:text-ink-500 focus:border-brand-400 focus:outline-hidden focus:ring-2
+           focus:ring-brand-200 transition-colors
+           dark:border-ink-700 dark:bg-ink-900 dark:text-ink-100 dark:placeholder:text-ink-400
+           dark:focus:border-brand-500 dark:focus:ring-brand-900;
+}
+
+@utility icon-wrap {
+  /* ── Icon containers ── */
+  @apply grid h-11 w-11 shrink-0 place-items-center rounded-xl
+           bg-brand-100 text-brand-600
+           dark:bg-brand-500/15 dark:text-brand-400;
+}
+
+@utility icon-wrap-lg {
+  @apply grid h-14 w-14 shrink-0 place-items-center rounded-2xl
+           bg-brand-100 text-brand-600
+           dark:bg-brand-500/15 dark:text-brand-400;
+}
+
+@utility gradient-text {
+  /* ── Gradient text — apply to inline <span> inside headings ── */
+  @apply bg-linear-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent
+           dark:from-brand-400 dark:to-brand-300;
+}
+
+@utility section-title {
+  /* ── Section heading shorthand ── */
+  @apply text-2xl font-bold tracking-tight text-ink-900 dark:text-white;
+}
+
+@utility chip {
+  /* ── Filter chips ── */
+  @apply rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150;
+}
+
+@utility chip-active {
+  @apply border-brand-600 bg-brand-600 text-white shadow-xs;
+}
+
+@utility chip-idle {
+  @apply border-ink-200 text-ink-600 hover:border-brand-400 hover:text-brand-700
+           dark:border-ink-700 dark:text-ink-300 dark:hover:border-brand-500 dark:hover:text-brand-300;
+}
+
+@utility glass {
+  /* ── Glass surface ── */
+  @apply bg-white/80 backdrop-blur-md border border-white/50
+           dark:bg-ink-900/80 dark:border-ink-700/50;
+}
+
+@utility progress-track {
+  /* ── Free-shipping progress bar ── */
+  @apply h-1.5 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800;
+}
+
+@utility progress-fill {
+  @apply h-full rounded-full bg-linear-to-r from-brand-500 to-brand-600 transition-all duration-500;
+}
+
+@utility divider {
+  /* ── Divider ── */
+  @apply border-t border-ink-200 dark:border-ink-800;
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+@utility animate-slide-up {
+  /* ── Cookie consent slide-up ── */
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@utility animate-shimmer {
+  /* ── Image shimmer placeholder ── */
+  animation: shimmer 1.5s ease-in-out infinite;
+}
 
 @layer base {
   :root {
@@ -18,134 +281,6 @@
   }
   ::selection {
     @apply bg-brand-200 text-brand-950;
-  }
-}
-
-@layer components {
-  /* ── Layout ── */
-  .container-page {
-    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
-  }
-
-  /* ── Buttons ── */
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
-           transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500
-           focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50
-           dark:focus-visible:ring-offset-ink-950;
-  }
-  /* Avoid @apply with custom boxShadow variants — use theme() in :hover rule instead */
-  .btn-primary {
-    @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:scale-[0.98];
-  }
-  .btn-primary:hover:not(:disabled) {
-    box-shadow: 0 0 32px -4px rgba(6, 163, 240, 0.35);
-  }
-  .btn-ghost {
-    @apply btn bg-transparent text-ink-700 hover:bg-ink-100
-           dark:text-ink-200 dark:hover:bg-ink-800;
-  }
-  .btn-outline {
-    @apply btn border border-ink-200 bg-white text-ink-800
-           hover:border-brand-400 hover:text-brand-700
-           dark:border-ink-700 dark:bg-ink-900 dark:text-ink-100
-           dark:hover:border-brand-500 dark:hover:text-brand-300;
-  }
-
-  /* ── Cards ── */
-  .card {
-    @apply rounded-2xl border border-ink-200/70 bg-white shadow-sm transition-all duration-200
-           dark:border-ink-800 dark:bg-ink-900;
-  }
-  .card-hover {
-    @apply hover:-translate-y-1 hover:border-brand-200/60
-           dark:hover:border-brand-800/60;
-  }
-  .card-hover:hover {
-    box-shadow: 0 8px 30px -4px rgba(31, 38, 48, 0.12);
-  }
-
-  /* ── Badges ── */
-  .badge {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
-  }
-
-  /* ── Form inputs ── */
-  .input {
-    @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900
-           placeholder:text-ink-500 focus:border-brand-400 focus:outline-none focus:ring-2
-           focus:ring-brand-200 transition-colors
-           dark:border-ink-700 dark:bg-ink-900 dark:text-ink-100 dark:placeholder:text-ink-400
-           dark:focus:border-brand-500 dark:focus:ring-brand-900;
-  }
-
-  /* ── Icon containers ── */
-  .icon-wrap {
-    @apply grid h-11 w-11 shrink-0 place-items-center rounded-xl
-           bg-brand-100 text-brand-600
-           dark:bg-brand-500/15 dark:text-brand-400;
-  }
-  .icon-wrap-lg {
-    @apply grid h-14 w-14 shrink-0 place-items-center rounded-2xl
-           bg-brand-100 text-brand-600
-           dark:bg-brand-500/15 dark:text-brand-400;
-  }
-
-  /* ── Gradient text — apply to inline <span> inside headings ── */
-  .gradient-text {
-    @apply bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent
-           dark:from-brand-400 dark:to-brand-300;
-  }
-
-  /* ── Section heading shorthand ── */
-  .section-title {
-    @apply text-2xl font-bold tracking-tight text-ink-900 dark:text-white;
-  }
-
-  /* ── Filter chips ── */
-  .chip {
-    @apply rounded-full border px-4 py-1.5 text-sm font-medium transition-all duration-150;
-  }
-  .chip-active {
-    @apply border-brand-600 bg-brand-600 text-white shadow-sm;
-  }
-  .chip-idle {
-    @apply border-ink-200 text-ink-600 hover:border-brand-400 hover:text-brand-700
-           dark:border-ink-700 dark:text-ink-300 dark:hover:border-brand-500 dark:hover:text-brand-300;
-  }
-
-  /* ── Glass surface ── */
-  .glass {
-    @apply bg-white/80 backdrop-blur-md border border-white/50
-           dark:bg-ink-900/80 dark:border-ink-700/50;
-  }
-
-  /* ── Free-shipping progress bar ── */
-  .progress-track {
-    @apply h-1.5 w-full overflow-hidden rounded-full bg-ink-100 dark:bg-ink-800;
-  }
-  .progress-fill {
-    @apply h-full rounded-full bg-gradient-to-r from-brand-500 to-brand-600 transition-all duration-500;
-  }
-
-  /* ── Divider ── */
-  .divider {
-    @apply border-t border-ink-200 dark:border-ink-800;
-  }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
-
-  /* ── Cookie consent slide-up ── */
-  .animate-slide-up {
-    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  /* ── Image shimmer placeholder ── */
-  .animate-shimmer {
-    animation: shimmer 1.5s ease-in-out infinite;
   }
 }
 

@@ -96,7 +96,7 @@ export function Loyalty() {
         </div>
       ) : data ? (
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl border border-ink-200 bg-gradient-to-br from-brand-50 to-white p-5 dark:border-ink-800 dark:from-brand-500/10 dark:to-ink-900">
+          <div className="rounded-xl border border-ink-200 bg-linear-to-br from-brand-50 to-white p-5 dark:border-ink-800 dark:from-brand-500/10 dark:to-ink-900">
             <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">
               <Sparkles className="h-3.5 w-3.5" /> Points balance
             </p>

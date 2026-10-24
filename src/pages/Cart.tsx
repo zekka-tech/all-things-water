@@ -83,7 +83,7 @@ export function Cart() {
               <div key={product.id} className="card flex gap-4 p-4">
                 <Link
                   to={`/product/${product.slug}`}
-                  className="grid h-24 w-24 shrink-0 place-items-center rounded-xl bg-gradient-to-b from-brand-50 to-white p-2 dark:from-ink-800 dark:to-ink-900"
+                  className="grid h-24 w-24 shrink-0 place-items-center rounded-xl bg-linear-to-b from-brand-50 to-white p-2 dark:from-ink-800 dark:to-ink-900"
                 >
                   <img
                     src={product.image}

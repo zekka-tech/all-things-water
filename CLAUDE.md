@@ -29,7 +29,7 @@ npm run deno:test  # Deno unit tests for PayFast signature builder
 
 ## Architecture
 
-**Stack:** React 18, TypeScript, Vite 5, Tailwind CSS 3, React Router 6, lucide-react.
+**Stack:** React 19, TypeScript, Vite 8, Tailwind CSS 4, React Router 7, lucide-react.
 
 **Provider tree** (`src/main.tsx`):
 ```
@@ -45,9 +45,9 @@ ThemeProvider → BrowserRouter → CartProvider → App
 - `ThemeContext` (`src/context/ThemeContext.tsx`) — light/dark toggle, persisted under `atw.theme`, synced to `document.documentElement.classList`.
 
 **Tailwind conventions:**
-- Custom colour scales: `brand-*` (blue) and `ink-*` (grey) — defined in `tailwind.config.js`.
-- Dark mode via `class` strategy (toggled by `ThemeContext`).
-- Utility classes like `container-page`, `btn-primary`, `input` are defined as component layers in `src/index.css`.
+- Theme lives in CSS: colour scales `brand-*` (blue) and `ink-*` (grey), fonts, shadows and animations are defined in the `@theme` block of `src/index.css` (there is no `tailwind.config.js`). Built via `@tailwindcss/postcss`.
+- Dark mode via the `.dark` class (`@custom-variant dark` in `src/index.css`, toggled by `ThemeContext`).
+- Utility classes like `container-page`, `btn-primary`, `input` are defined as `@utility` blocks in `src/index.css`.
 - Conditional class merging uses the local `cx()` helper in `src/lib/format.ts` (not a third-party library).
 
 **Path alias:** `@` resolves to `src/` (configured in `vite.config.ts` and both `tsconfig` files).
