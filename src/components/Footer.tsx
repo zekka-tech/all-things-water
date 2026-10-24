@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Droplets, Mail, MapPin, Phone, ArrowRight, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { env } from "@/lib/env";
 import { validateEmail } from "@/lib/validation";
+import { CONTACT_PHONE, CONTACT_PHONE_HREF } from "@/lib/contact";
 
 export function Footer() {
   const [email, setEmail] = useState("");
@@ -204,7 +205,9 @@ export function Footer() {
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
                   <Phone className="h-3.5 w-3.5" />
                 </span>
-                +27 76 964 1460
+                <a href={CONTACT_PHONE_HREF} className="transition-colors hover:text-brand-600 dark:hover:text-brand-400">
+                  {CONTACT_PHONE}
+                </a>
               </li>
               <li className="flex items-center gap-2.5">
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
