@@ -20,7 +20,7 @@ jobs:
     name: typecheck · lint · test · build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -41,7 +41,7 @@ jobs:
     name: deno check · deno test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -53,7 +53,7 @@ jobs:
     name: npm audit (prod, high+)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -72,7 +72,7 @@ jobs:
       contents: read
       pull-requests: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v3
@@ -84,7 +84,7 @@ jobs:
     name: migrations · security.sql
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Applies every migration to a fresh supabase/postgres container, then
       # runs supabase/tests/security.sql (RLS, grants, pricing, loyalty).
       - run: npm run test:db
@@ -97,7 +97,7 @@ jobs:
     # this a hard gate.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -120,7 +120,7 @@ jobs:
     # below (a Supabase project with the Edge Functions deployed + sandbox PayFast).
     if: ${{ vars.RUN_PAYFAST_E2E == 'true' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -148,7 +148,7 @@ jobs:
     needs: build-test
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: dist

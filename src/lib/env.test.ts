@@ -27,8 +27,8 @@ describe("env", () => {
     expect(env.newsletterEndpoint).toBe("");
   });
 
-  it("whatsappNumber defaults to empty string", () => {
-    expect(env.whatsappNumber).toBe("");
+  it("whatsappNumber defaults to the contact number", () => {
+    expect(env.whatsappNumber).toBe("+27769641460");
   });
 
   it("companyEmail falls back to default value", () => {
@@ -36,8 +36,8 @@ describe("env", () => {
     expect(env.companyEmail).toBe("info@allthingswater.co.za");
   });
 
-  it("companyPhone defaults to empty string", () => {
-    expect(env.companyPhone).toBe("");
+  it("companyPhone defaults to the contact number", () => {
+    expect(env.companyPhone).toBe("+27769641460");
   });
 
   it("companyAddress defaults to empty string", () => {
