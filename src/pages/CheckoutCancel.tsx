@@ -10,12 +10,18 @@ type ReleaseState = "idle" | "releasing" | "released" | "error";
 
 export function CheckoutCancel() {
   const [searchParams] = useSearchParams();
-  const [releaseState, setReleaseState] = useState<ReleaseState>("idle");
 
   const orderId = searchParams.get("orderId");
   // Stripped from the URL at startup (see sensitiveParams.ts).
   const token = getSensitiveParam("token") ?? searchParams.get("token");
   const orderRef = searchParams.get("orderRef");
+  const canRelease = Boolean(orderId && token && env.supabaseUrl);
+
+  // When there's an order to release, we start in "releasing" (the effect
+  // below fires the request on mount).
+  const [releaseState, setReleaseState] = useState<ReleaseState>(
+    canRelease ? "releasing" : "idle",
+  );
 
   useEffect(() => {
     if (!orderId || !token || !env.supabaseUrl) {
@@ -23,7 +29,6 @@ export function CheckoutCancel() {
     }
 
     let active = true;
-    setReleaseState("releasing");
 
     void apiPost<{ ok: boolean }>(`${env.supabaseUrl}/functions/v1/order-cancel`, {
       orderId,

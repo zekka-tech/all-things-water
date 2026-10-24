@@ -45,36 +45,48 @@ export function Account() {
 
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+  // Which user the current `orders` belong to. Until it matches the signed-in
+  // user (first load, or signing in on this page) we show the spinner.
+  const [ordersUserId, setOrdersUserId] = useState<string | null>(null);
+  const showOrdersLoading = ordersLoading || (!!user && !!supabase && ordersUserId !== user.id);
   const [ordersError, setOrdersError] = useState<string | null>(null);
 
-  const loadOrders = useCallback(async () => {
-    if (!user || !supabase) {
-      setOrders([]);
-      return;
-    }
-    setOrdersLoading(true);
-    setOrdersError(null);
-    try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("id, order_ref, status, total, created_at, delivery_method")
-        // Row-level security scopes rows to this user (by id, or by a
-        // verified email for guest orders) — no client-side filter needed.
-        .order("created_at", { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      setOrders(data as OrderRow[]);
-    } catch (err) {
-      setOrdersError("Could not load your orders. Please try again.");
-      captureException(err instanceof Error ? err : new Error(String(err)), { action: "loadOrders" });
-    } finally {
-      setOrdersLoading(false);
-    }
+  // State is only set in promise callbacks (after the request settles), so
+  // this is safe to call from an effect. Orders are cleared on sign-out.
+  const loadOrders = useCallback(() => {
+    if (!user || !supabase) return;
+    const userId = user.id;
+    void supabase
+      .from("orders")
+      .select("id, order_ref, status, total, created_at, delivery_method")
+      // Row-level security scopes rows to this user (by id, or by a
+      // verified email for guest orders) — no client-side filter needed.
+      .order("created_at", { ascending: false })
+      .limit(50)
+      .then(({ data, error }) => {
+        if (error) throw error;
+        setOrders(data as OrderRow[]);
+        setOrdersError(null);
+      })
+      .then(undefined, (err: unknown) => {
+        setOrdersError("Could not load your orders. Please try again.");
+        captureException(err instanceof Error ? err : new Error(String(err)), { action: "loadOrders" });
+      })
+      .then(() => {
+        setOrdersLoading(false);
+        setOrdersUserId(userId);
+      });
   }, [user]);
 
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
+
+  const reloadOrders = () => {
+    setOrdersLoading(true);
+    setOrdersError(null);
+    loadOrders();
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -289,7 +301,7 @@ export function Account() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => { refresh(); loadOrders(); }}
+              onClick={() => { refresh(); reloadOrders(); }}
               className="btn-outline px-4 py-2 text-sm"
             >
               <RefreshCw className="h-4 w-4" /> Refresh
@@ -311,14 +323,14 @@ export function Account() {
             Order history
           </h2>
 
-          {ordersLoading ? (
+          {showOrdersLoading ? (
             <div className="mt-6 flex items-center justify-center py-12">
               <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
             </div>
           ) : ordersError ? (
             <div className="mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-500/10">
               <p className="text-sm text-red-700 dark:text-red-400">{ordersError}</p>
-              <button type="button" onClick={loadOrders} className="mt-2 text-sm font-medium text-red-600 hover:underline dark:text-red-400">
+              <button type="button" onClick={reloadOrders} className="mt-2 text-sm font-medium text-red-600 hover:underline dark:text-red-400">
                 Try again
               </button>
             </div>

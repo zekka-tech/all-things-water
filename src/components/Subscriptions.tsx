@@ -41,7 +41,9 @@ export function Subscriptions() {
   const { user } = useAuth();
   const location = useLocation();
   const [subs, setSubs] = useState<SubscriptionRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Starts true when there is something to load, so the first render shows
+  // the spinner instead of the empty state.
+  const [loading, setLoading] = useState(Boolean(user && supabase));
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -59,40 +61,48 @@ export function Subscriptions() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!user || !supabase) {
-      setSubs([]);
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: err } = await supabase
+  // State is only set in promise callbacks (after the request settles), so
+  // this is safe to call from an effect. Never rejects.
+  const load = useCallback((): Promise<void> => {
+    if (!user || !supabase) return Promise.resolve();
+    return Promise.resolve(
+      supabase
         .from("subscriptions")
         .select(
           "id, product_id, product_name, quantity, unit_price, frequency, status, next_delivery_date, auto_pay",
         )
         // Row-level security scopes rows to this user (by id, or by a
         // verified email for guest orders) — no client-side filter needed.
-        .order("next_delivery_date", { ascending: true });
-      if (err) throw err;
-      setSubs((data ?? []) as SubscriptionRow[]);
-    } catch (err) {
-      setError("Could not load your subscriptions. Please try again.");
-      captureException(err instanceof Error ? err : new Error(String(err)), {
-        action: "loadSubscriptions",
-      });
-    } finally {
-      setLoading(false);
-    }
+        .order("next_delivery_date", { ascending: true }),
+    )
+      .then(({ data, error: err }) => {
+        if (err) throw err;
+        setSubs((data ?? []) as SubscriptionRow[]);
+        setError(null);
+      })
+      .catch((err: unknown) => {
+        setError("Could not load your subscriptions. Please try again.");
+        captureException(err instanceof Error ? err : new Error(String(err)), {
+          action: "loadSubscriptions",
+        });
+      })
+      .finally(() => setLoading(false));
   }, [user]);
 
-  // Prefill delivery details from the most recent order, if any.
-  const loadPrefill = useCallback(async () => {
-    if (!user || !supabase) return;
-    setName(user.email.split("@")[0] ?? "");
-    try {
-      const { data } = await supabase
+  const reload = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    return load();
+  }, [load]);
+
+  // While the creator is open, prefill delivery details from the most recent
+  // order, if any. Best-effort; state is only set when the fetch returns.
+  const userId = user?.id;
+  useEffect(() => {
+    if (!creating || !userId || !supabase) return;
+    let active = true;
+    void Promise.resolve(
+      supabase
         .from("orders")
         .select(
           "customer_name, customer_phone, delivery_address, delivery_city, delivery_postal_code",
@@ -101,19 +111,25 @@ export function Subscriptions() {
         // verified email for guest orders) — no client-side filter needed.
         .order("created_at", { ascending: false })
         .limit(1)
-        .maybeSingle();
-      if (data) {
+        .maybeSingle(),
+    ).then(
+      ({ data }) => {
+        if (!active || !data) return;
         const o = data as DeliveryPrefill;
         setName(o.customer_name || "");
         setPhone(o.customer_phone ?? "");
         setAddress(o.delivery_address ?? "");
         setCity(o.delivery_city ?? "");
         setPostalCode(o.delivery_postal_code ?? "");
-      }
-    } catch {
-      /* prefill is best-effort */
-    }
-  }, [user]);
+      },
+      () => {
+        /* prefill is best-effort */
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [creating, userId]);
 
   useEffect(() => {
     load();
@@ -163,25 +179,27 @@ export function Subscriptions() {
     }
   };
 
-  const openCreator = useCallback(() => {
+  const openCreator = () => {
     setFormError(null);
+    setName(user?.email.split("@")[0] ?? "");
     setCreating(true);
-    loadPrefill();
-  }, [loadPrefill]);
+  };
 
   // Deep-link support: a PDP "Subscribe & save" button navigates here with an
   // intent in router state. Pre-open the creator with the chosen product.
-  useEffect(() => {
-    const intent = (location.state as { newSubscription?: NewSubscriptionIntent } | null)
-      ?.newSubscription;
-    if (!intent || !user) return;
+  // Handled during render (once per intent) rather than in an effect.
+  const intent = (location.state as { newSubscription?: NewSubscriptionIntent } | null)
+    ?.newSubscription;
+  const [handledIntent, setHandledIntent] = useState<NewSubscriptionIntent | null>(null);
+  if (intent && user && intent !== handledIntent) {
+    setHandledIntent(intent);
     if (SELLABLE.some((p) => p.id === intent.productId)) {
       setProductId(intent.productId);
     }
     if (intent.quantity) setQuantity(Math.max(1, intent.quantity));
     if (intent.frequency) setFrequency(intent.frequency);
     openCreator();
-  }, [location.state, user, openCreator]);
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,7 +247,7 @@ export function Subscriptions() {
       setCreating(false);
       setQuantity(1);
       setNotes("");
-      await load();
+      await reload();
     } catch (err) {
       setFormError("Could not create the subscription. Please try again.");
       captureException(err instanceof Error ? err : new Error(String(err)), {
@@ -441,7 +459,7 @@ export function Subscriptions() {
           <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
           <button
             type="button"
-            onClick={load}
+            onClick={() => void reload()}
             className="mt-2 text-sm font-medium text-red-600 hover:underline dark:text-red-400"
           >
             Try again

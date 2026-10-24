@@ -22,52 +22,70 @@ interface StockRow {
   on_hand: number;
 }
 
+const isConfigured = () => Boolean(env.supabaseUrl && env.supabaseAnonKey);
+
+/** Lists warehouses and stock. Resolves to null when not signed in. */
+async function fetchWarehouses(): Promise<{ warehouses: WarehouseRow[]; stock: StockRow[] } | null> {
+  const token = await getAccessToken();
+  if (!token) return null;
+  const res = await fetch(`${env.supabaseUrl}/functions/v1/admin-warehouses`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: env.supabaseAnonKey,
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action: "list" }),
+  });
+  if (!res.ok) throw new Error(`Failed (${res.status})`);
+  const data = await res.json();
+  return { warehouses: data.warehouses || [], stock: data.stock || [] };
+}
+
 export default function AdminWarehouses() {
   const [warehouses, setWarehouses] = useState<WarehouseRow[]>([]);
   const [stock, setStock] = useState<StockRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(isConfigured);
+  const [error, setError] = useState<string | null>(() =>
+    isConfigured() ? null : "Supabase is not configured.",
+  );
   const [savingKey, setSavingKey] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
-    if (!env.supabaseUrl || !env.supabaseAnonKey) {
-      setError("Supabase is not configured.");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await getAccessToken();
-      if (!token) {
-        setError("Not authenticated.");
-        return;
-      }
-      const res = await fetch(`${env.supabaseUrl}/functions/v1/admin-warehouses`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: env.supabaseAnonKey,
-          Authorization: `Bearer ${token}`,
+  // State is only set in promise callbacks (after the request settles), so
+  // this is safe to call from an effect.
+  const load = useCallback(() => {
+    if (!isConfigured()) return;
+    void fetchWarehouses()
+      .then(
+        (data) => {
+          if (!data) {
+            setError("Not authenticated.");
+            return;
+          }
+          setWarehouses(data.warehouses);
+          setStock(data.stock);
+          setError(null);
         },
-        body: JSON.stringify({ action: "list" }),
-      });
-      if (!res.ok) throw new Error(`Failed (${res.status})`);
-      const data = await res.json();
-      setWarehouses(data.warehouses || []);
-      setStock(data.stock || []);
-    } catch (err) {
-      setError("Could not load warehouses. Please refresh.");
-      captureException(err instanceof Error ? err : new Error(String(err)), {
-        action: "adminFetchWarehouses",
-      });
-    } finally {
-      setLoading(false);
-    }
+        (err: unknown) => {
+          setError("Could not load warehouses. Please refresh.");
+          captureException(err instanceof Error ? err : new Error(String(err)), {
+            action: "adminFetchWarehouses",
+          });
+        },
+      )
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const reload = () => {
+    if (!isConfigured()) return;
+    setLoading(true);
+    setError(null);
+    load();
+  };
 
   const onHandFor = (productId: string, warehouseId: string): number =>
     stock.find((s) => s.product_id === productId && s.warehouse_id === warehouseId)?.on_hand ?? 0;
@@ -114,7 +132,7 @@ export default function AdminWarehouses() {
           <Warehouse className="h-5 w-5 text-brand-600 dark:text-brand-400" />
           Warehouses &amp; stock
         </h2>
-        <button type="button" onClick={load} className="btn-outline px-3 py-1.5 text-sm">
+        <button type="button" onClick={reload} className="btn-outline px-3 py-1.5 text-sm">
           <RefreshCw className={cx("h-4 w-4", loading && "animate-spin")} /> Refresh
         </button>
       </div>

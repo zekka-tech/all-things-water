@@ -54,7 +54,9 @@ function wrapper({ children }: { children: ReactNode }) {
 describe("AuthContext", () => {
   it("starts in loading state then resolves to no user", async () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
-    // After mount, loading should settle to false with no user
+    // Loading until the stored session has been checked...
+    expect(result.current.loading).toBe(true);
+    // ...then settles to false with no user
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.user).toBeNull();
     expect(result.current.hasConfig).toBe(true);

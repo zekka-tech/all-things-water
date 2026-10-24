@@ -10,13 +10,12 @@ const CUSTOMER_USER_KEY = "atw.customer-user";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CustomerUser | null>(null);
-  const [loading, setLoading] = useState(!hasSupabaseConfig);
+  // Loading until the stored session has been checked. Nothing to check
+  // when accounts aren't configured.
+  const [loading, setLoading] = useState(Boolean(hasSupabaseConfig && supabase));
 
   useEffect(() => {
-    if (!hasSupabaseConfig || !supabase) {
-      setLoading(false);
-      return;
-    }
+    if (!hasSupabaseConfig || !supabase) return;
 
     const client = supabase;
     let cancelled = false;

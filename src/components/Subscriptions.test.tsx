@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { Subscriptions } from "@/components/Subscriptions";
+import { products } from "@/data/products";
 import {
   frequencyLabel,
   subscriptionStatusLabel,
@@ -168,5 +169,46 @@ describe("Subscriptions component", () => {
     );
     expect(screen.getByLabelText(/quantity/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/^frequency$/i)).toBeInTheDocument();
+  });
+
+  it("pre-opens the creator from a product-page deep link", async () => {
+    // Pick a sellable product that isn't the form's default (the first one).
+    const target = products.filter((p) => p.stock > 0)[1];
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/account",
+            state: { newSubscription: { productId: target.id, quantity: 3, frequency: "weekly" } },
+          },
+        ]}
+      >
+        <Subscriptions />
+      </MemoryRouter>,
+    );
+    await waitFor(() => expect(screen.getByLabelText(/^product$/i)).toHaveValue(target.id));
+    expect(screen.getByLabelText(/quantity/i)).toHaveValue(3);
+    expect(screen.getByLabelText(/^frequency$/i)).toHaveValue("weekly");
+  });
+
+  it("prefills delivery details from the most recent order", async () => {
+    builder.maybeSingle.mockImplementationOnce(() =>
+      Promise.resolve({
+        data: {
+          customer_name: "Thandi M",
+          customer_phone: "0821234567",
+          delivery_address: "1 Main Rd",
+          delivery_city: "Cape Town",
+          delivery_postal_code: "8001",
+        },
+        error: null,
+      }),
+    );
+    renderSubs();
+    fireEvent.click(screen.getByRole("button", { name: /new subscription/i }));
+    // Name starts as the email prefix, then the last order's details arrive.
+    await waitFor(() => expect(screen.getByLabelText(/delivery name/i)).toHaveValue("Thandi M"));
+    expect(screen.getByLabelText(/city/i)).toHaveValue("Cape Town");
+    expect(screen.getByLabelText(/postal/i)).toHaveValue("8001");
   });
 });

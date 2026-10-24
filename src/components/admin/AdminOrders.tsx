@@ -53,48 +53,66 @@ function statusBadge(status: string) {
   return map[status] ?? { label: status, color: "bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-400" };
 }
 
+const isConfigured = () => Boolean(env.supabaseUrl && env.supabaseAnonKey);
+
+/** Lists orders for the admin. Resolves to null when not signed in. */
+async function loadAdminOrders(): Promise<Order[] | null> {
+  const token = await getAccessToken();
+  if (!token) return null;
+  const res = await fetch(`${env.supabaseUrl}/functions/v1/admin-orders`, {
+    headers: {
+      apikey: env.supabaseAnonKey,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch orders (${res.status})`);
+  }
+  const data = await res.json();
+  return data.orders || [];
+}
+
 export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(isConfigured);
+  const [error, setError] = useState<string | null>(() =>
+    isConfigured() ? null : "Supabase is not configured.",
+  );
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const fetchOrders = useCallback(async () => {
-    if (!env.supabaseUrl || !env.supabaseAnonKey) {
-      setError("Supabase is not configured.");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await getAccessToken();
-      if (!token) {
-        setError("Not authenticated.");
-        return;
-      }
-      const res = await fetch(`${env.supabaseUrl}/functions/v1/admin-orders`, {
-        headers: {
-          apikey: env.supabaseAnonKey,
-          Authorization: `Bearer ${token}`,
+  // State is only set in promise callbacks (after the request settles), so
+  // this is safe to call from an effect.
+  const fetchOrders = useCallback(() => {
+    if (!isConfigured()) return;
+    void loadAdminOrders()
+      .then(
+        (rows) => {
+          if (!rows) {
+            setError("Not authenticated.");
+            return;
+          }
+          setOrders(rows);
+          setError(null);
         },
-      });
-      if (!res.ok) {
-        throw new Error(`Failed to fetch orders (${res.status})`);
-      }
-      const data = await res.json();
-      setOrders(data.orders || []);
-    } catch (err) {
-      setError("Could not load orders. Please refresh.");
-      captureException(err instanceof Error ? err : new Error(String(err)), { action: "adminFetchOrders" });
-    } finally {
-      setLoading(false);
-    }
+        (err: unknown) => {
+          setError("Could not load orders. Please refresh.");
+          captureException(err instanceof Error ? err : new Error(String(err)), { action: "adminFetchOrders" });
+        },
+      )
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  const reload = () => {
+    if (!isConfigured()) return;
+    setLoading(true);
+    setError(null);
+    fetchOrders();
+  };
 
   const updateStatus = async (orderId: string, newStatus: string) => {
     setUpdatingId(orderId);
@@ -139,7 +157,7 @@ export default function AdminOrders() {
       <div className="card flex flex-col items-center gap-3 px-6 py-12 text-center">
         <XCircle className="h-8 w-8 text-red-500" />
         <p className="text-sm text-ink-500 dark:text-ink-400">{error}</p>
-        <button type="button" onClick={fetchOrders} className="btn-outline px-4 py-2 text-sm">
+        <button type="button" onClick={reload} className="btn-outline px-4 py-2 text-sm">
           <RefreshCw className="h-4 w-4" /> Try again
         </button>
       </div>
@@ -166,7 +184,7 @@ export default function AdminOrders() {
         <p className="text-sm text-ink-500 dark:text-ink-400">
           {orders.length} order{orders.length !== 1 ? "s" : ""}
         </p>
-        <button type="button" onClick={fetchOrders} className="btn-ghost px-3 py-1.5 text-sm" disabled={loading}>
+        <button type="button" onClick={reload} className="btn-ghost px-3 py-1.5 text-sm" disabled={loading}>
           <RefreshCw className={cx("h-4 w-4", loading && "animate-spin")} /> Refresh
         </button>
       </div>
