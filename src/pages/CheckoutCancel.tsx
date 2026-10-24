@@ -57,7 +57,7 @@ export function CheckoutCancel() {
 
       <div className="container-page flex flex-col items-center py-28 text-center">
         <div className="grid h-20 w-20 place-items-center rounded-full bg-ink-100 dark:bg-ink-800">
-          <XCircle className="h-10 w-10 text-ink-400 dark:text-ink-500" />
+          <XCircle className="h-10 w-10 text-ink-500 dark:text-ink-400" />
         </div>
 
         <h1 className="mt-6 font-display text-3xl font-extrabold text-ink-900 dark:text-white">
@@ -69,7 +69,7 @@ export function CheckoutCancel() {
         </p>
 
         {orderRef && (
-          <p className="mt-2 text-sm text-ink-400 dark:text-ink-500">
+          <p className="mt-2 text-sm text-ink-500 dark:text-ink-400">
             Order reference: <span className="font-mono font-medium">{orderRef}</span>
           </p>
         )}

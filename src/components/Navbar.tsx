@@ -151,7 +151,7 @@ export function Navbar() {
                   "block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300"
-                    : "text-ink-400 hover:bg-ink-50 dark:text-ink-500 dark:hover:bg-ink-800/60",
+                    : "text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800/60",
                 )
               }
             >

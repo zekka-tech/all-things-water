@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router";
 import {
   CheckCircle2,
@@ -98,7 +98,6 @@ export function Checkout() {
 
   // ── New state for enhancements ──
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("delivery");
-  const [postalStatus, setPostalStatus] = useState<ZoneStatus>("invalid");
   const [postalDebounced, setPostalDebounced] = useState("");
   const [deliverySlot, setDeliverySlot] = useState("");
   const [whatsappOptIn, setWhatsappOptIn] = useState(() => {
@@ -122,15 +121,11 @@ export function Checkout() {
     };
   }, [form.postal]);
 
-  // Re-run zone check when debounced value settles
-  useEffect(() => {
-    if (postalDebounced.length === 0) {
-      setPostalStatus("invalid");
-      return;
-    }
-    const { zone } = isDeliverablePostalCode(postalDebounced);
-    setPostalStatus(zone);
-  }, [postalDebounced]);
+  // Zone check derived from the debounced value
+  const postalStatus: ZoneStatus = useMemo(
+    () => (postalDebounced.length === 0 ? "invalid" : isDeliverablePostalCode(postalDebounced).zone),
+    [postalDebounced],
+  );
 
   // Persist WhatsApp opt-in preference
   useEffect(() => {
@@ -447,7 +442,7 @@ export function Checkout() {
               {/* Depot address — shown when collection is selected */}
               {deliveryMethod === "collection" && (
                 <div className="mt-4 flex items-start gap-3 rounded-lg bg-ink-50 p-4 dark:bg-ink-800/50">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-ink-400 dark:text-ink-500" />
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-ink-500 dark:text-ink-400" />
                   <div>
                     <p className="text-sm font-medium text-ink-700 dark:text-ink-200">
                       Depot address
@@ -548,7 +543,7 @@ export function Checkout() {
                     <option value="fri-pm">Friday afternoon (12:00–17:00)</option>
                     <option value="sat-am">Saturday morning (08:00–12:00)</option>
                   </select>
-                  <p className="mt-1 text-xs text-ink-400 dark:text-ink-500">
+                  <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">
                     We&rsquo;ll do our best to deliver in your chosen window. A confirmed
                     slot will be emailed once your order is processed.
                   </p>
@@ -560,9 +555,9 @@ export function Checkout() {
                     htmlFor="notes"
                     className="mb-2 flex items-center gap-1.5 text-sm font-medium text-ink-700 dark:text-ink-200"
                   >
-                    <Smartphone className="h-3.5 w-3.5 text-ink-400" />
+                    <Smartphone className="h-3.5 w-3.5 text-ink-500" />
                     Delivery notes
-                    <span className="font-normal text-ink-400">(optional)</span>
+                    <span className="font-normal text-ink-500">(optional)</span>
                   </label>
                   <textarea
                     id="notes"
@@ -572,7 +567,7 @@ export function Checkout() {
                     placeholder="e.g. Gate code, building name, delivery hours…"
                     className="input resize-none"
                   />
-                  <p className="mt-2 text-xs text-ink-400 dark:text-ink-500">
+                  <p className="mt-2 text-xs text-ink-500 dark:text-ink-400">
                     Help our driver find you quickly — include any access instructions or landmarks.
                   </p>
                 </div>
@@ -624,7 +619,7 @@ export function Checkout() {
                 <li key={product.id} className="flex justify-between gap-2 py-2.5">
                   <span className="text-ink-600 dark:text-ink-300">
                     {product.name}{" "}
-                    <span className="text-ink-400">× {quantity}</span>
+                    <span className="text-ink-500">× {quantity}</span>
                   </span>
                   <span className="font-medium text-ink-900 dark:text-white">
                     {formatZAR(product.price * quantity)}
@@ -690,7 +685,7 @@ export function Checkout() {
                 Please enter a deliverable postal code to continue.
               </p>
             )}
-            <p className="mt-3 text-center text-xs text-ink-400 dark:text-ink-500">
+            <p className="mt-3 text-center text-xs text-ink-500 dark:text-ink-400">
               By placing your order you agree to our terms.
             </p>
           </aside>

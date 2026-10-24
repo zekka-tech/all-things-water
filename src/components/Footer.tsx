@@ -147,7 +147,7 @@ export function Footer() {
 
           {/* Shop */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-400 dark:text-ink-500">
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
               Shop
             </h4>
             <ul className="mt-4 space-y-2.5 text-sm">
@@ -172,7 +172,7 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-400 dark:text-ink-500">
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
               Company
             </h4>
             <ul className="mt-4 space-y-2.5 text-sm">
@@ -196,7 +196,7 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-400 dark:text-ink-500">
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
               Get in touch
             </h4>
             <ul className="mt-4 space-y-3 text-sm text-ink-500 dark:text-ink-400">
@@ -224,7 +224,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-ink-200 py-5 dark:border-ink-800">
-          <div className="container-page flex flex-col items-center justify-between gap-2 text-xs text-ink-400 sm:flex-row">
+          <div className="container-page flex flex-col items-center justify-between gap-2 text-xs text-ink-500 sm:flex-row">
             <span>© {new Date().getFullYear()} All Things Water. All rights reserved.</span>
             <div className="flex items-center gap-4">
               <Link
@@ -245,7 +245,7 @@ export function Footer() {
               >
                 Returns
               </Link>
-              <span className="text-ink-300 dark:text-ink-600">Proudly South African 🇿🇦</span>
+              <span className="text-ink-500 dark:text-ink-400">Proudly South African 🇿🇦</span>
             </div>
           </div>
         </div>

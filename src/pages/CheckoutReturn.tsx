@@ -39,12 +39,12 @@ export function CheckoutReturn() {
         </p>
 
         {orderRef && (
-          <p className="mt-2 text-sm text-ink-400 dark:text-ink-500">
+          <p className="mt-2 text-sm text-ink-500 dark:text-ink-400">
             Order reference: <span className="font-mono font-medium">{orderRef}</span>
           </p>
         )}
 
-        <p className="mt-2 max-w-md text-sm text-ink-400 dark:text-ink-500">
+        <p className="mt-2 max-w-md text-sm text-ink-500 dark:text-ink-400">
           If you don’t hear from us within 30 minutes, please {" "}
           <Link
             to="/contact"

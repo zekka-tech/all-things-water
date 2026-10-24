@@ -14,6 +14,16 @@ test.describe("accessibility (axe)", () => {
     test(`no serious/critical a11y violations on ${route}`, async ({ page }) => {
       await page.goto(route);
       await page.waitForLoadState("networkidle");
+      // Let entrance animations (fade-in etc.) finish so axe doesn't sample
+      // half-transparent text. Infinite animations (ripple) are skipped.
+      await page.evaluate(() =>
+        Promise.all(
+          document
+            .getAnimations()
+            .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+            .map((a) => a.finished.catch(() => undefined)),
+        ),
+      );
 
       const results = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
