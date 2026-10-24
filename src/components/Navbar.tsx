@@ -21,14 +21,14 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/90 backdrop-blur-md dark:border-ink-800/70 dark:bg-ink-950/90">
-      <div className="container-page flex h-16 items-center justify-between gap-4">
+      <div className="container-page flex h-16 items-center justify-between gap-4 max-[359px]:gap-2">
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 font-extrabold tracking-tight">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-linear-to-br from-brand-500 to-brand-700 text-white shadow-xs transition-shadow hover:shadow-glow-sm">
+        <Link to="/" className="flex items-center gap-2.5 font-extrabold tracking-tight max-[359px]:gap-2">
+          <span className="grid h-9 w-9 place-items-center rounded-xl max-[359px]:h-8 max-[359px]:w-8 bg-linear-to-br from-brand-500 to-brand-700 text-white shadow-xs transition-shadow hover:shadow-glow-sm">
             <Droplets className="h-5 w-5" />
           </span>
-          <span className="font-display text-lg">
+          <span className="whitespace-nowrap font-display text-base max-[359px]:text-[15px] sm:text-lg">
             All Things <span className="text-brand-600 dark:text-brand-400">Water</span>
           </span>
         </Link>
@@ -62,12 +62,12 @@ export function Navbar() {
             type="button"
             onClick={toggle}
             aria-label="Toggle dark mode"
-            className="btn-ghost h-10 w-10 rounded-xl p-0"
+            className="btn-ghost h-10 w-10 rounded-xl p-0 max-[359px]:w-9"
           >
             {theme === "dark" ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
           </button>
 
-          <Link to="/cart" className="btn-ghost relative h-10 w-10 rounded-xl p-0" aria-label="Cart">
+          <Link to="/cart" className="btn-ghost relative h-10 w-10 rounded-xl p-0 max-[359px]:w-9" aria-label="Cart">
             <ShoppingCart className="h-5 w-5" />
             {count > 0 && (
               <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-ink-950">
@@ -76,10 +76,12 @@ export function Navbar() {
             )}
           </Link>
 
+          {/* On phones the account link lives in the menu drawer instead,
+              so the header row fits next to the logo. */}
           {hasConfig && (
             <Link
               to="/account"
-              className="btn-ghost h-10 w-10 rounded-xl p-0"
+              className="btn-ghost hidden h-10 w-10 rounded-xl p-0 sm:inline-flex"
               aria-label={user ? "My account" : "Sign in"}
               title={user ? user.email : "Sign in"}
             >
@@ -91,7 +93,7 @@ export function Navbar() {
             type="button"
             onClick={() => setOpen((v) => !v)}
             aria-label="Toggle menu"
-            className="btn-ghost h-10 w-10 rounded-xl p-0 md:hidden"
+            className="btn-ghost h-10 w-10 rounded-xl p-0 max-[359px]:w-9 md:hidden"
           >
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
