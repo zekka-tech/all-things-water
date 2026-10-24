@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { Mail, MapPin, Phone, Send, CheckCircle2, MessageCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { Turnstile } from "@/components/Turnstile";
@@ -123,7 +123,7 @@ export function Contact() {
                   <Icon className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-400 dark:text-ink-500">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-ink-500 dark:text-ink-400">
                     {label}
                   </p>
                   <p className="mt-0.5 text-sm font-medium text-ink-700 dark:text-ink-200">
@@ -248,7 +248,7 @@ export function Contact() {
                   className="mb-1.5 block text-sm font-medium text-ink-700 dark:text-ink-200"
                 >
                   Phone{" "}
-                  <span className="font-normal text-ink-400 dark:text-ink-500">
+                  <span className="font-normal text-ink-500 dark:text-ink-400">
                     (optional)
                   </span>
                 </label>

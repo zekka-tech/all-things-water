@@ -34,12 +34,13 @@ export interface PayLinkConfig {
 export function buildSubscriptionPayParams(
   order: PayLinkOrder,
   config: PayLinkConfig,
+  opts: { tokenize?: boolean } = {},
 ): Param[] {
   const encodedOrderRef = encodeURIComponent(order.order_ref);
   const encodedOrderId = encodeURIComponent(order.id);
   const encodedToken = encodeURIComponent(order.checkout_token);
 
-  return [
+  const params: Param[] = [
     ["merchant_id", config.merchantId],
     ["merchant_key", config.merchantKey],
     ["return_url", `${config.siteUrl}/checkout/return?orderRef=${encodedOrderRef}`],
@@ -54,4 +55,12 @@ export function buildSubscriptionPayParams(
     ["amount", order.total.toFixed(2)],
     ["item_name", `All Things Water — Standing order #${order.order_ref}`],
   ];
+
+  // Tokenizing checkout: PayFast returns a reusable card token on the ITN so
+  // future cycles can be charged ad-hoc without the customer.
+  if (opts.tokenize) {
+    params.push(["subscription_type", "2"]);
+  }
+
+  return params;
 }

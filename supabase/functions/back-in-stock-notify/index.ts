@@ -1,117 +1,93 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handleCors, errorResponse, jsonResponse } from "../_shared/cors.ts";
+import { sendBackInStock } from "../_shared/resend.ts";
+import { requireAdmin, serviceClient } from "../_shared/auth.ts";
+import { hasSharedSecret, HttpError, readJson } from "../_shared/http.ts";
+import { logError, logInfo, toErrorFields } from "../_shared/log.ts";
 
-interface NotifyBody {
-  productId: string;
-}
+/**
+ * Email everyone waiting on a product that is back in stock.
+ *
+ * Callers: an admin (Supabase Auth JWT + admins allowlist) or a trusted job
+ * presenting `Authorization: Bearer $BACK_IN_STOCK_CRON_SECRET`. This used to
+ * be unauthenticated, which let anyone trigger email blasts from our domain.
+ */
+const MAX_PER_RUN = 500;
 
 Deno.serve(async (req: Request) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
 
   if (req.method !== "POST") {
-    return errorResponse("Method not allowed", 405);
+    return errorResponse("Method not allowed", 405, undefined, req);
   }
 
   try {
-    const { productId }: NotifyBody = await req.json();
-    if (!productId?.trim()) {
-      return errorResponse("productId is required", 400);
+    const viaCron = hasSharedSecret(req, Deno.env.get("BACK_IN_STOCK_CRON_SECRET"));
+    if (!viaCron) {
+      const auth = await requireAdmin(req);
+      if (!auth.ok) return errorResponse(auth.message, auth.status, undefined, req);
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const resendKey = Deno.env.get("RESEND_API_KEY");
+    const { productId } = await readJson<{ productId?: unknown }>(req);
+    if (typeof productId !== "string" || !productId.trim() || productId.length > 64) {
+      return errorResponse("productId is required", 400, undefined, req);
+    }
+
+    if (!Deno.env.get("RESEND_API_KEY")) {
+      return errorResponse("Email configuration is incomplete", 500, undefined, req);
+    }
     const siteUrl = Deno.env.get("PUBLIC_SITE_URL") || "https://allthingswater.co.za";
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      return errorResponse("Server configuration is incomplete", 500);
-    }
-    if (!resendKey) {
-      return errorResponse("Email configuration is incomplete", 500);
-    }
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false },
-    });
+    const supabase = serviceClient();
 
     const { data: product, error: prodErr } = await supabase
       .from("products")
-      .select("id, name, slug, stock")
-      .eq("id", productId)
+      .select("id, name, slug, stock, reserved_stock, visible")
+      .eq("id", productId.trim())
       .maybeSingle();
 
-    if (prodErr || !product) {
-      return errorResponse("Product not found", 404);
+    if (prodErr || !product || !product.visible) {
+      return errorResponse("Product not found", 404, undefined, req);
     }
-    if (product.stock <= 0) {
-      return errorResponse("Product is still out of stock", 400);
+    if (product.stock - product.reserved_stock <= 0) {
+      return errorResponse("Product is still out of stock", 400, undefined, req);
     }
 
     const { data: subs, error: subsErr } = await supabase
       .from("back_in_stock_subscriptions")
       .select("id, email")
-      .eq("product_id", productId)
-      .eq("notified", false);
+      .eq("product_id", product.id)
+      .eq("notified", false)
+      .limit(MAX_PER_RUN);
 
     if (subsErr) {
-      console.error("Fetch subscriptions error:", subsErr);
-      return errorResponse("Failed to fetch subscriptions", 500);
+      logError("fetch subscriptions failed", { event: "bis_notify.fetch_failed", fn: "back-in-stock-notify", ...toErrorFields(subsErr) });
+      return errorResponse("Failed to fetch subscriptions", 500, undefined, req);
     }
-
     if (!subs || subs.length === 0) {
-      return jsonResponse({ ok: true, sent: 0, message: "No pending subscriptions" });
+      return jsonResponse({ ok: true, sent: 0, message: "No pending subscriptions" }, 200, req);
     }
 
-    const productUrl = `${siteUrl}/product/${product.slug}`;
-    let sentCount = 0;
-    const fromEmail = "All Things Water <orders@allthingswater.co.za>";
-
+    const productUrl = `${siteUrl}/product/${encodeURIComponent(product.slug)}`;
+    const sentIds: string[] = [];
     for (const sub of subs) {
-      try {
-        const html = `<!DOCTYPE html><html><body style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:24px;color:#1f2630">
-<h1 style="color:#06a3f0;font-size:24px;margin:0 0 8px">Back in stock!</h1>
-<p style="color:#66778f;margin:0 0 24px">The item you wanted is available again.</p>
-<div style="background:#f6f7f9;border-radius:12px;padding:20px;margin-bottom:24px">
-<p style="font-size:18px;font-weight:600;margin:0 0 12px">${product.name}</p>
-<p style="margin:0 0 16px;color:#66778f">Good news — we&rsquo;ve restocked this item and it&rsquo;s ready to ship.</p>
-<a href="${productUrl}" style="display:inline-block;background:#06a3f0;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600">Shop now</a>
-</div>
-<p style="color:#66778f;font-size:14px">You&rsquo;re receiving this because you asked to be notified when this product returns to stock.</p>
-</body></html>`;
-
-        const res = await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${resendKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            from: fromEmail,
-            to: sub.email,
-            subject: `Back in stock — ${product.name}`,
-            html,
-          }),
-        });
-
-        if (res.ok) {
-          sentCount++;
-          await supabase
-            .from("back_in_stock_subscriptions")
-            .update({ notified: true })
-            .eq("id", sub.id);
-        } else {
-          console.error(`Failed to notify ${sub.email}:`, await res.text());
-        }
-      } catch (emailErr) {
-        console.error(`Back-in-stock notify error for ${sub.email}:`, emailErr);
-      }
+      if (await sendBackInStock(sub.email, product.name, productUrl)) sentIds.push(sub.id);
     }
 
-    console.log(`Back-in-stock: sent ${sentCount}/${subs.length} notifications for ${product.name}`);
-    return jsonResponse({ ok: true, sent: sentCount, total: subs.length });
+    if (sentIds.length > 0) {
+      await supabase.from("back_in_stock_subscriptions").update({ notified: true }).in("id", sentIds);
+    }
+
+    logInfo("back-in-stock notifications sent", {
+      event: "bis_notify.sent",
+      fn: "back-in-stock-notify",
+      productId: product.id,
+      sent: sentIds.length,
+      total: subs.length,
+    });
+    return jsonResponse({ ok: true, sent: sentIds.length, total: subs.length }, 200, req);
   } catch (err) {
-    console.error("Back-in-stock-notify error:", err);
-    return errorResponse("Internal server error", 500);
+    if (err instanceof HttpError) return errorResponse(err.message, err.status, err.details, req);
+    logError("back-in-stock-notify error", { event: "bis_notify.exception", fn: "back-in-stock-notify", ...toErrorFields(err) });
+    return errorResponse("Internal server error", 500, undefined, req);
   }
 });

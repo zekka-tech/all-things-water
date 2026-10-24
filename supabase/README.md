@@ -123,6 +123,21 @@ The function is idempotent and safe to re-run — advancing `next_delivery_date`
 makes a second run on the same day a no-op for already-processed rows, and the
 RPC uses `for update skip locked` to prevent concurrent double-processing.
 
+**Auto-pay (tokenized recurring, migration 013)** — a subscription with
+`auto_pay = true` is billed hands-off after the first cycle:
+
+1. First due cycle with no stored token → the customer is emailed a *tokenizing*
+   pay link (`subscription_type=2`). On payment, the ITN stores the returned card
+   token via `store_payment_token` (in the service-role-only `payment_tokens`).
+2. Every later cycle → `subscriptions-run` charges that token server-to-server
+   via the PayFast ad-hoc API (`_shared/payfast-api.ts`) and marks the order paid
+   directly; no customer action. A failed charge falls back to a tokenizing pay
+   link and raises an alert.
+
+Tokenization must be **enabled on the PayFast merchant account**, and the ad-hoc
+money path should be validated against the PayFast sandbox before go-live. Card
+tokens never reach the browser.
+
 ## Testing
 
 ### Type-check (deno check)

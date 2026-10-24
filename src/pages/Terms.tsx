@@ -196,7 +196,7 @@ export function Terms() {
       />
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-white dark:from-ink-900 dark:to-ink-950">
+      <section className="relative overflow-hidden bg-linear-to-b from-brand-50 to-white dark:from-ink-900 dark:to-ink-950">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-brand-300/20 blur-3xl dark:bg-brand-700/15"
@@ -209,7 +209,7 @@ export function Terms() {
             Terms of{" "}
             <span className="gradient-text">Service</span>
           </h1>
-          <p className="mt-3 text-sm text-ink-400 dark:text-ink-500">
+          <p className="mt-3 text-sm text-ink-500 dark:text-ink-400">
             Last updated: June 2026
           </p>
           <p className="mt-4 text-lg leading-relaxed text-ink-600 dark:text-ink-300">

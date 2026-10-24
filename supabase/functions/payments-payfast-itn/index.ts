@@ -1,5 +1,5 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
 import { jsonResponse, errorResponse } from "../_shared/cors.ts";
+import { serviceClient } from "../_shared/auth.ts";
 import {
   sendOrderConfirmation,
   sendMerchantNotification,
@@ -12,7 +12,8 @@ import {
 } from "../_shared/payfast.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { alert, logInfo, logWarn, toErrorFields } from "../_shared/log.ts";
-import { clientIpFrom, isAllowedPayfastIp } from "../_shared/payfast-ip.ts";
+import { isAllowedPayfastIp } from "../_shared/payfast-ip.ts";
+import { clientIp as getClientIp, isUuid } from "../_shared/http.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
@@ -23,12 +24,12 @@ Deno.serve(async (req: Request) => {
     logWarn("ITN rejected: source IP not in PayFast allowlist", {
       event: "payfast.itn.ip_rejected",
       fn: "payments-payfast-itn",
-      ip: clientIpFrom(req),
+      ip: getClientIp(req),
     });
     return errorResponse("Forbidden", 403);
   }
 
-  const clientIp = clientIpFrom(req) || "unknown";
+  const clientIp = getClientIp(req);
   const rateLimit = checkRateLimit(`payfast-itn:${clientIp}`);
   if (!rateLimit.allowed) {
     return errorResponse(
@@ -40,9 +41,22 @@ Deno.serve(async (req: Request) => {
 
   try {
     const text = await req.text();
+    if (text.length > 16 * 1024) {
+      return errorResponse("Payload too large", 413);
+    }
     const formParams = parseFormParams(text);
 
+    const sandbox = Deno.env.get("PAYFAST_SANDBOX") === "true";
     const passphrase = Deno.env.get("PAYFAST_PASSPHRASE") || "";
+    if (!sandbox && !passphrase) {
+      // Without a passphrase anyone can compute a valid signature.
+      await alert("ITN rejected: PAYFAST_PASSPHRASE not configured in live mode", {
+        event: "payfast.itn.misconfigured",
+        fn: "payments-payfast-itn",
+      });
+      return errorResponse("Server misconfigured", 500);
+    }
+
     const signature = getParam(formParams, "signature") || "";
     if (!verifySignature(formParams, signature, passphrase)) {
       await alert("ITN signature mismatch", {
@@ -54,35 +68,53 @@ Deno.serve(async (req: Request) => {
       return errorResponse("Invalid signature", 400);
     }
 
+    // The ITN must be addressed to our merchant account.
+    const merchantId = Deno.env.get("PAYFAST_MERCHANT_ID") || "";
+    if (!merchantId || getParam(formParams, "merchant_id") !== merchantId) {
+      await alert("ITN merchant_id mismatch", {
+        event: "payfast.itn.merchant_mismatch",
+        fn: "payments-payfast-itn",
+        ip: clientIp,
+        ref: getParam(formParams, "m_payment_id") || "",
+      });
+      return errorResponse("Invalid merchant", 400);
+    }
+
     const validateRes = await fetch(getValidationUrl(), {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: text,
+      signal: AbortSignal.timeout(10_000),
     });
     const validateText = await validateRes.text();
 
     if (validateText.trim() !== "VALID") {
-      console.error("PayFast validation failed:", validateText);
+      logWarn("PayFast server validation failed", {
+        event: "payfast.itn.validation_failed",
+        fn: "payments-payfast-itn",
+        ref: getParam(formParams, "m_payment_id") || "",
+        response: validateText.slice(0, 200),
+      });
       return errorResponse("Payment validation failed", 400);
     }
 
     const paymentStatus = getParam(formParams, "payment_status");
     if (paymentStatus !== "COMPLETE") {
-      console.log(`ITN received with status: ${paymentStatus} — ignoring`);
+      logInfo("ITN received with non-COMPLETE status; ignoring", {
+        event: "payfast.itn.ignored",
+        fn: "payments-payfast-itn",
+        ref: getParam(formParams, "m_payment_id") || "",
+        paymentStatus,
+      });
       return jsonResponse({ received: true });
     }
 
     const orderId = getParam(formParams, "m_payment_id");
-    if (!orderId) {
+    if (!isUuid(orderId)) {
       return errorResponse("Missing order reference", 400);
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false },
-    });
+    const supabase = serviceClient();
 
     const { data: order, error: fetchErr } = await supabase
       .from("orders")
@@ -91,17 +123,20 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (fetchErr || !order) {
-      console.error("Order not found:", orderId);
+      logWarn("ITN for unknown order", {
+        event: "payfast.itn.order_not_found",
+        fn: "payments-payfast-itn",
+        ref: orderId,
+      });
       return errorResponse("Order not found", 404);
     }
 
     if (order.status === "paid") {
-      console.log(`Order ${orderId} already paid — idempotent return`);
       return jsonResponse({ received: true });
     }
 
-    const amountGross = parseFloat(getParam(formParams, "amount_gross") || "0");
-    if (Math.abs(amountGross - Number(order.total)) > 0.01) {
+    const amountGross = Number(getParam(formParams, "amount_gross") || "NaN");
+    if (!Number.isFinite(amountGross) || Math.abs(amountGross - Number(order.total)) > 0.01) {
       await alert("ITN amount mismatch — possible tampering", {
         event: "payfast.itn.amount_mismatch",
         fn: "payments-payfast-itn",
@@ -143,8 +178,32 @@ Deno.serve(async (req: Request) => {
     }
 
     if (result?.alreadyPaid) {
-      console.log(`Order ${orderId} already paid — idempotent return`);
       return jsonResponse({ received: true });
+    }
+
+    // Capture a card token from a tokenizing checkout (subscription_type=2) so
+    // future auto-pay cycles can be charged ad-hoc. Best-effort; never blocks.
+    const cardToken = getParam(formParams, "token");
+    if (cardToken && order.user_id) {
+      const { error: tokenErr } = await supabase.rpc("store_payment_token", {
+        p_user_id: order.user_id,
+        p_token: cardToken,
+        p_last_four: null,
+      });
+      if (tokenErr) {
+        logWarn("failed to store payment token", {
+          event: "payfast.itn.token_store_failed",
+          fn: "payments-payfast-itn",
+          ref: order.order_ref,
+          ...toErrorFields(tokenErr),
+        });
+      } else {
+        logInfo("payment token stored", {
+          event: "payfast.itn.token_stored",
+          fn: "payments-payfast-itn",
+          ref: order.order_ref,
+        });
+      }
     }
 
     const items = (order.order_items || []).map(

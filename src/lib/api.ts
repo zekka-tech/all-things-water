@@ -65,3 +65,16 @@ export function userFriendlyError(err: unknown): string {
   }
   return "An unexpected error occurred. Please try again or contact us.";
 }
+
+const PAYFAST_HOSTS = new Set(["www.payfast.co.za", "sandbox.payfast.co.za"]);
+
+/** True only for an https URL on PayFast's hosted-checkout domains. */
+export function isPayfastUrl(url: unknown): boolean {
+  if (typeof url !== "string") return false;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && PAYFAST_HOSTS.has(u.hostname);
+  } catch {
+    return false;
+  }
+}

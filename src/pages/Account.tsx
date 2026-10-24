@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import {
   Package,
   LogIn,
@@ -14,11 +14,13 @@ import {
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { Subscriptions } from "@/components/Subscriptions";
+import { Loyalty } from "@/components/Loyalty";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/lib/supabase";
 import { formatZAR } from "@/lib/format";
 import { captureException } from "@/lib/sentry";
 import { cx } from "@/lib/format";
+import { passwordProblem } from "@/lib/validation";
 
 interface OrderRow {
   id: string;
@@ -56,7 +58,8 @@ export function Account() {
       const { data, error } = await supabase
         .from("orders")
         .select("id, order_ref, status, total, created_at, delivery_method")
-        .or(`user_id.eq.${user.id},customer_email.eq.${user.email}`)
+        // Row-level security scopes rows to this user (by id, or by a
+        // verified email for guest orders) — no client-side filter needed.
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
@@ -87,8 +90,9 @@ export function Account() {
           setError("Please enter your name.");
           return;
         }
-        if (password.length < 6) {
-          setError("Password must be at least 6 characters.");
+        const weak = passwordProblem(password);
+        if (weak) {
+          setError(weak);
           return;
         }
         const res = await signUp(email.trim(), password, name.trim());
@@ -165,7 +169,7 @@ export function Account() {
                   className={cx(
                     "flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors",
                     mode === "login"
-                      ? "bg-white text-ink-900 shadow-sm dark:bg-ink-900 dark:text-white"
+                      ? "bg-white text-ink-900 shadow-xs dark:bg-ink-900 dark:text-white"
                       : "text-ink-500 hover:text-ink-700 dark:text-ink-400",
                   )}
                 >
@@ -177,7 +181,7 @@ export function Account() {
                   className={cx(
                     "flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors",
                     mode === "register"
-                      ? "bg-white text-ink-900 shadow-sm dark:bg-ink-900 dark:text-white"
+                      ? "bg-white text-ink-900 shadow-xs dark:bg-ink-900 dark:text-white"
                       : "text-ink-500 hover:text-ink-700 dark:text-ink-400",
                   )}
                 >
@@ -192,7 +196,7 @@ export function Account() {
                       Full name
                     </label>
                     <div className="relative">
-                      <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+                      <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
                       <input
                         id="name"
                         type="text"
@@ -210,7 +214,7 @@ export function Account() {
                     Email
                   </label>
                   <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
                     <input
                       id="email"
                       type="email"
@@ -227,7 +231,7 @@ export function Account() {
                     Password
                   </label>
                   <div className="relative">
-                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
                     <input
                       id="password"
                       type="password"
@@ -365,6 +369,9 @@ export function Account() {
 
         {/* Subscriptions */}
         <Subscriptions />
+
+        {/* Rewards & referrals */}
+        <Loyalty />
       </div>
     </>
   );

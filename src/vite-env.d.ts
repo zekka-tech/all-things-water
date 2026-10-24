@@ -7,9 +7,18 @@ interface GtagFunction {
   (command: "set", params: Record<string, unknown>): void;
 }
 
+type FbqFunction = ((...args: unknown[]) => void) & {
+  queue?: unknown[];
+  loaded?: boolean;
+  version?: string;
+  callMethod?: (...args: unknown[]) => void;
+};
+
 interface Window {
   gtag?: GtagFunction;
   dataLayer?: unknown[];
+  fbq?: FbqFunction;
+  _fbq?: FbqFunction;
 }
 
 interface ImportMetaEnv {
@@ -24,4 +33,7 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_URL?: string;
   readonly VITE_SUPABASE_ANON_KEY?: string;
   readonly VITE_SENTRY_DSN?: string;
+  readonly VITE_TURNSTILE_SITE_KEY?: string;
+  readonly VITE_META_PIXEL_ID?: string;
+  readonly VITE_CDP_ENDPOINT?: string;
 }

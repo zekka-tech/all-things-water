@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import {
   ArrowRight,
   Droplets,
@@ -57,7 +57,7 @@ export function Home() {
       />
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 via-white to-white dark:from-ink-900 dark:via-ink-950 dark:to-ink-950">
+      <section className="relative overflow-hidden bg-linear-to-b from-brand-50 via-white to-white dark:from-ink-900 dark:via-ink-950 dark:to-ink-950">
         {/* Decorative blobs */}
         <div
           aria-hidden
@@ -122,7 +122,7 @@ export function Home() {
                   key={p.id}
                   to={`/product/${p.slug}`}
                   style={{ animationDelay: `${i * 80}ms` }}
-                  className="glass card-hover group flex flex-col items-center gap-3 rounded-2xl p-5 shadow-sm"
+                  className="glass card-hover group flex flex-col items-center gap-3 rounded-2xl p-5 shadow-xs"
                 >
                   <img
                     src={p.image}
@@ -224,7 +224,7 @@ export function Home() {
 
       {/* ── CTA banner ── */}
       <section className="container-page py-12">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-brand-800 px-8 py-14 text-center text-white sm:px-16">
+        <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-brand-600 via-brand-700 to-brand-800 px-8 py-14 text-center text-white sm:px-16">
           {/* Decorative */}
           <div
             aria-hidden
@@ -235,7 +235,7 @@ export function Home() {
             className="pointer-events-none absolute -bottom-12 -left-12 h-48 w-48 rounded-full bg-brand-400/20 blur-3xl"
           />
 
-          <span className="badge bg-white/20 text-white backdrop-blur-sm">
+          <span className="badge bg-white/20 text-white backdrop-blur-xs">
             <Droplets className="h-3.5 w-3.5" /> Home &amp; office
           </span>
           <h2 className="mt-4 font-display text-3xl font-extrabold leading-tight sm:text-4xl">

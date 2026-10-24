@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter } from "react-router";
 import App from "./App";
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/context/ThemeContext";
@@ -9,8 +9,13 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { validateEnv } from "@/lib/validateEnv";
 import { initErrorReporter } from "@/lib/sentry";
 import { setTracker } from "@/lib/analytics";
+import { initMarketing } from "@/lib/marketing";
 import { CONSENT_EVENT, hasTrackingConsent } from "@/lib/consent";
+import { captureSensitiveParams } from "@/lib/sensitiveParams";
 import "./index.css";
+
+// Must run before analytics/pixels so credentials never reach their URLs.
+captureSensitiveParams();
 
 const warnings = validateEnv();
 if (warnings.length > 0) {
@@ -53,11 +58,14 @@ ${body}`;
       captureMessage(message, level = "info") {
         console.log(`[Sentry:${level}]`, message);
       },
-      setUser(user) {
-        if (user) console.log("[Sentry] setUser:", user);
+      setUser() {
+        // Intentionally a no-op: never attach customer PII to telemetry.
       },
     });
   }
+
+  // Load configured marketing destinations (GA4 / Meta Pixel / CDP webhook).
+  initMarketing();
 
   if (analyticsEnabled && gaId) {
     setTracker({

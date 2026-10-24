@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { Droplets, Mail, MapPin, Phone, ArrowRight, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { env } from "@/lib/env";
 import { validateEmail } from "@/lib/validation";
@@ -44,7 +44,7 @@ export function Footer() {
   return (
     <footer className="mt-20 border-t border-ink-200 dark:border-ink-800">
       {/* Brand gradient accent */}
-      <div className="h-1 bg-gradient-to-r from-brand-500 via-brand-400 to-brand-600" />
+      <div className="h-1 bg-linear-to-r from-brand-500 via-brand-400 to-brand-600" />
 
       <div className="bg-ink-50 dark:bg-ink-950">
         {/* Newsletter strip */}
@@ -89,7 +89,7 @@ export function Footer() {
                       <button
                         type="button"
                         onClick={reset}
-                        className="btn-ghost ml-auto !px-2 !py-1 text-xs"
+                        className="btn-ghost ml-auto px-2! py-1! text-xs"
                       >
                         <RefreshCw className="h-3 w-3" />
                         Try again
@@ -135,7 +135,7 @@ export function Footer() {
           {/* Brand */}
           <div>
             <Link to="/" className="flex items-center gap-2.5 font-extrabold">
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-sm">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-linear-to-br from-brand-500 to-brand-700 text-white shadow-xs">
                 <Droplets className="h-5 w-5" />
               </span>
               <span className="font-display text-base">All Things Water</span>
@@ -147,7 +147,7 @@ export function Footer() {
 
           {/* Shop */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-400 dark:text-ink-500">
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
               Shop
             </h4>
             <ul className="mt-4 space-y-2.5 text-sm">
@@ -172,7 +172,7 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-400 dark:text-ink-500">
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
               Company
             </h4>
             <ul className="mt-4 space-y-2.5 text-sm">
@@ -196,7 +196,7 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-400 dark:text-ink-500">
+            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
               Get in touch
             </h4>
             <ul className="mt-4 space-y-3 text-sm text-ink-500 dark:text-ink-400">
@@ -224,7 +224,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-ink-200 py-5 dark:border-ink-800">
-          <div className="container-page flex flex-col items-center justify-between gap-2 text-xs text-ink-400 sm:flex-row">
+          <div className="container-page flex flex-col items-center justify-between gap-2 text-xs text-ink-500 sm:flex-row">
             <span>© {new Date().getFullYear()} All Things Water. All rights reserved.</span>
             <div className="flex items-center gap-4">
               <Link
@@ -245,7 +245,7 @@ export function Footer() {
               >
                 Returns
               </Link>
-              <span className="text-ink-300 dark:text-ink-600">Proudly South African 🇿🇦</span>
+              <span className="text-ink-500 dark:text-ink-400">Proudly South African 🇿🇦</span>
             </div>
           </div>
         </div>

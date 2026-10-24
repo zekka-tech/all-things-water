@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router";
 import { ArrowLeft, Check, Repeat, ShoppingCart, Tag } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ProductCard } from "@/components/ProductCard";
@@ -12,6 +12,7 @@ import { categoryLabel } from "@/data/categories";
 import { BackInStockNotify } from "@/components/BackInStockNotify";
 import { formatZAR } from "@/lib/format";
 import { useCart } from "@/context/CartContext";
+import { trackMarketing } from "@/lib/marketing";
 import { NotFound } from "./NotFound";
 
 export function ProductDetail() {
@@ -30,6 +31,13 @@ export function ProductDetail() {
 
   const handleAdd = () => {
     addItem(product, qty);
+    trackMarketing({
+      type: "add_to_cart",
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: qty,
+    });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1600);
   };
@@ -62,18 +70,18 @@ export function ProductDetail() {
         {/* Product layout */}
         <div className="mt-6 grid gap-10 lg:grid-cols-2">
           {/* Image panel */}
-          <div className="animate-fade-in card relative grid place-items-center overflow-hidden bg-gradient-to-b from-brand-50 via-brand-50/50 to-white p-10 dark:from-ink-800 dark:via-ink-800/50 dark:to-ink-900">
+          <div className="animate-fade-in card relative grid place-items-center overflow-hidden bg-linear-to-b from-brand-50 via-brand-50/50 to-white p-10 dark:from-ink-800 dark:via-ink-800/50 dark:to-ink-900">
             {/* Decorative blur */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-0 -z-0 flex items-center justify-center"
+              className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center"
             >
               <div className="h-64 w-64 rounded-full bg-brand-200/40 blur-3xl dark:bg-brand-700/20" />
             </div>
             <img
               src={product.image}
               alt={product.name}
-              className="relative z-10 max-h-[420px] w-full object-contain drop-shadow-sm transition-transform duration-500 hover:scale-[1.03]"
+              className="relative z-10 max-h-[420px] w-full object-contain drop-shadow-xs transition-transform duration-500 hover:scale-[1.03]"
             />
           </div>
 
@@ -164,7 +172,7 @@ export function ProductDetail() {
                       aria-label="Delivery frequency"
                       value={subFrequency}
                       onChange={(e) => setSubFrequency(e.target.value as Frequency)}
-                      className="input max-w-[12rem]"
+                      className="input max-w-48"
                     >
                       {FREQUENCY_OPTIONS.map((o) => (
                         <option key={o.value} value={o.value}>

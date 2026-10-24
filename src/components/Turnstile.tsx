@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { env } from "@/lib/env";
 
 /**
@@ -71,8 +71,10 @@ export function Turnstile({
   // re-renders due to changing callback identities.
   const onVerifyRef = useRef(onVerify);
   const onExpireRef = useRef(onExpire);
-  onVerifyRef.current = onVerify;
-  onExpireRef.current = onExpire;
+  useLayoutEffect(() => {
+    onVerifyRef.current = onVerify;
+    onExpireRef.current = onExpire;
+  });
 
   useEffect(() => {
     if (!env.turnstileSiteKey || !containerRef.current) return;

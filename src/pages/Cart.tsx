@@ -1,12 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { ArrowRight, ShoppingBag, Trash2, Truck } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { QuantityStepper } from "@/components/QuantityStepper";
 import { useCart } from "@/context/CartContext";
 import { formatZAR } from "@/lib/format";
-
-const DELIVERY_THRESHOLD = 500;
-const DELIVERY_FEE = 75;
+import { DELIVERY_FEE, DELIVERY_THRESHOLD } from "@/lib/delivery";
 
 export function Cart() {
   const { items, subtotal, setQuantity, removeItem, clear } = useCart();
@@ -67,7 +65,7 @@ export function Cart() {
                   </span>
                 )}
               </div>
-              <span className="shrink-0 text-xs text-ink-400">{formatZAR(DELIVERY_THRESHOLD)}</span>
+              <span className="shrink-0 text-xs text-ink-500">{formatZAR(DELIVERY_THRESHOLD)}</span>
             </div>
             <div className="progress-track mt-2">
               <div
@@ -85,7 +83,7 @@ export function Cart() {
               <div key={product.id} className="card flex gap-4 p-4">
                 <Link
                   to={`/product/${product.slug}`}
-                  className="grid h-24 w-24 shrink-0 place-items-center rounded-xl bg-gradient-to-b from-brand-50 to-white p-2 dark:from-ink-800 dark:to-ink-900"
+                  className="grid h-24 w-24 shrink-0 place-items-center rounded-xl bg-linear-to-b from-brand-50 to-white p-2 dark:from-ink-800 dark:to-ink-900"
                 >
                   <img
                     src={product.image}
@@ -110,7 +108,7 @@ export function Cart() {
                       type="button"
                       onClick={() => removeItem(product.id)}
                       aria-label={`Remove ${product.name}`}
-                      className="btn-ghost h-8 w-8 shrink-0 rounded-lg p-0 text-ink-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                      className="btn-ghost h-8 w-8 shrink-0 rounded-lg p-0 text-ink-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -133,7 +131,7 @@ export function Cart() {
             <button
               type="button"
               onClick={clear}
-              className="text-sm font-medium text-ink-400 transition-colors hover:text-red-600 dark:hover:text-red-400"
+              className="text-sm font-medium text-ink-500 transition-colors hover:text-red-600 dark:hover:text-red-400"
             >
               Clear cart
             </button>

@@ -43,3 +43,17 @@ export function validatePhone(phone: string): string | null {
 export function validatePostalCode(code: string): boolean {
   return /^\d{4}$/.test(code);
 }
+
+/** Must match [auth] minimum_password_length / password_requirements in supabase/config.toml. */
+export const MIN_PASSWORD_LENGTH = 10;
+
+/** Returns an error message, or null when the password meets the policy. */
+export function passwordProblem(password: string): string | null {
+  if (password.length < MIN_PASSWORD_LENGTH) {
+    return `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  }
+  if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+    return "Password must include both letters and numbers.";
+  }
+  return null;
+}

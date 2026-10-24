@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation } from "react-router";
 import {
   Repeat,
   Loader2,
@@ -8,12 +8,14 @@ import {
   XCircle,
   Plus,
   CalendarClock,
+  CreditCard,
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/lib/supabase";
 import { products } from "@/data/products";
 import { cx, formatZAR } from "@/lib/format";
 import { captureException } from "@/lib/sentry";
+import { trackMarketing } from "@/lib/marketing";
 import {
   FREQUENCY_OPTIONS,
   frequencyLabel,
@@ -47,6 +49,7 @@ export function Subscriptions() {
   const [productId, setProductId] = useState(SELLABLE[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
   const [frequency, setFrequency] = useState<Frequency>("monthly");
+  const [autoPay, setAutoPay] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -67,9 +70,10 @@ export function Subscriptions() {
       const { data, error: err } = await supabase
         .from("subscriptions")
         .select(
-          "id, product_id, product_name, quantity, unit_price, frequency, status, next_delivery_date",
+          "id, product_id, product_name, quantity, unit_price, frequency, status, next_delivery_date, auto_pay",
         )
-        .or(`user_id.eq.${user.id},customer_email.eq.${user.email}`)
+        // Row-level security scopes rows to this user (by id, or by a
+        // verified email for guest orders) — no client-side filter needed.
         .order("next_delivery_date", { ascending: true });
       if (err) throw err;
       setSubs((data ?? []) as SubscriptionRow[]);
@@ -93,7 +97,8 @@ export function Subscriptions() {
         .select(
           "customer_name, customer_phone, delivery_address, delivery_city, delivery_postal_code",
         )
-        .or(`user_id.eq.${user.id},customer_email.eq.${user.email}`)
+        // Row-level security scopes rows to this user (by id, or by a
+        // verified email for guest orders) — no client-side filter needed.
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -130,6 +135,28 @@ export function Subscriptions() {
       setError("Could not update that subscription. Please try again.");
       captureException(err instanceof Error ? err : new Error(String(err)), {
         action: "updateSubscription",
+      });
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const toggleAutoPay = async (id: string, value: boolean) => {
+    if (!supabase) return;
+    setBusyId(id);
+    try {
+      const { error: err } = await supabase
+        .from("subscriptions")
+        .update({ auto_pay: value })
+        .eq("id", id);
+      if (err) throw err;
+      setSubs((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, auto_pay: value } : s)),
+      );
+    } catch (err) {
+      setError("Could not update auto-pay. Please try again.");
+      captureException(err instanceof Error ? err : new Error(String(err)), {
+        action: "toggleAutoPay",
       });
     } finally {
       setBusyId(null);
@@ -195,8 +222,10 @@ export function Subscriptions() {
         quantity,
         unit_price: product.price,
         frequency,
+        auto_pay: autoPay,
       });
       if (err) throw err;
+      trackMarketing({ type: "subscribe", productId: product.id, frequency });
       setCreating(false);
       setQuantity(1);
       setNotes("");
@@ -359,6 +388,20 @@ export function Subscriptions() {
                 className="input"
               />
             </div>
+
+            <label className="flex items-start gap-3 sm:col-span-2">
+              <input
+                type="checkbox"
+                checked={autoPay}
+                onChange={(e) => setAutoPay(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded-sm border-ink-300 text-brand-600 focus:ring-brand-500"
+              />
+              <span className="text-sm text-ink-600 dark:text-ink-300">
+                <span className="font-medium text-ink-800 dark:text-ink-100">Auto-pay</span> — pay
+                once on the first delivery, then we charge that card automatically each cycle. No
+                card details are ever stored by us.
+              </span>
+            </label>
           </div>
 
           {formError && (
@@ -469,6 +512,23 @@ export function Subscriptions() {
                     className="btn-outline px-3 py-1.5 text-xs"
                   >
                     <Play className="h-3.5 w-3.5" /> Resume
+                  </button>
+                )}
+                {s.status !== "cancelled" && (
+                  <button
+                    type="button"
+                    onClick={() => toggleAutoPay(s.id, !s.auto_pay)}
+                    disabled={busyId === s.id}
+                    className={cx(
+                      "px-3 py-1.5 text-xs",
+                      s.auto_pay
+                        ? "btn-primary"
+                        : "btn-outline",
+                    )}
+                    title={s.auto_pay ? "Auto-pay is on" : "Turn on auto-pay"}
+                  >
+                    <CreditCard className="h-3.5 w-3.5" />
+                    {s.auto_pay ? "Auto-pay on" : "Auto-pay off"}
                   </button>
                 )}
                 {s.status !== "cancelled" && (

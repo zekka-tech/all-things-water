@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router";
 import { Droplets, Menu, Moon, Settings, ShoppingCart, Sun, UserCircle, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useTheme } from "@/context/ThemeContext";
@@ -25,7 +25,7 @@ export function Navbar() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2.5 font-extrabold tracking-tight">
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-sm transition-shadow hover:shadow-glow-sm">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-linear-to-br from-brand-500 to-brand-700 text-white shadow-xs transition-shadow hover:shadow-glow-sm">
             <Droplets className="h-5 w-5" />
           </span>
           <span className="font-display text-lg">
@@ -100,7 +100,7 @@ export function Navbar() {
 
       {/* Mobile drawer */}
       {open && (
-        <nav className="animate-slide-up border-t border-ink-200 bg-white/95 px-4 pb-4 pt-2 backdrop-blur-sm dark:border-ink-800 dark:bg-ink-950/95">
+        <nav className="animate-slide-up border-t border-ink-200 bg-white/95 px-4 pb-4 pt-2 backdrop-blur-xs dark:border-ink-800 dark:bg-ink-950/95">
           <div className="space-y-0.5">
             {links.map((l) => (
               <NavLink
@@ -151,7 +151,7 @@ export function Navbar() {
                   "block rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                   isActive
                     ? "bg-ink-100 text-ink-600 dark:bg-ink-800 dark:text-ink-300"
-                    : "text-ink-400 hover:bg-ink-50 dark:text-ink-500 dark:hover:bg-ink-800/60",
+                    : "text-ink-500 hover:bg-ink-50 dark:text-ink-400 dark:hover:bg-ink-800/60",
                 )
               }
             >

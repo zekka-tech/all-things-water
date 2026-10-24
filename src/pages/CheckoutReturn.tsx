@@ -1,17 +1,24 @@
-import { useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Link, useSearchParams } from "react-router";
 import { ShoppingBag } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { useCart } from "@/context/CartContext";
+import { trackMarketing } from "@/lib/marketing";
 
 export function CheckoutReturn() {
-  const { clear } = useCart();
+  const { clear, subtotal } = useCart();
   const [searchParams] = useSearchParams();
   const orderRef = searchParams.get("orderRef");
+  const tracked = useRef(false);
 
   useEffect(() => {
+    // Fire the purchase event with the order value before the cart is cleared.
+    if (!tracked.current && orderRef) {
+      tracked.current = true;
+      trackMarketing({ type: "purchase", orderRef, value: subtotal });
+    }
     clear();
-  }, [clear]);
+  }, [clear, orderRef, subtotal]);
 
   return (
     <>
@@ -32,12 +39,12 @@ export function CheckoutReturn() {
         </p>
 
         {orderRef && (
-          <p className="mt-2 text-sm text-ink-400 dark:text-ink-500">
+          <p className="mt-2 text-sm text-ink-500 dark:text-ink-400">
             Order reference: <span className="font-mono font-medium">{orderRef}</span>
           </p>
         )}
 
-        <p className="mt-2 max-w-md text-sm text-ink-400 dark:text-ink-500">
+        <p className="mt-2 max-w-md text-sm text-ink-500 dark:text-ink-400">
           If you don’t hear from us within 30 minutes, please {" "}
           <Link
             to="/contact"

@@ -1,9 +1,10 @@
-import { Link } from "react-router-dom";
+import { Link } from "react-router";
 import { ShoppingCart, Check } from "lucide-react";
 import { useState } from "react";
 import type { Product } from "@/types";
 import { formatZAR } from "@/lib/format";
 import { useCart } from "@/context/CartContext";
+import { trackMarketing } from "@/lib/marketing";
 import { StockBadge } from "./StockBadge";
 import { OptimizedImage } from "./OptimizedImage";
 
@@ -14,6 +15,13 @@ export function ProductCard({ product }: { product: Product }) {
 
   const handleAdd = () => {
     addItem(product, 1);
+    trackMarketing({
+      type: "add_to_cart",
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+    });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1400);
   };
@@ -23,7 +31,7 @@ export function ProductCard({ product }: { product: Product }) {
       {/* Image */}
       <Link
         to={`/product/${product.slug}`}
-        className="relative block aspect-square overflow-hidden bg-gradient-to-b from-brand-50 via-brand-50/60 to-white dark:from-ink-800 dark:via-ink-800/60 dark:to-ink-900"
+        className="relative block aspect-square overflow-hidden bg-linear-to-b from-brand-50 via-brand-50/60 to-white dark:from-ink-800 dark:via-ink-800/60 dark:to-ink-900"
       >
         <OptimizedImage
           src={product.image}

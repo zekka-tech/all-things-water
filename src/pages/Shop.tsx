@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ProductCard } from "@/components/ProductCard";
@@ -129,7 +129,7 @@ export function Shop() {
         <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* Search with suggestions */}
           <div ref={searchRef} className="relative max-w-sm flex-1">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-500" />
             <input
               ref={inputRef}
               type="search"
@@ -148,7 +148,7 @@ export function Shop() {
                 type="button"
                 onClick={() => { setQuery(""); setShowSuggestions(false); }}
                 aria-label="Clear search"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-400 hover:text-ink-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 hover:text-ink-600"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -165,7 +165,7 @@ export function Shop() {
                     }}
                     className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 hover:bg-ink-50 dark:text-ink-200 dark:hover:bg-ink-800"
                   >
-                    <img src={p.image} alt="" className="h-8 w-8 rounded object-cover" />
+                    <img src={p.image} alt="" className="h-8 w-8 rounded-sm object-cover" />
                     <span className="truncate">{p.name}</span>
                   </button>
                 ))}
@@ -175,7 +175,7 @@ export function Shop() {
 
           {/* Sort + Filters toggle */}
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 shrink-0 text-ink-400" />
+            <SlidersHorizontal className="h-4 w-4 shrink-0 text-ink-500" />
             <label htmlFor="sort" className="sr-only">Sort by</label>
             <select
               id="sort"
@@ -268,7 +268,7 @@ export function Shop() {
                 type="checkbox"
                 checked={inStockOnly}
                 onChange={(e) => setInStockOnly(e.target.checked)}
-                className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500 dark:border-ink-600"
+                className="h-4 w-4 rounded-sm border-ink-300 text-brand-600 focus:ring-brand-500 dark:border-ink-600"
               />
               In stock only
             </label>
@@ -310,7 +310,7 @@ export function Shop() {
                 Browse all products
               </button>
             </div>
-            <p className="mt-4 text-xs text-ink-400 dark:text-ink-500">
+            <p className="mt-4 text-xs text-ink-500 dark:text-ink-400">
               Browse by:{" "}
               {categories.map((c, i) => (
                 <span key={c.id}>

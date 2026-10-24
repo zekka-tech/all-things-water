@@ -13,6 +13,7 @@
  */
 
 import { crypto } from "jsr:@std/crypto";
+import { timingSafeEqual } from "./http.ts";
 
 export type Param = [key: string, value: string];
 
@@ -42,7 +43,7 @@ export function pfEncode(value: string): string {
     .replace(/%[0-9a-f]{2}/g, (m) => m.toUpperCase());
 }
 
-function md5Hex(input: string): string {
+export function md5Hex(input: string): string {
   const digest = crypto.subtle.digestSync(
     "MD5",
     new TextEncoder().encode(input),
@@ -79,7 +80,7 @@ export function verifySignature(
   passphrase?: string,
 ): boolean {
   if (!signature) return false;
-  return buildSignature(params, passphrase) === signature;
+  return timingSafeEqual(buildSignature(params, passphrase), signature.toLowerCase());
 }
 
 /**
@@ -99,12 +100,18 @@ export function parseFormParams(body: string): Param[] {
     const idx = pair.indexOf("=");
     const key = idx === -1 ? pair : pair.slice(0, idx);
     const val = idx === -1 ? "" : pair.slice(idx + 1);
-    out.push([
-      decodeURIComponent(key),
-      decodeURIComponent(val.replace(/\+/g, " ")),
-    ]);
+    out.push([safeDecode(key), safeDecode(val.replace(/\+/g, " "))]);
   }
   return out;
+}
+
+/** decodeURIComponent that never throws on malformed escapes. */
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 /** Convenience: look up a single value from ordered params. */

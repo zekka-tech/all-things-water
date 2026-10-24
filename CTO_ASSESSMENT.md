@@ -79,9 +79,9 @@ economics are concrete; not yet a Series-A case.
 | **Back-in-stock notifications** | No way to capture demand for sold-out SKUs | P1 | ✅ **Implemented** — table + edge fn + PDP widget |
 | **Admin order management with real orders** | Admin used mock data only | P0 | ✅ **Implemented** — real order fetch + status updates + lifecycle email triggers |
 | **B2B office-water contracts** | Highest-LTV segment; previously guest-checkout only | P2 | ✅ **Implemented (MVP)** — `/business` quote-request flow + `business-quote` Edge Function (lead capture, sales + requester email), service-role-only `business_quotes` table (migration 010) |
-| **Loyalty / referral** | No program; LTV tooling absent | P2 | Pending |
-| **Inventory multi-warehouse** | Single stock count; no branch-level allocation | P2 | Pending |
-| **Marketing stack confirmed** | Analytics is consent-gated and generic GA/GTM; no CDP/klaviyo email lifecycle | P1 | Lifecycle email ✅; marketing CDP pending |
+| **Loyalty / referral** | No program; LTV tooling absent | P2 | ✅ **Implemented (MVP)** — points (1/R10) auto-awarded on paid orders, referral codes + 100-pt bonus, account Rewards UI (migration 012) |
+| **Inventory multi-warehouse** | Single stock count; no branch-level allocation | P2 | ✅ **Implemented** — per-warehouse on-hand, region-based fulfilment routing at order time, dispatch decrement on ship, admin warehouse/stock UI (migration 014). Reservations remain global (documented MVP limit) |
+| **Marketing stack confirmed** | Analytics is consent-gated and generic GA/GTM; no CDP/klaviyo email lifecycle | P1 | ✅ Lifecycle email + **consent-gated marketing event layer** (GA4 + Meta Pixel + CDP webhook), funnel instrumented |
 
 ---
 
@@ -93,8 +93,8 @@ economics are concrete; not yet a Series-A case.
 | --- | --- | --- |
 | Code quality / typing | **A−** | TS strict, colocated tests, `@/` alias; pure logic extracted from components; structured edge-fn logging |
 | Test coverage | **B+** | 187 Vitest + 38 Deno tests; **Playwright e2e** purchase-funnel smoke (desktop+mobile) + **axe a11y** gate added |
-| Security posture | **A−** | RLS, service-role mediation, CSP+HSTS+COOP, **ITN source-IP allowlist**, **CORS allowlist**, **structured logging + alerting**, rate-limits. See `SECURITY_AUDIT.md` |
-| Reliability / observability | **B** | Sentry consent-gated; **structured JSON logging + Slack/email alerting** on order/ITN/subscription failures; no uptime SLO yet |
+| Security posture | **A** | RLS, service-role mediation, **strict CSP** (no script `unsafe-inline`)+HSTS+COOP, ITN source-IP allowlist, token-bound payment init, Turnstile, **shared-store rate limits**, structured logging+alerting, **0 npm-audit vulns**. See `SECURITY_AUDIT.md` |
+| Reliability / observability | **B+** | Sentry consent-gated; structured JSON logging + Slack/email alerting; **public health probe + scheduled SLO monitor** (DB latency + order-flow) with env-tunable thresholds (`OBSERVABILITY.md`) |
 | Deployment | **A−** | Cloudflare Pages + Supabase; reproducible `npm run build`; **GitHub Actions CI** (typecheck/lint/test/build/deno/audit) |
 | Performance | **B+** | Code-split vendor/Admin chunks, lazy images; **Lighthouse/CWV budget** in CI (LCP/CLS/TBT) |
 | Accessibility | **B+** | Semantic markup, focus states; **axe-core gate** over primary routes in CI |
@@ -293,11 +293,19 @@ Now complete (this phase):
 9. ~~**Core Web Vitals budget + axe a11y**~~ ✅ — `lighthouserc.json` + axe gate in CI.
 10. ~~**B2B office-water flow**~~ ✅ (MVP) — `/business` quote capture + `business-quote` Edge Function + `business_quotes` table.
 
-Remaining (next phase):
-11. **Marketing CDP + lifecycle automation** (P1) — beyond transactional email; segment-driven re-order nudges.
-12. **True recurring auto-billing** (P2, optional) — PayFast tokenization if the one-click-pay model underperforms on conversion.
-13. **Migration CI gate** (`supabase db reset`), **Dependabot + secret scanning**, **Turnstile on public forms** (see `SECURITY_AUDIT.md` O5–O7).
-14. **Loyalty / referral** and **multi-warehouse inventory** (P2).
+Now complete (follow-up phases):
+11. ~~**Marketing event layer / CDP**~~ ✅ — consent-gated GA4 + Meta Pixel + first-party CDP webhook (`src/lib/marketing.ts`); funnel instrumented (add_to_cart → begin_checkout → purchase, plus generate_lead and subscribe).
+13. ~~**Migration CI gate, Dependabot + secret scanning, Turnstile**~~ ✅ — see `SECURITY_AUDIT.md` R7–R9.
+14. ~~**Loyalty / referral**~~ ✅ (MVP) — points (1/R10) awarded server-side on paid orders via trigger, referral codes + 100-pt referral bonus, account Rewards UI (migration 012).
+
+Plus security/infra hardening: **Vite 8** upgrade (0 npm-audit vulnerabilities), **strict script CSP** (no `unsafe-inline`), **shared-store rate limiting**, and **PayFast token-bound initiation** (`SECURITY_AUDIT.md` R6, R10–R12).
+
+12. ~~**True recurring auto-billing**~~ ✅ — PayFast tokenized ad-hoc charging for opt-in subscriptions (migration 013); first cycle tokenizes, later cycles bill hands-off.
+15. ~~**Multi-warehouse inventory**~~ ✅ — per-warehouse on-hand + region-based fulfilment routing + dispatch decrement + admin UI (migration 014).
+
+16. ~~**Uptime/SLO monitoring**~~ ✅ — public `health` probe for external uptime monitors + scheduled `monitor` SLO check (DB latency + order-flow), `slo_samples` history, env-tunable thresholds, alerting via `_shared/log.ts` (migration 015, see `OBSERVABILITY.md`).
+
+The engineering backlog from this assessment is now fully cleared.
 
 ---
 

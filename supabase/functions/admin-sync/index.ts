@@ -1,102 +1,93 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
-import {
-  handleCors,
-  jsonResponse,
-  errorResponse,
-} from "../_shared/cors.ts";
+import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { checkRateLimit } from "../_shared/rate-limit.ts";
+import { requireAdmin } from "../_shared/auth.ts";
+import { clientIp, HttpError, readJson } from "../_shared/http.ts";
+import { logError, toErrorFields } from "../_shared/log.ts";
 
 interface SyncPayload {
-  stockUpdates: Record<string, number>;
-  auditEvents: {
-    action: string;
-    productId?: string;
-    productName?: string;
-    changes: Record<string, unknown>;
+  stockUpdates?: Record<string, unknown>;
+  auditEvents?: {
+    action?: unknown;
+    productId?: unknown;
+    productName?: unknown;
+    changes?: unknown;
   }[];
 }
+
+const MAX_STOCK = 1_000_000;
+const MAX_UPDATES = 200;
+const MAX_EVENTS = 200;
 
 Deno.serve(async (req: Request) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
-  const clientIp = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
-  const rateLimit = checkRateLimit(`admin-sync:${clientIp}`);
+  if (req.method !== "POST") {
+    return errorResponse("Method not allowed", 405, undefined, req);
+  }
+
+  const rateLimit = checkRateLimit(`admin-sync:${clientIp(req)}`);
   if (!rateLimit.allowed) {
-    return new Response(
-      JSON.stringify({ error: "Too many requests", retryAfter: rateLimit.retryAfter }),
-      { status: 429, headers: { "Content-Type": "application/json" } },
-    );
+    return errorResponse("Too many requests", 429, { retryAfter: rateLimit.retryAfter }, req);
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const auth = await requireAdmin(req);
+    if (!auth.ok) return errorResponse(auth.message, auth.status, undefined, req);
+    const { admin: supabase, performedBy } = auth;
 
-    // ── Authorization: verify the caller's Supabase Auth JWT, then confirm the
-    //    user is in the server-controlled `admins` allowlist. The secret never
-    //    leaves the server, unlike the old shared password.
-    const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
-    if (!token) return errorResponse("Unauthorized", 401);
+    const body = await readJson<SyncPayload>(req, 256 * 1024);
 
-    const anon = createClient(supabaseUrl, anonKey);
-    const { data: userData, error: userErr } = await anon.auth.getUser(token);
-    if (userErr || !userData.user) return errorResponse("Unauthorized", 401);
-
-    const supabase = createClient(supabaseUrl, serviceKey);
-
-    const { data: adminRow, error: adminErr } = await supabase
-      .from("admins")
-      .select("user_id")
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
-    if (adminErr) {
-      console.error("admin lookup failed:", adminErr);
-      return errorResponse("Internal server error", 500);
+    const updates = Object.entries(body.stockUpdates ?? {});
+    if (updates.length > MAX_UPDATES) {
+      return errorResponse("Too many stock updates", 400, undefined, req);
     }
-    if (!adminRow) return errorResponse("Forbidden", 403);
-
-    const performedBy = userData.user.email ?? userData.user.id;
-    const body: SyncPayload = await req.json();
-
-    // Update product stock levels
-    if (body.stockUpdates && Object.keys(body.stockUpdates).length > 0) {
-      for (const [productId, newStock] of Object.entries(body.stockUpdates)) {
-        const { error } = await supabase
-          .from("products")
-          .update({ stock: newStock })
-          .eq("id", productId);
-
-        if (error) {
-          console.error(`Failed to update stock for ${productId}:`, error);
-          return errorResponse("Failed to update stock", 500);
-        }
+    for (const [productId, value] of updates) {
+      if (
+        productId.length > 64 ||
+        typeof value !== "number" ||
+        !Number.isInteger(value) ||
+        value < 0 ||
+        value > MAX_STOCK
+      ) {
+        return errorResponse(`Invalid stock value for ${productId.slice(0, 64)}`, 400, undefined, req);
       }
     }
 
-    // Record audit events
-    if (body.auditEvents && body.auditEvents.length > 0) {
-      const { error } = await supabase
-        .from("admin_audit_log")
-        .insert(body.auditEvents.map((e) => ({
-          action: e.action,
-          product_id: e.productId || null,
-          product_name: e.productName || null,
-          changes: e.changes,
+    const events = Array.isArray(body.auditEvents) ? body.auditEvents : [];
+    if (events.length > MAX_EVENTS) {
+      return errorResponse("Too many audit events", 400, undefined, req);
+    }
+
+    for (const [productId, newStock] of updates) {
+      const { error } = await supabase.from("products").update({ stock: newStock }).eq("id", productId);
+      if (error) {
+        logError("stock update failed", { event: "admin_sync.stock_failed", fn: "admin-sync", productId, ...toErrorFields(error) });
+        return errorResponse("Failed to update stock", 500, undefined, req);
+      }
+    }
+
+    if (events.length > 0) {
+      const { error } = await supabase.from("admin_audit_log").insert(
+        events.map((e) => ({
+          action: String(e.action ?? "unknown").slice(0, 100),
+          product_id: typeof e.productId === "string" ? e.productId.slice(0, 64) : null,
+          product_name: typeof e.productName === "string" ? e.productName.slice(0, 200) : null,
+          changes: e.changes && typeof e.changes === "object" ? e.changes : {},
           performed_by: performedBy,
           performed_at: new Date().toISOString(),
-        })));
-
+        })),
+      );
       if (error) {
-        console.error("Failed to record audit log:", error);
-        return errorResponse("Failed to record audit log", 500);
+        logError("audit insert failed", { event: "admin_sync.audit_failed", fn: "admin-sync", ...toErrorFields(error) });
+        return errorResponse("Failed to record audit log", 500, undefined, req);
       }
     }
 
-    return jsonResponse({ success: true, syncedAt: new Date().toISOString() });
+    return jsonResponse({ success: true, syncedAt: new Date().toISOString() }, 200, req);
   } catch (err) {
-    console.error("admin-sync error:", err);
-    return errorResponse("Internal server error", 500);
+    if (err instanceof HttpError) return errorResponse(err.message, err.status, err.details, req);
+    logError("admin-sync error", { event: "admin_sync.exception", fn: "admin-sync", ...toErrorFields(err) });
+    return errorResponse("Internal server error", 500, undefined, req);
   }
 });
