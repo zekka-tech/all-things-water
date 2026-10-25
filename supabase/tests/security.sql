@@ -66,6 +66,23 @@ begin
   r := public.create_order('M','m@example.com','','a','c','2000','','delivery',
     -20,75,55,'ATW-T-NEG','[{"productId":"t-bottle","quantity":-2}]'::jsonb,false,null,null);
   assert r->>'error' = 'Invalid item', 'FAIL: negative quantity accepted';
+
+  -- Regression (go-live smoke test, 2026-10-25): the orders Edge Function
+  -- calls create_order via supabase-js RPC with named params, and
+  -- p_user_id/p_delivery_slot are omitted entirely (not passed as null) for
+  -- guest checkout with no delivery slot picked. A leftover 14-param
+  -- overload of create_order (pre-007_customer_accounts.sql) made that named
+  -- call ambiguous in production (PGRST203), 500ing every such checkout.
+  -- Reproduce with SQL's own named-argument call, omitting the same two
+  -- params, so this fails loudly if the ambiguous overload ever comes back.
+  r := public.create_order(
+    p_customer_name := 'Guest', p_customer_email := 'guest.noslot@example.com',
+    p_customer_phone := '', p_delivery_address := 'a', p_delivery_city := 'c',
+    p_delivery_postal_code := '2000', p_delivery_notes := '', p_delivery_method := 'collection',
+    p_subtotal := 10, p_delivery_fee := 0, p_total := 10, p_order_ref := 'ATW-T-NOSLOT',
+    p_items := '[{"productId":"t-bottle","quantity":1}]'::jsonb, p_whatsapp_optin := false
+  );
+  assert r ? 'orderId', 'FAIL: guest/no-slot create_order call rejected or ambiguous: ' || r::text;
 end $$;
 
 reset role;
