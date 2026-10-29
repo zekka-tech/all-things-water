@@ -7,12 +7,12 @@ import { turnstileEnabled } from "@/lib/turnstile";
 import { cx } from "@/lib/format";
 import { env } from "@/lib/env";
 import { validateEmail, validatePhone } from "@/lib/validation";
-import { CONTACT_PHONE, CONTACT_PHONE_HREF } from "@/lib/contact";
+import { CONTACT_EMAIL, CONTACT_PHONE, CONTACT_PHONE_HREF } from "@/lib/contact";
 import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 const contactInfo = [
   { icon: Phone, label: "Phone", value: CONTACT_PHONE, href: CONTACT_PHONE_HREF },
-  { icon: Mail, label: "Email", value: "hello@allthingswater.co.za" },
+  { icon: Mail, label: "Email", value: CONTACT_EMAIL },
   { icon: MapPin, label: "Location", value: "South Africa" },
 ];
 

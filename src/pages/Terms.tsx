@@ -1,6 +1,6 @@
 import { Scale, Shield, FileText, AlertTriangle, Gavel, Mail } from "lucide-react";
 import { Seo } from "@/components/Seo";
-import { CONTACT_PHONE } from "@/lib/contact";
+import { CONTACT_EMAIL, CONTACT_PHONE } from "@/lib/contact";
 
 const sections = [
   {
@@ -179,7 +179,7 @@ const sections = [
           For questions about these Terms, please contact us:
         </p>
         <ul className="mt-2 space-y-1 text-sm text-ink-600 dark:text-ink-400">
-          <li>Email: hello@allthingswater.co.za</li>
+          <li>Email: {CONTACT_EMAIL}</li>
           <li>Phone: {CONTACT_PHONE}</li>
           <li>Address: South Africa</li>
         </ul>

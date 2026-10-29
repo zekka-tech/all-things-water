@@ -33,7 +33,7 @@ describe("env", () => {
 
   it("companyEmail falls back to default value", () => {
     // Without VITE_COMPANY_EMAIL, the || fallback kicks in
-    expect(env.companyEmail).toBe("info@allthingswater.co.za");
+    expect(env.companyEmail).toBe("hello@allthingswater.co.za");
   });
 
   it("companyPhone defaults to the contact number", () => {
