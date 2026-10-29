@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate } from "react-router";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ProductCard } from "@/components/ProductCard";
+import { Reveal } from "@/components/Reveal";
+import { useRipple } from "@/components/Ripple";
 import { products } from "@/data/products";
 import { categories } from "@/data/categories";
 import { cx } from "@/lib/format";
@@ -21,6 +23,33 @@ const priceRange = () => {
   const prices = products.map((p) => p.price);
   return { min: Math.min(...prices), max: Math.max(...prices) };
 };
+
+function FilterChip({
+  active,
+  onSelect,
+  children,
+}: {
+  active: boolean;
+  onSelect: () => void;
+  children: React.ReactNode;
+}) {
+  const { onPointerDown, ripples } = useRipple();
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      onPointerDown={onPointerDown}
+      className={cx(
+        "chip relative overflow-hidden",
+        active ? "chip-active" : "chip-idle",
+      )}
+    >
+      {children}
+      {ripples}
+    </button>
+  );
+}
 
 export function Shop() {
   const [params, setParams] = useSearchParams();
@@ -208,22 +237,17 @@ export function Shop() {
 
         {/* Category chips */}
         <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setCategory(null)}
-            className={cx("chip", !activeCategory ? "chip-active" : "chip-idle")}
-          >
+          <FilterChip active={!activeCategory} onSelect={() => setCategory(null)}>
             All
-          </button>
+          </FilterChip>
           {categories.map((c) => (
-            <button
+            <FilterChip
               key={c.id}
-              type="button"
-              onClick={() => setCategory(c.id)}
-              className={cx("chip", activeCategory === c.id ? "chip-active" : "chip-idle")}
+              active={activeCategory === c.id}
+              onSelect={() => setCategory(c.id)}
             >
               {c.label}
-            </button>
+            </FilterChip>
           ))}
         </div>
 
@@ -287,7 +311,23 @@ export function Shop() {
         {/* Grid */}
         {visible.length === 0 ? (
           <div className="mt-20 flex flex-col items-center gap-4 text-center">
-            <Search className="h-12 w-12 text-ink-300 dark:text-ink-600" />
+            <svg
+              viewBox="0 0 96 96"
+              aria-hidden
+              className="h-20 w-20 text-brand-200 dark:text-brand-800"
+            >
+              <path
+                d="M48 14c11 17 19 25 19 36a19 19 0 0 1-38 0c0-11 8-19 19-36Z"
+                fill="currentColor"
+              />
+              <path
+                d="M30 62q9-5 18 0t18 0"
+                className="stroke-white dark:stroke-ink-950"
+                strokeWidth="3"
+                strokeLinecap="round"
+                fill="none"
+              />
+            </svg>
             <h2 className="font-display font-semibold text-ink-700 dark:text-ink-200">
               No products match your criteria
             </h2>
@@ -328,8 +368,12 @@ export function Shop() {
           </div>
         ) : (
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {visible.map((p) => (
-              <ProductCard key={p.id} product={p} />
+            {visible.map((p, i) => (
+              // Stagger caps at the first row or two — beyond that the delay
+              // would outlast the scroll.
+              <Reveal key={p.id} delay={Math.min(i, 7) * 70}>
+                <ProductCard product={p} />
+              </Reveal>
             ))}
           </div>
         )}

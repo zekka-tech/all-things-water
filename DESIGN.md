@@ -1,6 +1,6 @@
 ---
 name: all-things-water-design-system
-version: 2.0.0
+version: 3.0.0
 brand: All Things Water
 market: South Africa (ZAR)
 ---
@@ -9,6 +9,11 @@ market: South Africa (ZAR)
 
 Agent-readable design specification (Google Stitch DESIGN.md format).
 Apply these tokens and rules consistently across every component and page.
+
+**Source of truth:** all tokens live in the `@theme` block of `src/index.css`.
+There is no `tailwind.config.js` — this project is on Tailwind CSS 4, where the
+theme is CSS. If a value here disagrees with `src/index.css`, the stylesheet
+wins and this document should be corrected.
 
 ---
 
@@ -31,7 +36,7 @@ Apply these tokens and rules consistently across every component and page.
 | brand-300   | #78d4ff   | Decorative accents                       |
 | brand-400   | #32bdff   | Dark mode links, icon fills              |
 | brand-500   | #06a3f0   | Gradient start, active icons             |
-| brand-600   | #0082cd   | Primary buttons, links, active states    |
+| brand-600   | #0071b3   | Primary buttons, links, active states    |
 | brand-700   | #0067a6   | Button hover, pressed                    |
 | brand-800   | #055789   | Dark text on light surfaces              |
 | brand-950   | #072e4b   | Dark hero backgrounds                    |
@@ -43,7 +48,7 @@ Apply these tokens and rules consistently across every component and page.
 | ink-100 | #eceef2   | Hover fills                        |
 | ink-200 | #d5dae2   | Card borders, dividers             |
 | ink-400 | #8595aa   | Placeholder text, muted icons      |
-| ink-500 | #66778f   | Muted / secondary text             |
+| ink-500 | #5c6d85   | Muted / secondary text             |
 | ink-600 | #516076   | Body text (secondary)              |
 | ink-700 | #424e60   | Body text (primary)                |
 | ink-900 | #1f2630   | Headings (light mode)              |
@@ -62,8 +67,15 @@ Apply these tokens and rules consistently across every component and page.
 ## Typography
 
 ### Font Stack
-- **Display / Headings:** `Plus Jakarta Sans` — h1, h2, large stats, hero text
-- **Body / UI:** `Inter` — body copy, buttons, labels, form fields
+- **Display / Headings (`font-display`):** `Outfit` — h1–h4, prices, large stats,
+  hero text. Self-hosted variable woff2 (weights 400–800) at
+  `public/fonts/outfit-latin-var.woff2`, preloaded in `index.html`.
+- **Body / UI (`font-sans`):** system sans stack — body copy, buttons, labels, inputs.
+
+The font **must** be self-hosted: the CSP sets `font-src 'self' data:`, so a
+Google Fonts CDN link is blocked outright. Keep the `<link rel="preload">`
+alongside `font-display: swap` — dropping the preload reintroduces a layout
+shift against a CLS budget that fails the build at 0.1.
 
 ### Scale
 | Role        | Tailwind                        | Size | Weight | Use                     |
@@ -185,7 +197,12 @@ Base unit: 4 px (Tailwind default). Use multiples of the base.
 - Use `grid place-items-center`
 
 ### ProductCard
-- Image area: square aspect-ratio, `bg-gradient-to-b from-brand-50 to-white dark:from-ink-800 dark:to-ink-900`
+- Wrapped in `TiltCard` (max 5°) so the card leans toward the cursor.
+- Image area: square aspect-ratio, `bg-linear-to-b from-brand-50 via-brand-50/60 to-white`.
+  **Stays light in dark mode on purpose** — catalogue photos are shot on white
+  rather than cut out, so a dark stage renders them as white rectangles. The
+  image carries `mix-blend-multiply` so its white background dissolves into the
+  stage. Any new product surface must follow the same rule.
 - Image padding: `p-6`; image `object-contain`; hover `scale-105` (500 ms)
 - Stock badge: top-left absolute
 - Body: `p-4`, flex-col
@@ -207,13 +224,69 @@ Base unit: 4 px (Tailwind default). Use multiples of the base.
 
 ## Animations
 
-| Name      | Duration | Easing          | Use                          |
-|-----------|----------|-----------------|------------------------------|
-| fade-in   | 0.5 s    | ease-out        | Entry animation, hero        |
-| ripple    | 2.4 s    | ease-out ∞      | Hero bg decoration           |
-| slide-up  | 0.3 s    | ease-out        | Mobile menu, toasts          |
-| scale-in  | 0.2 s    | ease-out        | Badge appear, modal entry    |
-| shimmer   | 1.5 s    | ease-in-out ∞   | Skeleton loading states      |
+| Name          | Duration | Easing          | Use                              |
+|---------------|----------|-----------------|----------------------------------|
+| fade-in       | 0.5 s    | ease-out        | Entry animation, hero            |
+| ripple        | 2.6 s    | ease-out ∞      | Hero bg decoration               |
+| slide-up      | 0.35 s   | ease-out        | Mobile menu, toasts              |
+| scale-in      | 0.2 s    | ease-out        | Badge appear, modal entry        |
+| shimmer       | 1.5 s    | ease-in-out ∞   | Skeleton loading states          |
+| wave-drift    | 11–32 s  | linear ∞        | Parallax wave bands (3 speeds)   |
+| bob           | 6 s      | ease-in-out ∞   | Product floating on its stage    |
+| bubble-rise   | 8–13 s   | linear ∞        | Rising bubbles in water scenes   |
+| sheen         | 1.1 s    | ease-out        | Specular sweep on tilt hover     |
+| caustic-shift | 16 s     | ease-in-out ⇄   | Dappled light over water panels  |
+| ring-out      | 0.7 s    | ease-out        | Touch ripple on chips/tiles      |
+
+### Two rules that are not negotiable
+
+1. **Animate `opacity` and `transform` only.** CLS fails the build at 0.1
+   (error-level, not a warning). Anything that animates layout — height, width,
+   margin, top/left — can break it.
+2. **Everything respects `prefers-reduced-motion`.** `src/index.css` ends with a
+   block that collapses the whole motion layer to static end-states, and
+   `prefersReducedMotion()` (`src/lib/motion.ts`) gates the JS-driven tilt and
+   ripple. Accessibility is likewise error-gated, at 0.95.
+
+---
+
+## Water Motion & Depth Layer
+
+The storefront's differentiator: water as the interface. No WebGL and no motion
+library — CSS 3D transforms plus ~25 lines of `IntersectionObserver`.
+
+| Utility / Component | Role |
+|---------------------|------|
+| `tilt-card` | Pointer-driven tilt; reads `--tilt-x`/`--tilt-y`. Carries its **own** `perspective()` so each card tilts about its own centre. Do **not** add an ancestor `perspective` as well — the two compose and skew cards at the edge of a wide grid |
+| `glass-strong` | Frosted surface with an inner top highlight (light on a bottle rim) |
+| `caustic-bg` | Dappled moving light |
+| `water-surface` | Positioning shell for the wave bands |
+| `sheen-overlay` | Specular sweep; fires via `.tilt-card:hover > .sheen-overlay` |
+| `reveal` / `reveal-visible` | Scroll-reveal start/end states |
+| `depth-lift` | Hover elevation using the `shadow-depth-*` ladder |
+| `<WaterSurface>` | Three layered SVG wave bands at different speeds. The path is 2400 units wide with a 600-unit period and drifts −50%, so the loop is seamless |
+| `<BubbleField>` | Sparse rising bubbles; positions are **fixed, not random**, so layout is identical across renders, tests and Lighthouse runs |
+| `<TiltCard>` | Tilt + sheen wrapper; no-ops on touch and under reduced motion |
+| `<Reveal>` / `useReveal` | Scroll-reveal with stagger. **Fails open:** with no `IntersectionObserver` the content starts visible rather than blank |
+| `<Product3DPanel>` | PDP centrepiece — lit stage in a water scene |
+| `useRipple` | Touch-the-water ring feedback for chips and tiles |
+
+Inline `style` **attributes** are how the tilt sets its CSS custom properties.
+That is CSP-legal (`style-src-attr 'unsafe-inline'`); injected `<style>`
+**elements** are blocked (`style-src-elem 'self'`), so never inject a stylesheet
+at runtime.
+
+### Depth ladder
+
+| Token | Use |
+|-------|-----|
+| `shadow-depth-1` | Resting lift |
+| `shadow-depth-2` | Floating product stage, raised cards |
+| `shadow-depth-3` | Peak hover elevation (`depth-lift`) |
+
+Depth shadows are deliberately blue-tinted (`rgba(7,46,75,…)`) rather than
+neutral grey, so floating elements read as suspended in water, not hovering
+over paper.
 
 ---
 

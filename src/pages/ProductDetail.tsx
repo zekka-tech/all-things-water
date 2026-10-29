@@ -6,6 +6,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { StockBadge } from "@/components/StockBadge";
 import { QuantityStepper } from "@/components/QuantityStepper";
 import { ProductReviews } from "@/components/ProductReviews";
+import { Product3DPanel } from "@/components/Product3DPanel";
 import { FREQUENCY_OPTIONS, type Frequency } from "@/lib/subscriptions";
 import { getProductBySlug, getRelatedProducts } from "@/data/products";
 import { categoryLabel } from "@/data/categories";
@@ -70,19 +71,8 @@ export function ProductDetail() {
         {/* Product layout */}
         <div className="mt-6 grid gap-10 lg:grid-cols-2">
           {/* Image panel */}
-          <div className="animate-fade-in card relative grid place-items-center overflow-hidden bg-linear-to-b from-brand-50 via-brand-50/50 to-white p-10 dark:from-ink-800 dark:via-ink-800/50 dark:to-ink-900">
-            {/* Decorative blur */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center"
-            >
-              <div className="h-64 w-64 rounded-full bg-brand-200/40 blur-3xl dark:bg-brand-700/20" />
-            </div>
-            <img
-              src={product.image}
-              alt={product.name}
-              className="relative z-10 max-h-[420px] w-full object-contain drop-shadow-xs transition-transform duration-500 hover:scale-[1.03]"
-            />
+          <div className="animate-fade-in">
+            <Product3DPanel src={product.image} alt={product.name} />
           </div>
 
           {/* Details panel */}

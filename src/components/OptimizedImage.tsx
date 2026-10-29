@@ -1,9 +1,13 @@
 import { useState } from "react";
 import type { ImgHTMLAttributes } from "react";
+import { cx } from "@/lib/format";
 
 interface OptimizedImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   webpSrc?: string;
   fallback?: string;
+  /** Replaces the wrapper's default surface — pass this when the image floats
+   *  over artwork and the opaque placeholder box would show through. */
+  wrapperClassName?: string;
 }
 
 export function OptimizedImage({
@@ -12,6 +16,7 @@ export function OptimizedImage({
   alt = "",
   className = "",
   fallback,
+  wrapperClassName,
   ...rest
 }: OptimizedImageProps) {
   const [error, setError] = useState(false);
@@ -20,7 +25,12 @@ export function OptimizedImage({
   const displaySrc = error && fallback ? fallback : src;
 
   return (
-    <div className="relative overflow-hidden bg-ink-100 dark:bg-ink-800">
+    <div
+      className={cx(
+        "relative overflow-hidden",
+        wrapperClassName ?? "bg-ink-100 dark:bg-ink-800",
+      )}
+    >
       {!loaded && (
         <div className="absolute inset-0 animate-shimmer bg-linear-to-r from-transparent via-white/20 to-transparent" />
       )}
