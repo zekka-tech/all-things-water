@@ -2,6 +2,28 @@
 
 Use this checklist to configure and deploy the storefront for production. The environment is split between frontend build variables in Cloudflare Pages and backend secrets for Supabase Edge Functions.
 
+## Current status (2026-10-29)
+
+Canonical domain is **`https://allthingswater.co.za`** (with `www.` as an alias);
+`all-things-water.pages.dev` remains as the Pages origin and a permitted origin.
+
+| Area | State |
+| --- | --- |
+| Custom domain + TLS | Live — `allthingswater.co.za` and `www.`, certs active |
+| Migrations / Edge Functions | 18 applied, 14 ACTIVE |
+| Cloudflare Pages production vars | Set (see below); `VITE_COMPANY_ADDRESS` still unset |
+| Resend | Domain `allthingswater.co.za` registered (eu-west-1), DKIM/SPF/MX published, sending key set |
+| Cloudflare Email Routing | Enabled; `orders@`/`ops@`/`sales@`/`info@` forward once the destination is verified |
+| Turnstile | Widget `all-things-water` created, site + secret key wired |
+| Cron | `018_cron_scheduler.sql` written, **not yet applied** |
+| PayFast | **Sandbox** — `PAYFAST_SANDBOX=true`, live credentials not set |
+
+Email posture: the root domain publishes `v=spf1 include:_spf.mx.cloudflare.net -all`
+and `DMARC p=reject; adkim=s; aspf=r`. Resend sends over the `send.` subdomain and
+signs with a root DKIM selector, so DKIM aligns strictly and SPF aligns in relaxed
+mode. The root itself still hard-fails any direct sender, and the `*._domainkey`
+null key keeps every selector but `resend` and `cf2024-1` revoked.
+
 ## Cloudflare Pages
 
 Project: `all-things-water`  
@@ -135,9 +157,7 @@ database job (`npm run test:db`: every migration applied to a fresh
 supabase/postgres container, then `supabase/tests/security.sql`). Secret
 scanning (gitleaks) is blocking. The Playwright e2e + axe and Lighthouse CWV
 jobs run as informational until verified green in your environment (flip
-`continue-on-error: false` to make them hard gates). The axe job currently
-fails on colour contrast: `brand-600` (#0082cd) on white is 4.13:1 vs the
-4.5:1 WCAG AA minimum.
+`continue-on-error: false` to make them hard gates).
 
 To run the **full PayFast-sandbox funnel** in CI, set repository variable
 `RUN_PAYFAST_E2E=true` and add secrets `E2E_SUPABASE_URL` and
