@@ -27,6 +27,30 @@ Object.defineProperty(globalThis, "localStorage", {
   writable: true,
 });
 
+// jsdom ships no AnimationEvent, and React feature-detects it when the DOM
+// renderer initialises — without this, onAnimationEnd handlers are never wired
+// up and animation-driven cleanup is untestable. Must be defined before React
+// is imported.
+if (typeof globalThis.AnimationEvent === "undefined") {
+  class AnimationEventPolyfill extends Event {
+    animationName: string;
+    elapsedTime: number;
+    pseudoElement: string;
+
+    constructor(type: string, init: AnimationEventInit = {}) {
+      super(type, init);
+      this.animationName = init.animationName ?? "";
+      this.elapsedTime = init.elapsedTime ?? 0;
+      this.pseudoElement = init.pseudoElement ?? "";
+    }
+  }
+
+  Object.defineProperty(globalThis, "AnimationEvent", {
+    writable: true,
+    value: AnimationEventPolyfill,
+  });
+}
+
 Object.defineProperty(globalThis, "matchMedia", {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({

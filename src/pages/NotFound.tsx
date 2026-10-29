@@ -18,7 +18,12 @@ export function NotFound() {
           </div>
         </div>
 
-        <p className="mt-6 font-display text-7xl font-extrabold tracking-tight text-brand-200 dark:text-brand-900">
+        {/* Decorative: the <h1> below carries the meaning, so this is redundant
+            for screen readers and exempt from the contrast minimum. */}
+        <p
+          aria-hidden="true"
+          className="mt-6 font-display text-7xl font-extrabold tracking-tight text-brand-200 dark:text-brand-900"
+        >
           404
         </p>
         <h1 className="mt-2 font-display text-2xl font-bold text-ink-900 dark:text-white">

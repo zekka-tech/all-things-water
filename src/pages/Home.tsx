@@ -13,6 +13,12 @@ import {
 } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { ProductCard } from "@/components/ProductCard";
+import { Reveal } from "@/components/Reveal";
+import { TiltCard } from "@/components/TiltCard";
+import { WaterSurface } from "@/components/WaterSurface";
+import { BubbleField } from "@/components/BubbleField";
+import { WaterJourney } from "@/components/WaterJourney";
+import { useRipple } from "@/components/Ripple";
 import { featuredProducts } from "@/data/products";
 import { categories } from "@/data/categories";
 
@@ -46,6 +52,49 @@ const categoryIcons: Record<string, React.ElementType> = {
   accessories: Wrench,
 };
 
+function CategoryTile({
+  id,
+  label,
+  description,
+  icon: Icon,
+  delay,
+}: {
+  id: string;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+  delay: number;
+}) {
+  const { onPointerDown, ripples } = useRipple();
+
+  return (
+    <Reveal delay={delay}>
+      <TiltCard max={6} className="h-full rounded-2xl">
+        <Link
+          to={`/shop?category=${id}`}
+          onPointerDown={onPointerDown}
+          className="card depth-lift group relative flex h-full flex-col overflow-hidden p-6 text-brand-500"
+        >
+          <div className="icon-wrap-lg transition-transform duration-300 group-hover:scale-110">
+            <Icon className="h-6 w-6" />
+          </div>
+          <span className="mt-4 font-display font-semibold text-ink-900 dark:text-white">
+            {label}
+          </span>
+          <span className="mt-1.5 flex-1 text-sm leading-relaxed text-ink-500 dark:text-ink-400">
+            {description}
+          </span>
+          <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 dark:text-brand-400">
+            Browse{" "}
+            <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+          </span>
+          {ripples}
+        </Link>
+      </TiltCard>
+    </Reveal>
+  );
+}
+
 export function Home() {
   const featured = featuredProducts();
 
@@ -58,15 +107,14 @@ export function Home() {
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-linear-to-b from-brand-50 via-white to-white dark:from-ink-900 dark:via-ink-950 dark:to-ink-950">
-        {/* Decorative blobs */}
+        {/* Dappled light, rising bubbles and a wave horizon — the hero reads as
+            looking into water rather than at a blue panel. */}
+        <div aria-hidden className="caustic-bg absolute inset-0" />
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-40 left-1/2 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-brand-300/20 blur-3xl dark:bg-brand-700/15"
+          className="pointer-events-none absolute -top-40 left-1/2 h-[620px] w-[620px] -translate-x-1/2 rounded-full bg-brand-300/20 blur-3xl dark:bg-brand-700/15"
         />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute right-0 top-0 h-96 w-96 rounded-full bg-brand-200/25 blur-3xl dark:bg-brand-800/20"
-        />
+        <BubbleField className="opacity-60" />
 
         <div className="container-page relative grid items-center gap-12 py-16 lg:grid-cols-2 lg:py-24">
           {/* Left — copy */}
@@ -110,7 +158,7 @@ export function Home() {
             </div>
           </div>
 
-          {/* Right — product tiles */}
+          {/* Right — product tiles floating in a 3D scene */}
           <div className="animate-fade-in-delay relative">
             <div
               aria-hidden
@@ -118,36 +166,40 @@ export function Home() {
             />
             <div className="grid grid-cols-2 gap-4">
               {featured.slice(0, 4).map((p, i) => (
-                <Link
-                  key={p.id}
-                  to={`/product/${p.slug}`}
-                  style={{ animationDelay: `${i * 80}ms` }}
-                  className="glass card-hover group flex flex-col items-center gap-3 rounded-2xl p-5 shadow-xs"
-                >
-                  <img
-                    src={p.image}
-                    alt={p.name}
-                    className="h-28 w-full object-contain transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <p className="text-center text-xs font-semibold leading-tight text-ink-700 dark:text-ink-200">
-                    {p.name}
-                  </p>
-                </Link>
+                <TiltCard key={p.id} max={9} className="rounded-2xl">
+                  <Link
+                    to={`/product/${p.slug}`}
+                    style={{ animationDelay: `${i * 80}ms` }}
+                    className="glass-strong group flex flex-col items-center gap-3 rounded-2xl p-5"
+                  >
+                    <span className="w-full rounded-xl bg-white p-2">
+                      <img
+                        src={p.image}
+                        alt={p.name}
+                        className="h-24 w-full object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </span>
+                    <p className="text-center text-xs font-semibold leading-tight text-ink-700 dark:text-ink-200">
+                      {p.name}
+                    </p>
+                  </Link>
+                </TiltCard>
               ))}
             </div>
           </div>
         </div>
+
+        <WaterSurface className="bottom-0 h-20 text-brand-200/70 dark:text-brand-900" />
       </section>
 
       {/* ── Value propositions ── */}
       <section className="container-page py-14">
+        {/* Named for assistive tech, and so the cards' h3s don't jump
+            straight from the hero h1. */}
+        <h2 className="sr-only">Why shop with All Things Water</h2>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {valueProps.map((v, i) => (
-            <div
-              key={v.title}
-              style={{ animationDelay: `${i * 60}ms` }}
-              className="card p-5 animate-fade-in"
-            >
+            <Reveal key={v.title} delay={i * 90} className="card p-5">
               <div className="icon-wrap">
                 <v.icon className="h-5 w-5" />
               </div>
@@ -157,10 +209,12 @@ export function Home() {
               <p className="mt-1 text-sm leading-relaxed text-ink-500 dark:text-ink-400">
                 {v.text}
               </p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </section>
+
+      <WaterJourney />
 
       {/* ── Categories ── */}
       <section className="container-page py-4">
@@ -168,29 +222,16 @@ export function Home() {
           <h2 className="section-title">Shop by category</h2>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map((c) => {
-            const Icon = categoryIcons[c.id] ?? Wind;
-            return (
-              <Link
-                key={c.id}
-                to={`/shop?category=${c.id}`}
-                className="card card-hover group flex flex-col p-6"
-              >
-                <div className="icon-wrap-lg transition-transform duration-300 group-hover:scale-110">
-                  <Icon className="h-6 w-6" />
-                </div>
-                <span className="mt-4 font-display font-semibold text-ink-900 dark:text-white">
-                  {c.label}
-                </span>
-                <span className="mt-1.5 flex-1 text-sm leading-relaxed text-ink-500 dark:text-ink-400">
-                  {c.description}
-                </span>
-                <span className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-brand-600 dark:text-brand-400">
-                  Browse <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-                </span>
-              </Link>
-            );
-          })}
+          {categories.map((c, i) => (
+            <CategoryTile
+              key={c.id}
+              id={c.id}
+              label={c.label}
+              description={c.description}
+              icon={categoryIcons[c.id] ?? Wind}
+              delay={i * 90}
+            />
+          ))}
         </div>
       </section>
 
@@ -225,15 +266,13 @@ export function Home() {
       {/* ── CTA banner ── */}
       <section className="container-page py-12">
         <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-brand-600 via-brand-700 to-brand-800 px-8 py-14 text-center text-white sm:px-16">
-          {/* Decorative */}
+          {/* Decorative — deep water with a surface at the base */}
           <div
             aria-hidden
             className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-brand-500/30 blur-3xl"
           />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -bottom-12 -left-12 h-48 w-48 rounded-full bg-brand-400/20 blur-3xl"
-          />
+          <BubbleField className="opacity-40" />
+          <WaterSurface className="bottom-0 h-24 text-brand-500/40" />
 
           <span className="badge bg-white/20 text-white backdrop-blur-xs">
             <Droplets className="h-3.5 w-3.5" /> Home &amp; office
