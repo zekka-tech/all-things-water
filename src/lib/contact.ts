@@ -14,3 +14,4 @@ export const CONTACT_PHONE_HREF = `tel:${CONTACT_PHONE_E164}`;
  * (orders@/sales@/ops@), which are Edge Function concerns and set by secret.
  */
 export const CONTACT_EMAIL = "hello@allthingswater.co.za";
+export const CONTACT_EMAIL_HREF = `mailto:${CONTACT_EMAIL}`;
