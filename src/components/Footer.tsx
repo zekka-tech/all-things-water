@@ -148,9 +148,9 @@ export function Footer() {
 
           {/* Shop */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
               Shop
-            </h4>
+            </h2>
             <ul className="mt-4 space-y-2.5 text-sm">
               {[
                 { to: "/shop", label: "All products" },
@@ -173,9 +173,9 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
               Company
-            </h4>
+            </h2>
             <ul className="mt-4 space-y-2.5 text-sm">
               {[
                 { to: "/about", label: "About us" },
@@ -197,9 +197,9 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
               Get in touch
-            </h4>
+            </h2>
             <ul className="mt-4 space-y-3 text-sm text-ink-500 dark:text-ink-400">
               <li className="flex items-center gap-2.5">
                 <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
@@ -227,7 +227,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-ink-200 py-5 dark:border-ink-800">
-          <div className="container-page flex flex-col items-center justify-between gap-2 text-xs text-ink-500 sm:flex-row">
+          <div className="container-page flex flex-col items-center justify-between gap-2 text-xs text-ink-500 dark:text-ink-400 sm:flex-row">
             <span>© {new Date().getFullYear()} All Things Water. All rights reserved.</span>
             <div className="flex items-center gap-4">
               <Link

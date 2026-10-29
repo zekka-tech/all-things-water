@@ -24,7 +24,10 @@ const NotFound = lazy(() => import("@/pages/NotFound").then((m) => ({ default: m
 
 function PageLoading() {
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
+    // Full height so the footer stays below the fold while the route chunk
+    // loads — at 60vh it sat in the viewport and the swap to real content
+    // shifted it, which is the page's entire CLS budget in one go.
+    <div className="flex min-h-screen items-center justify-center">
       <div className="h-8 w-8 animate-spin rounded-full border-3 border-brand-200 border-t-brand-600" role="status" />
     </div>
   );
