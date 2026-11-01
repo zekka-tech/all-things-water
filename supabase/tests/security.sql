@@ -41,6 +41,19 @@ do $$ begin
 exception when insufficient_privilege or check_violation then null;
 end $$;
 
+-- The cron entry points reach Vault and send email; anon must not reach them.
+do $$ begin
+  perform public.invoke_cron_function('monitor', 'monitor_cron_secret');
+  raise exception 'FAIL R25: anon can execute invoke_cron_function';
+exception when insufficient_privilege then null;
+end $$;
+
+do $$ begin
+  perform public.drain_back_in_stock_waitlist();
+  raise exception 'FAIL R25: anon can execute drain_back_in_stock_waitlist';
+exception when insufficient_privilege then null;
+end $$;
+
 reset role;
 
 -- ── service role: create_order is authoritative on price ───────────────
