@@ -9,9 +9,16 @@
 -- Same shape as business_quotes (migration 010): RLS on, service-role-only,
 -- no anon/authenticated policy. All writes are mediated server-side by the
 -- Edge Functions, which apply Turnstile and rate limiting first.
+--
+-- gen_random_uuid(), not uuid_generate_v4() as the older migrations use:
+-- uuid-ossp lives in the `extensions` schema on the hosted project, which is
+-- not in the search_path `supabase db push` runs with, so uuid_generate_v4()
+-- fails there with 42883 even though it resolves on a local throwaway
+-- Postgres. gen_random_uuid() is core since Postgres 13 and needs no
+-- extension. Migrations 016 and 017 already use it.
 
 create table if not exists public.contact_messages (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   email text not null,
   phone text,
@@ -40,7 +47,7 @@ create trigger set_updated_at_contact_messages before update on public.contact_m
 -- Newsletter: email is unique so a repeat sign-up is idempotent rather than an
 -- error, and re-subscribing after unsubscribing reuses the row.
 create table if not exists public.newsletter_subscribers (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   email text not null unique,
   status text not null default 'subscribed'
     check (status in ('subscribed', 'unsubscribed')),
