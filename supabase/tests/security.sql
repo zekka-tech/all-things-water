@@ -272,5 +272,72 @@ do $$ begin
     'FAIL R23: mutual referral loop allowed';
 end $$;
 
+-- ── cron: the back-in-stock drain fans out one call per due product ─────
+-- Migration 020. 019 posted an empty body to a per-product endpoint, so the
+-- job 400'd on every run and the waitlist was never drained; these checks pin
+-- the fan-out down. net.http_post only inserts into net.http_request_queue,
+-- and this file's closing rollback discards it, so no request is ever sent.
+do $$
+declare
+  queued int;
+  req_url text;
+  req_body jsonb;
+begin
+  perform vault.create_secret('test-back-in-stock-secret-0123456789', 'back_in_stock_cron_secret');
+
+  -- t-cooler: stock 10, someone waiting -> due.
+  insert into public.back_in_stock_subscriptions (email, product_id)
+    values ('waiting.test@example.com', 't-cooler');
+
+  -- t-bottle: someone waiting but nothing available -> must be left alone,
+  -- otherwise the Edge Function answers 400 "still out of stock".
+  update public.products set stock = 0 where id = 't-bottle';
+  insert into public.back_in_stock_subscriptions (email, product_id)
+    values ('waiting2.test@example.com', 't-bottle');
+
+  perform public.drain_back_in_stock_waitlist();
+
+  select count(*) into queued from net.http_request_queue;
+  assert queued = 1,
+    'FAIL R26: drain queued ' || queued || ' request(s), expected exactly 1';
+
+  select q.url, convert_from(q.body, 'utf8')::jsonb
+    into req_url, req_body
+    from net.http_request_queue q
+   limit 1;
+
+  assert req_url like '%/functions/v1/back-in-stock-notify',
+    'FAIL R26: drain posted to the wrong url: ' || req_url;
+  assert req_body->>'productId' = 't-cooler',
+    'FAIL R26: drain sent the wrong productId: ' || req_body::text;
+end $$;
+
+-- A waiter who has already been emailed is not queued again.
+do $$
+declare queued int;
+begin
+  delete from net.http_request_queue;
+  update public.back_in_stock_subscriptions set notified = true where product_id = 't-cooler';
+
+  perform public.drain_back_in_stock_waitlist();
+
+  select count(*) into queued from net.http_request_queue;
+  assert queued = 0, 'FAIL R26: drain re-queued an already-notified waitlist entry';
+end $$;
+
+-- Without the Vault secret the drain warns and skips rather than calling out.
+do $$
+declare queued int;
+begin
+  delete from net.http_request_queue;
+  delete from vault.secrets where name = 'back_in_stock_cron_secret';
+  update public.back_in_stock_subscriptions set notified = false where product_id = 't-cooler';
+
+  perform public.drain_back_in_stock_waitlist();
+
+  select count(*) into queued from net.http_request_queue;
+  assert queued = 0, 'FAIL R26: drain called out with no cron secret stored';
+end $$;
+
 \echo 'security.sql: all checks passed'
 rollback;
