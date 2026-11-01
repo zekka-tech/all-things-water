@@ -1,6 +1,6 @@
 import { Shield, FileText, Eye, Database, Lock, Cookie, Server, UserCheck, Baby, RefreshCw, Mail } from "lucide-react";
 import { Seo } from "@/components/Seo";
-import { CONTACT_PHONE } from "@/lib/contact";
+import { CONTACT_EMAIL, CONTACT_EMAIL_HREF, CONTACT_PHONE } from "@/lib/contact";
 
 const sections = [
   {
@@ -92,7 +92,7 @@ const sections = [
         </ul>
         <p>
           To exercise any of these rights, contact us at{" "}
-          <span className="text-brand-600 dark:text-brand-400">hello@allthingswater.co.za</span>.
+          <a href={CONTACT_EMAIL_HREF} className="text-brand-600 hover:underline dark:text-brand-400">{CONTACT_EMAIL}</a>.
         </p>
       </>
     ),
@@ -194,7 +194,10 @@ const sections = [
           please contact us:
         </p>
         <ul className="mt-2 space-y-1 text-sm text-ink-600 dark:text-ink-400">
-          <li>Email: hello@allthingswater.co.za</li>
+          <li>
+            Email:{" "}
+            <a href={CONTACT_EMAIL_HREF} className="text-brand-600 hover:underline dark:text-brand-400">{CONTACT_EMAIL}</a>
+          </li>
           <li>Phone: {CONTACT_PHONE}</li>
           <li>Address: South Africa</li>
         </ul>
