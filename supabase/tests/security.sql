@@ -41,6 +41,34 @@ do $$ begin
 exception when insufficient_privilege or check_violation then null;
 end $$;
 
+-- contact_messages / newsletter_subscribers (021) are service-role only: all
+-- writes go through the contact / newsletter Edge Functions, which apply
+-- Turnstile and rate limiting first.
+do $$ begin
+  perform count(*) from public.contact_messages;
+  raise exception 'FAIL R27: anon can read contact_messages';
+exception when insufficient_privilege then null;
+end $$;
+
+do $$ begin
+  insert into public.contact_messages (name, email, message)
+    values ('spam', 'spam@example.com', 'spam');
+  raise exception 'FAIL R27: anon can insert contact_messages';
+exception when insufficient_privilege then null;
+end $$;
+
+do $$ begin
+  perform count(*) from public.newsletter_subscribers;
+  raise exception 'FAIL R27: anon can read newsletter_subscribers';
+exception when insufficient_privilege then null;
+end $$;
+
+do $$ begin
+  insert into public.newsletter_subscribers (email) values ('spam@example.com');
+  raise exception 'FAIL R27: anon can insert newsletter_subscribers';
+exception when insufficient_privilege then null;
+end $$;
+
 -- The cron entry points reach Vault and send email; anon must not reach them.
 do $$ begin
   perform public.invoke_cron_function('monitor', 'monitor_cron_secret');
