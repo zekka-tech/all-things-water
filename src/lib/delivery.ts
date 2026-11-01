@@ -3,11 +3,14 @@
  * and deposit/collection information.
  */
 import { env } from "@/lib/env";
+import { DEPOT_ADDRESS_LINE } from "@/lib/contact";
 
 export const DELIVERY_THRESHOLD = 500;
 export const DELIVERY_FEE = 75;
 
-export const DEPOT_ADDRESS = env.companyAddress || "123 Water St, Johannesburg, 2000";
+/** `VITE_COMPANY_ADDRESS` overrides the displayed line; the structured form
+ *  used for JSON-LD always comes from `DEPOT_ADDRESS_PARTS`. */
+export const DEPOT_ADDRESS = env.companyAddress || DEPOT_ADDRESS_LINE;
 
 export type DeliveryMethod = "delivery" | "collection";
 
@@ -30,7 +33,7 @@ export interface PostalCodeResult {
 /**
  * Validate a South African postal code against known delivery zones.
  *
- * The business operates out of Johannesburg and primarily serves Gauteng.
+ * The business operates out of Centurion and primarily serves Gauteng.
  * Postal codes are mapped as:
  *   metro        – Gauteng (0001–0299, 1400–2199)
  *   borderline   – Nearby provinces (0300–1399)

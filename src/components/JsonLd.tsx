@@ -1,5 +1,6 @@
 import type { Product } from "@/types";
 import { env } from "@/lib/env";
+import { DEPOT_ADDRESS_PARTS } from "@/lib/contact";
 
 interface BreadcrumbItem {
   name: string;
@@ -29,12 +30,10 @@ export function JsonLdOrganization() {
       telephone: env.companyPhone,
       contactType: "customer service",
     },
-    ...(env.companyAddress && {
-      address: {
-        "@type": "PostalAddress",
-        streetAddress: env.companyAddress,
-      },
-    }),
+    address: {
+      "@type": "PostalAddress",
+      ...DEPOT_ADDRESS_PARTS,
+    },
   };
 
   return <JsonLdScript data={org} />;
