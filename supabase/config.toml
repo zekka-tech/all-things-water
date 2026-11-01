@@ -46,6 +46,12 @@ verify_jwt = false
 [functions.business-quote]
 verify_jwt = false
 
+[functions.contact]
+verify_jwt = false
+
+[functions.newsletter]
+verify_jwt = false
+
 [functions.health]
 verify_jwt = false
 

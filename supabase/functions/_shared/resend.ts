@@ -281,3 +281,76 @@ export async function sendBackInStock(
     "back_in_stock",
   );
 }
+
+export interface ContactMessage {
+  name: string;
+  email: string;
+  phone?: string;
+  message: string;
+}
+
+/** Notify the sales inbox of a new website contact message (plain text). */
+export async function sendContactNotification(msg: ContactMessage): Promise<void> {
+  const lines = [
+    `Name: ${msg.name}`,
+    `Email: ${msg.email}`,
+    msg.phone ? `Phone: ${msg.phone}` : "",
+    `\nMessage:\n${msg.message}`,
+  ].filter(Boolean);
+
+  await sendEmail(
+    {
+      to: Deno.env.get("SALES_EMAIL") || Deno.env.get("MERCHANT_EMAIL") || "orders@allthingswater.co.za",
+      replyTo: msg.email,
+      subject: `Website enquiry — ${msg.name}`,
+      text: `New contact form message\n\n${lines.join("\n")}`,
+    },
+    "contact_notification",
+  );
+}
+
+export function buildContactAck(name: string): string {
+  return emailShell(
+    "Thanks for getting in touch",
+    card(
+      `<p style="margin:0 0 12px">Hi ${escapeHtml(name.slice(0, 100))},</p>` +
+        `<p style="margin:0 0 12px">We've received your message and someone from our team will get back to you within one business day.</p>` +
+        `<p style="margin:0">If it's urgent, reply to this email or give us a call and we'll help right away.</p>`,
+    ),
+  );
+}
+
+/** Acknowledge a contact form submission to the sender. */
+export async function sendContactAck(email: string, name: string): Promise<void> {
+  await sendEmail(
+    {
+      to: email,
+      subject: "We've received your message",
+      html: buildContactAck(name),
+    },
+    "contact_ack",
+  );
+}
+
+export function buildNewsletterWelcome(): string {
+  return emailShell(
+    "You're on the list",
+    card(
+      `<p style="margin:0 0 12px">Thanks for subscribing to All Things Water.</p>` +
+        `<p style="margin:0 0 12px">We'll send you product updates and promotions — never more than we'd want to receive ourselves.</p>` +
+        `<p style="margin:0">Changed your mind? Reply with "unsubscribe" and we'll take you straight off the list.</p>`,
+    ),
+  );
+}
+
+/** Welcome a new newsletter subscriber. Best-effort: the row is already stored. */
+export async function sendNewsletterWelcome(email: string): Promise<void> {
+  await sendEmail(
+    {
+      to: email,
+      subject: "Welcome to All Things Water",
+      html: buildNewsletterWelcome(),
+    },
+    "newsletter_welcome",
+  );
+}
