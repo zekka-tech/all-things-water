@@ -2,21 +2,39 @@
 
 Use this checklist to configure and deploy the storefront for production. The environment is split between frontend build variables in Cloudflare Pages and backend secrets for Supabase Edge Functions.
 
-## Current status (2026-10-29)
+## Current status (2026-11-08)
 
 Canonical domain is **`https://allthingswater.co.za`** (with `www.` as an alias);
 `all-things-water.pages.dev` remains as the Pages origin and a permitted origin.
 
 | Area | State |
 | --- | --- |
-| Custom domain + TLS | Live — `allthingswater.co.za` and `www.`, certs active |
-| Migrations / Edge Functions | 18 applied, 14 ACTIVE |
-| Cloudflare Pages production vars | Set (see below); `VITE_COMPANY_ADDRESS` still unset |
-| Resend | Domain `allthingswater.co.za` registered (eu-west-1), DKIM/SPF/MX published, sending key set |
-| Cloudflare Email Routing | Enabled; `orders@`/`ops@`/`sales@`/`info@` forward once the destination is verified |
-| Turnstile | Widget `all-things-water` created, site + secret key wired |
-| Cron | `018_cron_scheduler.sql` written, **not yet applied** |
-| PayFast | **Sandbox** — `PAYFAST_SANDBOX=true`, live credentials not set |
+| Custom domain + TLS | Live — `allthingswater.co.za`, `www.` and the `pages.dev` origin all serve over HTTPS |
+| Migrations | 21 of 21 applied, through `021_contact_and_newsletter.sql` |
+| Edge Functions | 16 deployed, all ACTIVE (matches `supabase/functions/`) |
+| Cloudflare Pages production vars | All 11 `VITE_*` set, `VITE_COMPANY_ADDRESS` included; confirmed baked into the live bundle built from `d7685a6` |
+| Cloudflare Pages preview vars | **None set** — preview deployments have no Supabase config, so a PR preview cannot complete a checkout |
+| Edge Function secrets | Set, except the three PayFast credentials below |
+| Resend | Domain `allthingswater.co.za` verified (eu-west-1), sending enabled. `EMAIL_FROM` is unset, so the default `All Things Water <orders@allthingswater.co.za>` applies — valid on this domain |
+| Cloudflare Email Routing | Live — enabled, status `ready`, destination verified. A single catch-all rule covers `orders@`/`ops@`/`sales@`/`info@` |
+| Turnstile | Live — site key present in the production bundle, `TURNSTILE_SECRET_KEY` set, so `contact`, `newsletter` and `business-quote` fail closed on a bad token |
+| Cron | Applied as `019_cron_scheduler.sql`; all 3 jobs active; all 3 Vault secrets present |
+| Health | `GET /functions/v1/health` returns `status: ok` |
+| PayFast | **Sandbox** — `PAYFAST_SANDBOX=true`; `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY` and `PAYFAST_PASSPHRASE` not set |
+
+**Remaining to go live:** only PayFast. Set `PAYFAST_MERCHANT_ID`,
+`PAYFAST_MERCHANT_KEY` and `PAYFAST_PASSPHRASE`, flip `PAYFAST_SANDBOX` to
+`false`, then redeploy `payments-payfast-initiate`, `payments-payfast-itn` and
+`subscriptions-run`. Apply all four together: without the credentials
+`payments-payfast-initiate` answers 500, and in live mode the ITN endpoint
+rejects and alerts when the passphrase is missing.
+
+Unset by choice, each degrading one feature only: `ALERT_SLACK_WEBHOOK_URL`
+(alerts still reach the logs and `ALERT_EMAIL`), `EMAIL_FROM`,
+`SLO_DB_LATENCY_MS` / `SLO_MAX_STUCK_ORDERS` (defaults apply),
+`VITE_SENTRY_DSN`, and the analytics set `VITE_GA_MEASUREMENT_ID` /
+`VITE_META_PIXEL_ID` / `VITE_CDP_ENDPOINT` — note `VITE_ANALYTICS_ENABLED` is
+`false`, so a measurement ID alone changes nothing until that is `true` too.
 
 Email posture: the root domain publishes `v=spf1 include:_spf.mx.cloudflare.net -all`
 and `DMARC p=reject; adkim=s; aspf=r`. Resend sends over the `send.` subdomain and
@@ -34,8 +52,8 @@ Set these in the `Production` environment for core checkout:
 ```text
 VITE_SUPABASE_URL=https://<your-project>.supabase.co
 VITE_SUPABASE_ANON_KEY=<your-supabase-anon-key>
-VITE_SITE_URL=https://all-things-water.pages.dev
-VITE_COMPANY_EMAIL=info@allthingswater.co.za
+VITE_SITE_URL=https://allthingswater.co.za
+VITE_COMPANY_EMAIL=hello@allthingswater.co.za
 VITE_COMPANY_PHONE=+27769641460
 VITE_COMPANY_ADDRESS=Your real business address
 VITE_WHATSAPP_NUMBER=+27769641460
@@ -73,7 +91,7 @@ PAYFAST_MERCHANT_ID=<live-merchant-id>
 PAYFAST_MERCHANT_KEY=<live-merchant-key>
 PAYFAST_PASSPHRASE=<live-passphrase>
 PAYFAST_SANDBOX=false
-PUBLIC_SITE_URL=https://all-things-water.pages.dev
+PUBLIC_SITE_URL=https://allthingswater.co.za
 ```
 
 Strongly recommended:
@@ -125,13 +143,13 @@ These are set in `supabase/config.toml` for local dev but must be mirrored by ha
 - **Leaked-password protection ON** (HaveIBeenPwned check; Pro plan).
 - **MFA (TOTP) enabled** and used by every account in `public.admins`.
 
-If you move from `all-things-water.pages.dev` to a custom domain such as `https://allthingswater.co.za`, update both `VITE_SITE_URL` and `PUBLIC_SITE_URL`.
+The move from `all-things-water.pages.dev` to `https://allthingswater.co.za` is done, and both `VITE_SITE_URL` and `PUBLIC_SITE_URL` already point at it. Any future domain change has to update both.
 
 ## Deployment Steps
 
 1. Set the Cloudflare Pages production variables.
 2. Set the Supabase Edge Function secrets.
-3. Apply database migrations (`supabase db push`) — through `017_least_privilege_and_loyalty.sql`. Run `npm run test:db` first; it applies every migration to a throwaway database and runs the RLS/privilege tests.
+3. Apply database migrations (`supabase db push`) — through `021_contact_and_newsletter.sql`. Run `npm run test:db` first; it applies every migration to a throwaway database and runs the RLS/privilege tests.
 4. Redeploy Cloudflare Pages production.
 5. Redeploy the Supabase functions that depend on secrets:
    - `orders`
@@ -144,6 +162,8 @@ If you move from `all-things-water.pages.dev` to a custom domain such as `https:
    - `back-in-stock`
    - `back-in-stock-notify`
    - `business-quote`
+   - `contact`
+   - `newsletter`
    - `subscriptions-run`
    - `admin-warehouses`
    - `health`
