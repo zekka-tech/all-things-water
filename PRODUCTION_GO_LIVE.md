@@ -15,32 +15,42 @@ Canonical domain is **`https://allthingswater.co.za`** (with `www.` as an alias)
 | Cloudflare Pages production vars | All 11 `VITE_*` set, `VITE_COMPANY_ADDRESS` included; confirmed baked into the live bundle built from `d7685a6` |
 | Cloudflare Pages preview vars | **None set** — preview deployments have no Supabase config, so a PR preview cannot complete a checkout |
 | Edge Function secrets | All set |
-| Resend | Domain `allthingswater.co.za` verified (eu-west-1), sending enabled. `EMAIL_FROM` is unset, so the default `All Things Water <orders@allthingswater.co.za>` applies — valid on this domain |
+| Resend | Domain `allthingswater.co.za` verified (eu-west-1), sending enabled, and `RESEND_API_KEY` confirmed working: Resend's request log shows `POST /emails` returning 200 from the Edge Runtime (`ref=csrqtidbliacfhklnbad`), every send `delivered`. `EMAIL_FROM` is unset, so the default `All Things Water <orders@allthingswater.co.za>` applies — valid on this domain |
 | Cloudflare Email Routing | Live — enabled, status `ready`, destination verified. A single catch-all rule covers `orders@`/`ops@`/`sales@`/`info@` |
 | Turnstile | Live — site key present in the production bundle, `TURNSTILE_SECRET_KEY` set, so `contact`, `newsletter` and `business-quote` fail closed on a bad token |
 | Cron | Applied as `019_cron_scheduler.sql`; all 3 jobs active; all 3 Vault secrets present |
 | Health | `GET /functions/v1/health` returns `status: ok` |
-| PayFast | **Live** — `PAYFAST_SANDBOX=false`; merchant ID, key and passphrase set 2026-11-08. None of the three matches PayFast's published sandbox test values, and a probe of `payments-payfast-initiate` clears every configuration gate and fails only at order lookup, so the running function reads all three |
+| PayFast | **Live and accepted by PayFast** — `PAYFAST_SANDBOX=false`. Verified 2026-11-08 by submitting a real order's parameters to `www.payfast.co.za/eng/process`: PayFast answers 200 with its payment page for R 2 965,00 against order `ATW-76367D7547`. That proves the merchant ID and key are valid and the signature matches, so the passphrase agrees with the PayFast dashboard |
 
-**Remaining to go live:** nothing in configuration. Two things remain that no
-amount of secret-setting can prove:
+**Remaining to go live:** nothing in configuration, and the outbound half of
+the payment flow is now proven as far as PayFast's own payment page. What has
+never run is everything *after* the customer pays:
 
-1. **One real low-value transaction, end to end.** Config checks only prove the
-   credentials are present and well-formed, not that PayFast accepts them. Put a
-   live order through, confirm the ITN arrives and flips the order to paid, and
-   confirm the confirmation and merchant emails send.
-2. **The notify URL registered on the live PayFast account.** The code sends
+1. **The ITN callback.** No payment has completed, so
+   `payments-payfast-itn` has never received a real notification. Put one real
+   low-value order through and confirm it flips to paid. If the payment succeeds
+   but the order stays `pending_payment`, suspect the notify URL: the code sends
    `https://csrqtidbliacfhklnbad.supabase.co/functions/v1/payments-payfast-itn`
-   on every transaction, but a PayFast account can be configured to accept only a
-   whitelisted notify URL. `PAYFAST_ITN_IP_CHECK` is also `true`, so ITNs must
+   on every transaction, but a PayFast account can be set to accept only a
+   whitelisted one, and `PAYFAST_ITN_IP_CHECK` is `true`, so the POST must also
    originate from PayFast's published IP ranges.
+2. **The transactional emails.** The Resend key is proven to authenticate and
+   deliver, but only SLO alerts have ever been sent through it. The order
+   confirmation and the merchant notification have never fired on a real order.
 
-Note that the passphrase must match the one set in the PayFast dashboard
-character for character, or every ITN signature fails.
+Until a payment completes, the storefront can take money without anyone being
+told about it, so treat that single transaction as the real go-live gate.
+
+`SLO_DB_LATENCY_MS` is set to `2000`, raised from the 1000 default on
+2026-11-08. Over the preceding 10 days the `db.probe` sample was p50 398 ms,
+p95 695 ms, p99 965 ms and max 1761 ms, so a 1000 ms objective breached 9 times
+in 1291 probes and sent 10 `[ATW alert] monitor.slo_breach` emails while the
+database was never once unreachable. 2000 ms still catches a real degradation
+without training the alert mailbox to be ignored.
 
 Unset by choice, each degrading one feature only: `ALERT_SLACK_WEBHOOK_URL`
 (alerts still reach the logs and `ALERT_EMAIL`), `EMAIL_FROM`,
-`SLO_DB_LATENCY_MS` / `SLO_MAX_STUCK_ORDERS` (defaults apply),
+`SLO_MAX_STUCK_ORDERS` (default 3 applies),
 `VITE_SENTRY_DSN`, and the analytics set `VITE_GA_MEASUREMENT_ID` /
 `VITE_META_PIXEL_ID` / `VITE_CDP_ENDPOINT` — note `VITE_ANALYTICS_ENABLED` is
 `false`, so a measurement ID alone changes nothing until that is `true` too.
@@ -102,6 +112,14 @@ PAYFAST_PASSPHRASE=<live-passphrase>
 PAYFAST_SANDBOX=false
 PUBLIC_SITE_URL=https://allthingswater.co.za
 ```
+
+**Paste the values, not the brackets.** The `<...>` above marks a placeholder.
+On 2026-11-08 all three PayFast credentials were saved with the angle brackets
+still wrapped around them, and PayFast rejected the checkout with *"The merchant
+id field is required"* — the brackets are part of the stored value and nothing
+in the stack strips them. Clear each field completely before typing. To check a
+stored secret without reading it back, compare `supabase secrets list` (which
+prints a SHA-256 of each value) against the hash of what you expect.
 
 Strongly recommended:
 
