@@ -14,20 +14,29 @@ Canonical domain is **`https://allthingswater.co.za`** (with `www.` as an alias)
 | Edge Functions | 16 deployed, all ACTIVE (matches `supabase/functions/`) |
 | Cloudflare Pages production vars | All 11 `VITE_*` set, `VITE_COMPANY_ADDRESS` included; confirmed baked into the live bundle built from `d7685a6` |
 | Cloudflare Pages preview vars | **None set** — preview deployments have no Supabase config, so a PR preview cannot complete a checkout |
-| Edge Function secrets | Set, except the three PayFast credentials below |
+| Edge Function secrets | All set |
 | Resend | Domain `allthingswater.co.za` verified (eu-west-1), sending enabled. `EMAIL_FROM` is unset, so the default `All Things Water <orders@allthingswater.co.za>` applies — valid on this domain |
 | Cloudflare Email Routing | Live — enabled, status `ready`, destination verified. A single catch-all rule covers `orders@`/`ops@`/`sales@`/`info@` |
 | Turnstile | Live — site key present in the production bundle, `TURNSTILE_SECRET_KEY` set, so `contact`, `newsletter` and `business-quote` fail closed on a bad token |
 | Cron | Applied as `019_cron_scheduler.sql`; all 3 jobs active; all 3 Vault secrets present |
 | Health | `GET /functions/v1/health` returns `status: ok` |
-| PayFast | **Sandbox** — `PAYFAST_SANDBOX=true`; `PAYFAST_MERCHANT_ID`, `PAYFAST_MERCHANT_KEY` and `PAYFAST_PASSPHRASE` not set |
+| PayFast | **Live** — `PAYFAST_SANDBOX=false`; merchant ID, key and passphrase set 2026-11-08. None of the three matches PayFast's published sandbox test values, and a probe of `payments-payfast-initiate` clears every configuration gate and fails only at order lookup, so the running function reads all three |
 
-**Remaining to go live:** only PayFast. Set `PAYFAST_MERCHANT_ID`,
-`PAYFAST_MERCHANT_KEY` and `PAYFAST_PASSPHRASE`, flip `PAYFAST_SANDBOX` to
-`false`, then redeploy `payments-payfast-initiate`, `payments-payfast-itn` and
-`subscriptions-run`. Apply all four together: without the credentials
-`payments-payfast-initiate` answers 500, and in live mode the ITN endpoint
-rejects and alerts when the passphrase is missing.
+**Remaining to go live:** nothing in configuration. Two things remain that no
+amount of secret-setting can prove:
+
+1. **One real low-value transaction, end to end.** Config checks only prove the
+   credentials are present and well-formed, not that PayFast accepts them. Put a
+   live order through, confirm the ITN arrives and flips the order to paid, and
+   confirm the confirmation and merchant emails send.
+2. **The notify URL registered on the live PayFast account.** The code sends
+   `https://csrqtidbliacfhklnbad.supabase.co/functions/v1/payments-payfast-itn`
+   on every transaction, but a PayFast account can be configured to accept only a
+   whitelisted notify URL. `PAYFAST_ITN_IP_CHECK` is also `true`, so ITNs must
+   originate from PayFast's published IP ranges.
+
+Note that the passphrase must match the one set in the PayFast dashboard
+character for character, or every ITN signature fails.
 
 Unset by choice, each degrading one feature only: `ALERT_SLACK_WEBHOOK_URL`
 (alerts still reach the logs and `ALERT_EMAIL`), `EMAIL_FROM`,
