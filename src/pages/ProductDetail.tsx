@@ -8,7 +8,7 @@ import { QuantityStepper } from "@/components/QuantityStepper";
 import { ProductReviews } from "@/components/ProductReviews";
 import { Product3DPanel } from "@/components/Product3DPanel";
 import { FREQUENCY_OPTIONS, type Frequency } from "@/lib/subscriptions";
-import { getProductBySlug, getRelatedProducts } from "@/data/products";
+import { useCatalog } from "@/context/CatalogContext";
 import { categoryLabel } from "@/data/categories";
 import { BackInStockNotify } from "@/components/BackInStockNotify";
 import { formatZAR } from "@/lib/format";
@@ -19,7 +19,8 @@ import { NotFound } from "./NotFound";
 export function ProductDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const product = slug ? getProductBySlug(slug) : undefined;
+  const { products, ready } = useCatalog();
+  const product = products.find((p) => p.slug === slug);
   const { addItem } = useCart();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
@@ -27,8 +28,9 @@ export function ProductDetail() {
 
   if (!product) return <NotFound />;
 
-  const soldOut = product.stock <= 0;
-  const related = getRelatedProducts(product);
+  const soldOut = !ready || product.stock <= 0;
+  const related = products.filter((p) => p.id !== product.id)
+    .sort((a, b) => Number(b.category === product.category) - Number(a.category === product.category)).slice(0, 3);
 
   const handleAdd = () => {
     addItem(product, qty);

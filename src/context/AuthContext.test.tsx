@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { AuthProvider } from "@/context/AuthContext";
 import { useAuth } from "@/context/useAuth";
+import { supabase } from "@/lib/supabase";
 
 // Mock @supabase/supabase-js so we don't need real env vars
 vi.mock("@supabase/supabase-js", () => ({
@@ -52,6 +53,43 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 describe("AuthContext", () => {
+  it("clears a signed-in customer when the session ends without another Auth request", async () => {
+    let changed: (event: string, session: unknown) => void = () => {};
+    vi.mocked(supabase!.auth.onAuthStateChange).mockImplementationOnce((callback) => {
+      changed = callback as typeof changed;
+      return { data: { subscription: { id: "test", callback, unsubscribe: vi.fn() } } };
+    });
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    act(() => changed("SIGNED_IN", { user: { id: "customer", email: "customer@example.com" } }));
+    expect(result.current.user?.id).toBe("customer");
+    act(() => changed("SIGNED_OUT", null));
+    expect(result.current.user).toBeNull();
+    expect(localStorage.getItem("atw.customer-user")).toBeNull();
+    expect(supabase!.auth.getUser).toHaveBeenCalledTimes(1);
+  });
+
+  it("settles loading when session restoration rejects", async () => {
+    vi.mocked(supabase!.auth.getUser).mockRejectedValueOnce(new Error("offline"));
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.user).toBeNull();
+  });
+
+  it("does not restore an old user after a newer sign-out event", async () => {
+    let resolveUser: (value: unknown) => void = () => {};
+    let changed: (event: string, session: unknown) => void = () => {};
+    vi.mocked(supabase!.auth.getUser).mockImplementationOnce(() => new Promise((resolve) => { resolveUser = resolve as typeof resolveUser; }));
+    vi.mocked(supabase!.auth.onAuthStateChange).mockImplementationOnce((callback) => {
+      changed = callback as typeof changed;
+      return { data: { subscription: { id: "test", callback, unsubscribe: vi.fn() } } };
+    });
+    const { result } = renderHook(() => useAuth(), { wrapper });
+    act(() => changed("SIGNED_OUT", null));
+    await act(async () => resolveUser({ data: { user: { id: "stale" } } }));
+    expect(result.current.user).toBeNull();
+  });
+
   it("starts in loading state then resolves to no user", async () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
     // Loading until the stored session has been checked...

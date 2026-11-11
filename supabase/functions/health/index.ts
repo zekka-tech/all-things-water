@@ -1,4 +1,4 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2.107.0";
 import { handleCors, jsonResponse } from "../_shared/cors.ts";
 
 /**

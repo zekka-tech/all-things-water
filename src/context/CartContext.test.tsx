@@ -349,6 +349,30 @@ describe("CartContext", () => {
   });
 
   describe("localStorage persistence", () => {
+    it("ignores broken rows and refreshes stored product details instead of trusting saved prices", () => {
+      localStorage.setItem("atw.cart.v1", JSON.stringify([
+        null, {}, { product: null, quantity: 2 },
+        { product: { id: "missing" }, quantity: 2 },
+        { product: { id: "atw-001" }, quantity: "2" },
+        { product: { id: "atw-001", price: 1 }, quantity: 1 },
+        { product: { id: "atw-001", price: 1 }, quantity: 100 },
+      ]));
+      const { result } = renderHook(() => useCart(), { wrapper });
+      expect(result.current.items).toHaveLength(1);
+      expect(result.current.items[0].product.price).toBe(2645);
+      expect(result.current.count).toBe(2);
+      expect(result.current.subtotal).toBe(5290);
+    });
+
+    it("does not let invalid quantity updates corrupt totals", () => {
+      const { result } = renderHook(() => useCart(), { wrapper });
+      act(() => result.current.addItem(makeProduct(), 2));
+      act(() => result.current.setQuantity("test-001", NaN));
+      act(() => result.current.addItem(makeProduct(), Infinity));
+      expect(result.current.count).toBe(2);
+      expect(result.current.subtotal).toBe(200);
+    });
+
     it("persists cart items to localStorage on change", () => {
       const { result } = renderHook(() => useCart(), { wrapper });
       const product = makeProduct({ id: "atw-001" });

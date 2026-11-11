@@ -19,7 +19,7 @@ import { WaterSurface } from "@/components/WaterSurface";
 import { BubbleField } from "@/components/BubbleField";
 import { WaterJourney } from "@/components/WaterJourney";
 import { useRipple } from "@/components/Ripple";
-import { featuredProducts } from "@/data/products";
+import { useCatalog } from "@/context/CatalogContext";
 import { categories } from "@/data/categories";
 
 const valueProps = [
@@ -96,7 +96,8 @@ function CategoryTile({
 }
 
 export function Home() {
-  const featured = featuredProducts();
+  const { products } = useCatalog();
+  const featured = products.filter((p) => p.featured);
 
   return (
     <>

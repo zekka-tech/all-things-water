@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Product } from "@/types";
 import { formatZAR } from "@/lib/format";
 import { useCart } from "@/context/CartContext";
+import { useCatalog } from "@/context/CatalogContext";
 import { trackMarketing } from "@/lib/marketing";
 import { StockBadge } from "./StockBadge";
 import { OptimizedImage } from "./OptimizedImage";
@@ -11,6 +12,7 @@ import { TiltCard } from "./TiltCard";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
+  const { ready } = useCatalog();
   const [added, setAdded] = useState(false);
   const soldOut = product.stock <= 0;
 
@@ -77,7 +79,7 @@ export function ProductCard({ product }: { product: Product }) {
             <button
               type="button"
               onClick={handleAdd}
-              disabled={soldOut}
+              disabled={soldOut || !ready}
               className={
                 added
                   ? "btn bg-emerald-600 px-3 py-2 text-xs text-white hover:bg-emerald-700"

@@ -46,7 +46,19 @@ Deno.test("readJson rejects bad JSON, non-objects and oversized bodies", async (
   assertEquals(await readJson(req({}, '{"a":1}')), { a: 1 });
   await assertRejects(() => readJson(req({}, "{nope")), HttpError, "Invalid JSON");
   await assertRejects(() => readJson(req({}, "42")), HttpError, "Invalid JSON");
+  await assertRejects(() => readJson(req({}, "[]")), HttpError, "Invalid JSON");
   await assertRejects(() => readJson(req({}, JSON.stringify({ a: "x".repeat(100) })), 50), HttpError, "too large");
+});
+
+Deno.test("readJson stops oversized streaming bodies before buffering the whole request", async () => {
+  let cancelled = false;
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) { controller.enqueue(new Uint8Array(1024)); },
+    cancel() { cancelled = true; },
+  });
+  const request = new Request("https://x.test", { method: "POST", body });
+  await assertRejects(() => readJson(request, 512), HttpError, "too large");
+  assert(cancelled);
 });
 
 Deno.test("escapeHtml and safeHref neutralise markup and bad schemes", () => {

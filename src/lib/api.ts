@@ -27,14 +27,12 @@ export async function apiPost<T>(
       signal: controller.signal,
     });
 
-    clearTimeout(timeout);
-
     if (!res.ok) {
       let details: unknown;
       try {
         details = await res.json();
       } catch {
-        /* ignore parse errors */
+        if (controller.signal.aborted) throw errFromAbort();
       }
       const message =
         typeof details === "object" && details !== null && "error" in details
@@ -43,18 +41,21 @@ export async function apiPost<T>(
       throw new ApiError(res.status, message, details);
     }
 
-    return res.json();
+    return await res.json();
   } catch (err) {
-    clearTimeout(timeout);
     if (err instanceof ApiError) throw err;
-    if (err instanceof DOMException && err.name === "AbortError") {
-      throw new ApiError(0, "Request timed out. Please try again.");
-    }
+    if (controller.signal.aborted) throw errFromAbort();
     throw new ApiError(
       0,
       "Network error. Please check your connection and try again.",
     );
+  } finally {
+    clearTimeout(timeout);
   }
+}
+
+function errFromAbort(): ApiError {
+  return new ApiError(0, "Request timed out. Please try again.");
 }
 
 export function userFriendlyError(err: unknown): string {

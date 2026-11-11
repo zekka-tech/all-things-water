@@ -16,11 +16,13 @@ import {
 import { Seo } from "@/components/Seo";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/useAuth";
+import { useCatalog } from "@/context/CatalogContext";
 import { formatZAR, cx } from "@/lib/format";
 import { env } from "@/lib/env";
-import { apiPost, isPayfastUrl, userFriendlyError } from "@/lib/api";
+import { ApiError, apiPost, isPayfastUrl, userFriendlyError } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { captureException } from "@/lib/sentry";
+import { saveCheckoutSession, type CheckoutSession } from "@/lib/checkoutSession";
 import { trackMarketing } from "@/lib/marketing";
 import {
   DELIVERY_THRESHOLD,
@@ -91,10 +93,12 @@ const postalFeedback: Record<
 export function Checkout() {
   const { items, subtotal } = useCart();
   const { user } = useAuth();
+  const { ready: catalogReady } = useCatalog();
   const [form, setForm] = useState<Form>(empty);
   const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const pendingOrder = useRef<{ payload: string; order: CheckoutSession } | null>(null);
 
   // ── New state for enhancements ──
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("delivery");
@@ -198,6 +202,7 @@ export function Checkout() {
 
   const placeOrder = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting || !catalogReady) return;
     if (!validate()) return;
 
     trackMarketing({ type: "begin_checkout", value: total, items: items.length });
@@ -225,6 +230,7 @@ export function Checkout() {
       }
 
       const orderPayload = {
+        expectedTotal: total,
         items: items.map(({ product, quantity }) => ({
           productId: product.id,
           quantity,
@@ -245,15 +251,21 @@ export function Checkout() {
         deliverySlot: deliveryMethod === "delivery" ? deliverySlot || undefined : undefined,
       };
 
-      const orderResult = await apiPost<{
-        orderId: string;
-        orderRef: string;
-        checkoutToken: string;
-      }>(
+      const payload = JSON.stringify([user?.id ?? null, orderPayload]);
+      if (pendingOrder.current && pendingOrder.current.payload !== payload) {
+        await apiPost(`${functionsUrl}/order-cancel`, {
+          orderId: pendingOrder.current.order.orderId,
+          token: pendingOrder.current.order.checkoutToken,
+        }, authHeaders);
+        pendingOrder.current = null;
+      }
+      // A payment-initiation retry must reuse the order and its reservation.
+      const orderResult = pendingOrder.current?.order ?? await apiPost<CheckoutSession>(
         `${functionsUrl}/orders`,
         orderPayload,
         authHeaders,
       );
+      pendingOrder.current = { payload, order: orderResult };
 
       const paymentResult = await apiPost<{ redirectUrl: string }>(
         `${functionsUrl}/payments-payfast-initiate`,
@@ -265,8 +277,10 @@ export function Checkout() {
       if (!isPayfastUrl(paymentResult.redirectUrl)) {
         throw new Error("Unexpected payment redirect");
       }
+      saveCheckoutSession(orderResult);
       window.location.href = paymentResult.redirectUrl;
     } catch (err) {
+      if (err instanceof ApiError && [404, 409].includes(err.status)) pendingOrder.current = null;
       captureException(err instanceof Error ? err : new Error(String(err)), {
         action: "placeOrder",
       });
@@ -669,7 +683,7 @@ export function Checkout() {
 
             <button
               type="submit"
-              disabled={!isPostalDeliverable || submitting}
+              disabled={!isPostalDeliverable || submitting || !catalogReady}
               className="btn-primary mt-6 w-full py-3 text-base"
             >
               {submitting ? (

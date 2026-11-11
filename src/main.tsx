@@ -5,6 +5,7 @@ import App from "./App";
 import { CartProvider } from "@/context/CartContext";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
+import { CatalogProvider } from "@/context/CatalogContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { validateEnv } from "@/lib/validateEnv";
 import { initErrorReporter } from "@/lib/sentry";
@@ -34,6 +35,7 @@ function enableOptionalServices() {
   if (sentryDsn) {
     initErrorReporter({
       captureException(error, context) {
+        if (!hasTrackingConsent()) return;
         console.error("[Sentry]", error, context);
         try {
           const body = JSON.stringify({
@@ -98,9 +100,11 @@ createRoot(document.getElementById("root")!).render(
       <ThemeProvider>
         <BrowserRouter>
           <AuthProvider>
-            <CartProvider>
-              <App />
-            </CartProvider>
+            <CatalogProvider>
+              <CartProvider>
+                <App />
+              </CartProvider>
+            </CatalogProvider>
           </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>

@@ -1,4 +1,4 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2.107.0";
 import { hasSharedSecret } from "../_shared/http.ts";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { alert, logInfo, toErrorFields } from "../_shared/log.ts";

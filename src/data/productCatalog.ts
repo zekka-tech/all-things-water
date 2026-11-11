@@ -8,7 +8,6 @@ export interface ProductCatalogItem {
   description: string;
   category: Category;
   price: number;
-  cost: number;
   unit: string;
   stock: number;
   features: string[];
@@ -26,7 +25,6 @@ export const productCatalog: ProductCatalogItem[] = [
       "A free-standing floor cooler that delivers piping-hot and refreshingly-cold water on demand. The YLR-805LB takes standard 18.9L bottles and is built for busy kitchens, reception areas and offices.",
     category: "dispensers",
     price: 2645,
-    cost: 2300,
     unit: "each",
     stock: 2,
     featured: true,
@@ -46,7 +44,6 @@ export const productCatalog: ProductCatalogItem[] = [
       "A space-saving counter-top cooler that brings cold, great-tasting water to smaller offices, kitchenettes and homes without taking up floor space.",
     category: "dispensers",
     price: 1800,
-    cost: 1350,
     unit: "each",
     stock: 0,
     featured: true,
@@ -66,7 +63,6 @@ export const productCatalog: ProductCatalogItem[] = [
       "A durable 18.9-litre (5-gallon) refillable bottle designed for all standard top-loading coolers and dispensers. The handle-free design stacks and stores neatly.",
     category: "dispensers",
     price: 150,
-    cost: 86,
     unit: "each",
     stock: 6,
     featured: true,
@@ -86,7 +82,6 @@ export const productCatalog: ProductCatalogItem[] = [
       "Replacement screw caps for 5-gallon / 18.9L water bottles. Seal opened bottles for transport and storage, or keep spares on hand for refills.",
     category: "accessories",
     price: 10,
-    cost: 4,
     unit: "each",
     stock: 50,
     features: [
@@ -104,7 +99,6 @@ export const productCatalog: ProductCatalogItem[] = [
       "Monate still mineral water in convenient 500ml bottles. Sold as a case of 24 — perfect for events, boardrooms and keeping the fridge stocked.",
     category: "bottled-water",
     price: 175,
-    cost: 145,
     unit: "case of 24",
     stock: 2,
     volumeMl: 500,
@@ -124,7 +118,6 @@ export const productCatalog: ProductCatalogItem[] = [
       "VOSS artesian still water in the signature 800ml cylinder. A premium centrepiece for fine dining, hospitality and gifting. Sold as a case of 12.",
     category: "accessories",
     price: 1500,
-    cost: 1345,
     unit: "case of 12",
     stock: 1,
     volumeMl: 800,
@@ -143,7 +136,6 @@ export const productCatalog: ProductCatalogItem[] = [
       "Aquafria sparkling water in 500ml bottles — bright, fine bubbles and a clean taste. Sold as a case of 24 for the table or the fridge.",
     category: "bottled-water",
     price: 120,
-    cost: 100,
     unit: "case of 24",
     stock: 3,
     volumeMl: 500,
@@ -163,7 +155,6 @@ export const productCatalog: ProductCatalogItem[] = [
       "Aquafria still water in 500ml bottles — pure, refreshing and easy to grab on the go. Sold as a case of 24.",
     category: "bottled-water",
     price: 120,
-    cost: 100,
     unit: "case of 24",
     stock: 3,
     volumeMl: 500,

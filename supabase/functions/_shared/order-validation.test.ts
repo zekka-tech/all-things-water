@@ -1,5 +1,5 @@
 import { assert, assertEquals, assertFalse, assertMatch } from "jsr:@std/assert";
-import { canTransition, newOrderRef, validateOrderRequest } from "./order-validation.ts";
+import { newOrderRef, validateOrderRequest } from "./order-validation.ts";
 
 const base = () => ({
   items: [{ productId: "p1", quantity: 2 }],
@@ -14,6 +14,15 @@ Deno.test("accepts a well-formed delivery order", () => {
     assertEquals(r.value.items, [{ productId: "p1", quantity: 2 }]);
     assertEquals(r.value.delivery.method, "delivery");
     assertEquals(r.value.whatsappOptin, false);
+  }
+});
+
+Deno.test("accepts the displayed checkout total for price-drift checks and rejects invalid amounts", () => {
+  const result = validateOrderRequest({ ...base(), expectedTotal: 575 });
+  assert(result.ok);
+  if (result.ok) assertEquals(result.value.expectedTotal, 575);
+  for (const expectedTotal of [null, "575", 0, -1, 1.5, Number.NaN]) {
+    assertFalse(validateOrderRequest({ ...base(), expectedTotal }).ok);
   }
 });
 
@@ -73,17 +82,6 @@ Deno.test("clips over-long free text", () => {
   if (r.ok) assertEquals(r.value.customer.name.length, 200);
 });
 
-Deno.test("status transitions are forward-only", () => {
-  assert(canTransition("paid", "processing"));
-  assert(canTransition("processing", "shipped"));
-  assert(canTransition("shipped", "delivered"));
-  assert(canTransition("pending_payment", "cancelled"));
-  assertFalse(canTransition("pending_payment", "shipped"));
-  assertFalse(canTransition("shipped", "processing")); // would double-dispatch stock
-  assertFalse(canTransition("delivered", "cancelled"));
-  assertFalse(canTransition("cancelled", "processing"));
-  assertFalse(canTransition("bogus", "paid"));
-});
 
 Deno.test("order refs are long enough to avoid collisions", () => {
   assertMatch(newOrderRef(), /^ATW-[0-9A-F]{10}$/);

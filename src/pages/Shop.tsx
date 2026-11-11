@@ -5,7 +5,7 @@ import { Seo } from "@/components/Seo";
 import { ProductCard } from "@/components/ProductCard";
 import { Reveal } from "@/components/Reveal";
 import { useRipple } from "@/components/Ripple";
-import { products } from "@/data/products";
+import { useCatalog } from "@/context/CatalogContext";
 import { categories } from "@/data/categories";
 import { cx } from "@/lib/format";
 import type { Category } from "@/types";
@@ -18,11 +18,6 @@ const sortOptions: { value: SortKey; label: string }[] = [
   { value: "price-desc", label: "Price: high → low" },
   { value: "name", label: "Name A–Z" },
 ];
-
-const priceRange = () => {
-  const prices = products.map((p) => p.price);
-  return { min: Math.min(...prices), max: Math.max(...prices) };
-};
 
 function FilterChip({
   active,
@@ -52,6 +47,7 @@ function FilterChip({
 }
 
 export function Shop() {
+  const { products } = useCatalog();
   const [params, setParams] = useSearchParams();
   const activeCategory = params.get("category") as Category | null;
   const [query, setQuery] = useState("");
@@ -65,7 +61,9 @@ export function Shop() {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  const { min: globalMin, max: globalMax } = priceRange();
+  const prices = products.map((p) => p.price);
+  const globalMin = prices.length ? Math.min(...prices) : 0;
+  const globalMax = prices.length ? Math.max(...prices) : 0;
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -83,7 +81,7 @@ export function Shop() {
     return products
       .filter((p) => p.name.toLowerCase().includes(q))
       .slice(0, 5);
-  }, [query]);
+  }, [query, products]);
 
   const setCategory = (cat: Category | null) => {
     const next = new URLSearchParams(params);
@@ -123,7 +121,7 @@ export function Shop() {
         list.sort((a, b) => Number(b.featured ?? false) - Number(a.featured ?? false));
     }
     return list;
-  }, [activeCategory, query, sort, priceMin, priceMax, inStockOnly]);
+  }, [activeCategory, query, sort, priceMin, priceMax, inStockOnly, products]);
 
   const hasFilters = !!activeCategory || !!query.trim() || !!priceMin || !!priceMax || inStockOnly;
 
@@ -260,10 +258,11 @@ export function Shop() {
         >
           <div className="flex flex-wrap items-end gap-4 rounded-xl bg-ink-50 p-4 dark:bg-ink-800/50">
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-500 dark:text-ink-400">
+              <label htmlFor="price-min" className="mb-1 block text-xs font-medium text-ink-500 dark:text-ink-400">
                 Min price (R)
               </label>
               <input
+                id="price-min"
                 type="number"
                 min={globalMin}
                 max={globalMax}
@@ -274,10 +273,11 @@ export function Shop() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-ink-500 dark:text-ink-400">
+              <label htmlFor="price-max" className="mb-1 block text-xs font-medium text-ink-500 dark:text-ink-400">
                 Max price (R)
               </label>
               <input
+                id="price-max"
                 type="number"
                 min={globalMin}
                 max={globalMax}

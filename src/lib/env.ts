@@ -3,9 +3,9 @@ import { CONTACT_EMAIL, CONTACT_PHONE_E164 } from "./contact";
 export const env = {
   analyticsEnabled: import.meta.env.VITE_ANALYTICS_ENABLED === "true",
   contactFormEndpoint:
-    import.meta.env.VITE_CONTACT_FORM_ENDPOINT || "",
+    import.meta.env.VITE_CONTACT_FORM_ENDPOINT || (import.meta.env.VITE_SUPABASE_URL ? `${import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, "")}/functions/v1/contact` : ""),
   newsletterEndpoint:
-    import.meta.env.VITE_NEWSLETTER_ENDPOINT || "",
+    import.meta.env.VITE_NEWSLETTER_ENDPOINT || (import.meta.env.VITE_SUPABASE_URL ? `${import.meta.env.VITE_SUPABASE_URL.replace(/\/$/, "")}/functions/v1/newsletter` : ""),
   whatsappNumber: import.meta.env.VITE_WHATSAPP_NUMBER || CONTACT_PHONE_E164,
   companyEmail: import.meta.env.VITE_COMPANY_EMAIL || CONTACT_EMAIL,
   companyPhone: import.meta.env.VITE_COMPANY_PHONE || CONTACT_PHONE_E164,

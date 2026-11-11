@@ -10,6 +10,12 @@
 
 Apply migrations to your linked project:
 
+Use a separate project for staging. Before applying
+`20261111064118_deployment_readiness.sql`, create/update the Vault secret
+`project_url` with this project's `https://<ref>.supabase.co` origin. Cron
+requests no longer fall back to the production project. See
+[deployment review](../DEPLOYMENT_REVIEW.md) for the rollout order.
+
 ```bash
 supabase db push
 ```
@@ -25,6 +31,8 @@ supabase db reset  # applies all migrations fresh
 
 - `001_initial_schema.sql` — Core tables: products, orders, order_items, order_status_events
 - `002_rls_policies.sql` — Row-level security: public read on visible products, service_role for all writes
+- `003`–`021` — Checkout transactions, accounts, security hardening, scheduling and contact/newsletter support
+- `20261111064118_deployment_readiness.sql` — Environment-specific cron destinations, private purchasing costs, atomic admin catalogue and order status changes
 
 ## Seeding
 

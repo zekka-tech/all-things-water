@@ -69,7 +69,7 @@ export function Seo({ title, description, canonicalPath, noIndex = false }: Prop
     );
     ensureMeta('meta[name="robots"]', { name: "robots" }).setAttribute(
       "content",
-      noIndex ? "noindex, nofollow" : "index, follow",
+      noIndex || import.meta.env.MODE === "staging" ? "noindex, nofollow" : "index, follow",
     );
 
     ensureLink("canonical").setAttribute("href", canonicalUrl);

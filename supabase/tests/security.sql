@@ -312,6 +312,7 @@ declare
   req_body jsonb;
 begin
   perform vault.create_secret('test-back-in-stock-secret-0123456789', 'back_in_stock_cron_secret');
+  perform vault.create_secret('https://staging-test.supabase.co', 'project_url');
 
   -- t-cooler: stock 10, someone waiting -> due.
   insert into public.back_in_stock_subscriptions (email, product_id)
@@ -334,7 +335,7 @@ begin
     from net.http_request_queue q
    limit 1;
 
-  assert req_url like '%/functions/v1/back-in-stock-notify',
+  assert req_url = 'https://staging-test.supabase.co/functions/v1/back-in-stock-notify',
     'FAIL R26: drain posted to the wrong url: ' || req_url;
   assert req_body->>'productId' = 't-cooler',
     'FAIL R26: drain sent the wrong productId: ' || req_body::text;

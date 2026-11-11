@@ -24,6 +24,7 @@ export interface AdhocResult {
   ok: boolean;
   status: number;
   pfPaymentId?: string;
+  uncertain?: boolean;
   raw?: string;
 }
 
@@ -92,22 +93,20 @@ export async function chargeAdhoc(
       signal: AbortSignal.timeout(15_000),
     });
     const raw = await res.text();
-    let ok = res.ok;
-    let pfPaymentId: string | undefined;
     try {
       const json = JSON.parse(raw) as {
         status?: string;
         data?: { response?: unknown; pf_payment_id?: string | number };
       };
-      // PayFast returns { status: "success", data: { response, pf_payment_id } }
-      if (json.status && json.status !== "success") ok = false;
       const pid = json.data?.pf_payment_id;
-      if (pid !== undefined) pfPaymentId = String(pid);
+      const ok = res.ok && json.status === "success" && json.data?.response === true &&
+        (typeof pid === "string" || typeof pid === "number") && /^\d+$/.test(String(pid));
+      // Only an explicit failed response is safe to offer another payment for.
+      return { ok, status: res.status, pfPaymentId: ok ? String(pid) : undefined, uncertain: !ok && json.status !== "failed", raw };
     } catch {
-      // non-JSON body; rely on HTTP status
+      return { ok: false, status: res.status, uncertain: true, raw };
     }
-    return { ok, status: res.status, pfPaymentId, raw };
   } catch (err) {
-    return { ok: false, status: 0, raw: String(err) };
+    return { ok: false, status: 0, uncertain: true, raw: String(err) };
   }
 }

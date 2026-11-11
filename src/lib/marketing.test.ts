@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockEnv, consent } = vi.hoisted(() => ({
-  mockEnv: { gaMeasurementId: "", metaPixelId: "", cdpEndpoint: "" },
+  mockEnv: { analyticsEnabled: true, gaMeasurementId: "", metaPixelId: "", cdpEndpoint: "" },
   consent: { ok: true },
 }));
 
@@ -19,6 +19,7 @@ beforeEach(() => {
   mockEnv.metaPixelId = "";
   mockEnv.cdpEndpoint = "";
   consent.ok = true;
+  mockEnv.analyticsEnabled = true;
   delete (window as { gtag?: unknown }).gtag;
   delete (window as { fbq?: unknown }).fbq;
 });
@@ -28,6 +29,12 @@ afterEach(() => {
 });
 
 describe("trackMarketing", () => {
+  it("honors the analytics switch even when consent and destinations are configured", () => {
+    mockEnv.analyticsEnabled = false;
+    mockEnv.cdpEndpoint = "https://cdp.example/collect";
+    trackMarketing({ type: "purchase", orderRef: "ATW-disabled", value: 100 });
+    expect(beacon).not.toHaveBeenCalled();
+  });
   it("does nothing without tracking consent", () => {
     consent.ok = false;
     mockEnv.cdpEndpoint = "https://cdp.example/collect";
