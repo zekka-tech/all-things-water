@@ -2,8 +2,8 @@
 
 This review covers the storefront, cart and account state, admin workflows,
 Supabase functions, migrations and permissions, payments, scheduled jobs,
-static hosting, dependencies and CI. Changes are local and have not been
-deployed. Historical live-service observations in PRODUCTION_GO_LIVE.md have
+static hosting, dependencies and CI. Changes were validated locally; the
+production application/backend rollout remains pending. Historical live-service observations in PRODUCTION_GO_LIVE.md have
 not been revalidated by this review.
 
 ## Fixed findings
@@ -116,7 +116,22 @@ delivery proof. Static product reviews and business claims require owner approva
   `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` and `VITE_SITE_URL`. The ordinary
   bundle build passed; it does not certify a configured production deployment.
 - The final checkout retry regression also passed after adding the displayed
-  total to order requests. No live payment, hosted migration or deployment was run.
+  total to order requests. No live payment or hosted migration was run.
+
+## Publication and merge status
+
+All reviewed changes are committed and pushed. The independently releasable
+tooling changes are proposed in [PR #45](https://github.com/zekka-tech/all-things-water/pull/45).
+The complete storefront/backend changes, rollout instructions and UI screenshot
+are proposed in [draft PR #46](https://github.com/zekka-tech/all-things-water/pull/46).
+
+Neither PR has been merged. GitHub Actions reports that jobs cannot start
+because recent account payments failed or the spending limit must be increased.
+The same restriction affects existing dependency PRs. Restore runner access
+and obtain passing checks rather than bypassing the failed checks. Cloudflare's
+tooling preview build passed; that does not verify database/payment behavior.
+PR #46 additionally requires the backend-first rollout above before it can
+safely publish the new frontend through the production branch.
 
 References used for integration review:
 [Supabase function authorization](https://supabase.com/docs/guides/functions/auth),
