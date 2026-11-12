@@ -2,13 +2,14 @@ import { bindFullScreenTriangle, createProgram, type Program } from "./gl";
 import { depthFor } from "./depth";
 import { FRAGMENT_SHADER, VERTEX_SHADER } from "./shaders";
 
-export type FallbackReason = "no-webgl" | "compile" | "context-lost" | "slow";
+export type FallbackReason = "no-webgl" | "software" | "compile" | "context-lost" | "slow";
 
 export interface WaterSceneOptions {
   dark: boolean;
   /** Freeze time: render on demand only, no pointer lens. */
   still: boolean;
-  /** Skip the frame-time check that hands over to the CSS fallback. */
+  /** QA only: run on software rasterisers and skip the frame-time check
+   *  that hands over to the CSS fallback. */
   forceGl?: boolean;
   onReady: () => void;
   onFallback: (reason: FallbackReason) => void;
@@ -41,6 +42,16 @@ interface Layout {
   calm: [number, number];
 }
 
+/** Renderer names of CPU rasterisers: SwiftShader (headless Chrome, GPU-less
+ *  VMs), Mesa's llvmpipe/softpipe, and Windows' basic display driver. */
+const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|software|basic render/i;
+
+const isSoftware = (gl: WebGLRenderingContext) => {
+  const info = gl.getExtension("WEBGL_debug_renderer_info");
+  const name = gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER);
+  return typeof name === "string" && SOFTWARE_RENDERER.test(name);
+};
+
 const layoutFor = (width: number, height: number): Layout =>
   width >= 1024
     ? { rest: [0.74, 0.44], radius: Math.min(width, height) * 0.17, calm: [0.5, 0.8] }
@@ -57,9 +68,18 @@ export async function createWaterScene(
     stencil: false,
     premultipliedAlpha: false,
     powerPreference: "low-power",
+    // A CPU rasteriser can't run this shader at frame rate and stalls the
+    // main thread compiling it; the CSS water is the better page there.
+    failIfMajorPerformanceCaveat: !options.forceGl,
   });
   if (!gl) {
     options.onFallback("no-webgl");
+    return null;
+  }
+  // Not every browser honours the caveat flag, so check the renderer too.
+  if (!options.forceGl && isSoftware(gl)) {
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    options.onFallback("software");
     return null;
   }
   // Narrowed once for the hoisted helpers below.

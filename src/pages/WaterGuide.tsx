@@ -121,7 +121,7 @@ export function WaterGuide() {
                 aria-current={active === s.id ? "location" : undefined}
                 className={cx("chip flex items-center gap-2", active === s.id ? "chip-active" : "chip-idle")}
               >
-                <span className="text-[11px] font-semibold tabular-nums opacity-70">{s.index}</span>
+                <span className="text-[11px] font-semibold tabular-nums">{s.index}</span>
                 {s.eyebrow}
               </a>
             </li>
