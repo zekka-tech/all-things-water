@@ -1,6 +1,6 @@
 ---
 name: all-things-water-design-system
-version: 3.0.0
+version: 4.0.0
 brand: All Things Water
 market: South Africa (ZAR)
 ---
@@ -22,6 +22,19 @@ wins and this document should be corrected.
 **Personality:** Clean · Premium · Refreshing · Trustworthy
 **Visual language:** The purity of water — white space, crystalline blues, confident typography, crisp edges.
 **Voice:** Direct, welcoming, South African.
+
+**Signature (v4): "look into the water, then dive."** One GPU-rendered water
+scene sits behind the Home hero — caustics on a pale floor, a refracting drop
+that follows the pointer — and descends as the visitor scrolls, while five
+"subjects of water" rise past as glass cards. There is one canvas and one idea;
+everything else stays quiet. Supporting moves, deliberately few: an italic
+serif accent in headlines, one glass material, photo "portal" cards, and a drop
+that flies into the cart.
+
+**Honest claims only.** Every figure on the site comes from the catalogue or the
+delivery rules (`src/lib/delivery.ts`), never from copy: no invented stats,
+ratings or savings. Delivery is Gauteng and nearby areas from the Centurion
+depot — not "across South Africa".
 
 ---
 
@@ -70,6 +83,13 @@ wins and this document should be corrected.
 - **Display / Headings (`font-display`):** `Outfit` — h1–h4, prices, large stats,
   hero text. Self-hosted variable woff2 (weights 400–800) at
   `public/fonts/outfit-latin-var.woff2`, preloaded in `index.html`.
+- **Accent (`font-accent`, via the `accent` utility):** `Instrument Serif` italic
+  (OFL) for **one to three words** at the end of a headline — "Every drop,
+  *from source to glass.*" Self-hosted, Latin subset (21 KB) at
+  `public/fonts/instrument-serif-italic-latin.woff2`, preloaded, with
+  `font-display: optional` so a late font can never swap in and shift layout.
+  The `accent` utility also sets the brand colour; on dark bands override it
+  with `text-brand-200!`.
 - **Body / UI (`font-sans`):** system sans stack — body copy, buttons, labels, inputs.
 
 The font **must** be self-hosted: the CSP sets `font-src 'self' data:`, so a
@@ -80,9 +100,10 @@ shift against a CLS budget that fails the build at 0.1.
 ### Scale
 | Role        | Tailwind                        | Size | Weight | Use                     |
 |-------------|----------------------------------|------|--------|-------------------------|
-| Display XL  | `font-display text-5xl font-extrabold` | 48px | 800 | Hero h1               |
-| Display L   | `font-display text-4xl font-extrabold` | 36px | 800 | Page h1, About hero   |
-| Heading XL  | `font-display text-3xl font-bold`      | 30px | 700 | Section h2            |
+| Display 1   | `display-1`                      | clamp(44–88px), leading 0.98, −0.035em | 600 | Hero h1 (Home, About) |
+| Display 2   | `display-2`                      | clamp(32–52px), leading 1.04 | 600 | Page h1, guide chapters |
+| Section     | `section-title`                  | clamp(28–40px), −0.03em | 600 | Section h2            |
+| Label       | `label`                          | 11px, uppercase, +0.2em | 600 | Eyebrows, indices ("02 / 05"), metadata |
 | Heading L   | `font-display text-2xl font-bold`      | 24px | 700 | Card headings, stats  |
 | Heading M   | `text-xl font-semibold`                | 20px | 600 | Sub-sections, aside h |
 | Body L      | `text-lg`                              | 18px | 400 | Lead paragraph        |
@@ -90,9 +111,13 @@ shift against a CLS budget that fails the build at 0.1.
 | Body S      | `text-sm`                              | 14px | 400 | Secondary text        |
 | Caption     | `text-xs font-semibold`                | 12px | 600 | Badges, labels        |
 
-### Gradient Text (key headline accent)
-Apply `gradient-text` on the brand word in hero headlines: wraps text in
-`bg-gradient-to-r from-brand-500 to-brand-700 bg-clip-text text-transparent`.
+The display utilities set their own colour (`text-ink-900 dark:text-white`); on
+a dark band override with `text-white!`. Use `text-balance` on wrapping
+headlines so the accent never strands a single word.
+
+### Gradient text (retired)
+`gradient-text` still exists but v4 doesn't use it: the serif accent does that
+job with more character and without a paint-heavy clipped gradient.
 
 ---
 
@@ -157,7 +182,7 @@ Base unit: 4 px (Tailwind default). Use multiples of the base.
 - Hover: `bg-brand-700 shadow-glow-brand`
 - Text: white, `font-semibold text-sm`
 - Padding: `px-4 py-2.5` default, `px-6 py-3` large
-- Radius: `rounded-xl`
+- Radius: `rounded-full` (pills, all `btn-*` variants, since v4)
 - Active: `scale-[0.98]`
 - Focus: `ring-2 ring-brand-500 ring-offset-2`
 
@@ -204,9 +229,11 @@ Base unit: 4 px (Tailwind default). Use multiples of the base.
   image carries `mix-blend-multiply` so its white background dissolves into the
   stage. Any new product surface must follow the same rule.
 - Image padding: `p-6`; image `object-contain`; hover `scale-105` (500 ms)
+- The image wrapper is `parallax-front`, so the product lifts off its stage as
+  the card tilts; Add calls `flyToCart` with its button
 - Stock badge: top-left absolute
 - Body: `p-4`, flex-col
-- Category: `text-xs font-semibold uppercase tracking-wide text-brand-600`
+- Unit: `label text-brand-700`
 - Name: `font-semibold leading-snug`
 - Tagline: `text-sm text-ink-500 line-clamp-2`
 - Price: `text-lg font-bold`
@@ -214,11 +241,13 @@ Base unit: 4 px (Tailwind default). Use multiples of the base.
 - Card hover: `-translate-y-1 shadow-md`
 
 ### Footer
-- Background: `bg-ink-50 dark:bg-ink-950`
-- Top accent: 4 px brand-gradient strip
+- A deep-water band: `bg-abyss` in both themes, white/75 text, `label
+  text-brand-200` headings, under a `<WaterSurface>` crest that rises out of its
+  top edge (`bottom-full text-abyss!` — the `!` because WaterSurface's own
+  colour sorts later)
 - Grid: logo col + 3 link columns (4 col desktop, 2 col tablet, stack mobile)
 - Newsletter: separate row above the grid columns
-- Bottom bar: copyright centered, `text-xs text-ink-400`
+- Links use `TransitionLink`; no emoji
 
 ---
 
@@ -236,7 +265,13 @@ Base unit: 4 px (Tailwind default). Use multiples of the base.
 | bubble-rise   | 8–13 s   | linear ∞        | Rising bubbles in water scenes   |
 | sheen         | 1.1 s    | ease-out        | Specular sweep on tilt hover     |
 | caustic-shift | 16 s     | ease-in-out ⇄   | Dappled light over water panels  |
-| ring-out      | 0.7 s    | ease-out        | Touch ripple on chips/tiles      |
+| ring-out      | 0.7 s    | ease-out        | Touch ripple on chips/tiles; cart badge landing; free-delivery splash |
+| blur-rise     | 0.8 s    | `ease-out-expo` | Entrance: opacity, 24 px rise, 8 px blur → sharp. Stagger 60–120 ms via `[animation-delay:…]` |
+| vt-flood      | 0.52 s   | `ease-out-expo` | Route change: the new page rises in behind a wave-edged mask |
+| cart flight   | 0.72 s   | ease-in-out     | WAAPI droplet from the Add button to the cart icon (`src/lib/cartFlight.ts`) |
+
+`--ease-out-expo` is `cubic-bezier(0.22, 1, 0.36, 1)` — the house easing for
+anything entering.
 
 ### Two rules that are not negotiable
 
@@ -250,10 +285,41 @@ Base unit: 4 px (Tailwind default). Use multiples of the base.
 
 ---
 
+## The GPU water scene (Home)
+
+One hand-written WebGL1 fragment shader (`src/lib/water/`), **no library** —
+Three.js and friends stay out; so does any new runtime dependency.
+
+- **What it draws:** Voronoi-seam caustics on a pale floor (a moonlit deep in
+  dark mode), a refracting drop at the pointer with squash-and-stretch, fresnel,
+  a total-internal-reflection rim and a specular glint; click ripples; and, as
+  `u_depth` rises with scroll (`depthFor`, shared with the CSS fallback), light
+  shafts and drifting motes. A calm zone keeps contrast low behind the copy.
+- **Loading:** `WaterCanvas` imports the scene chunk (~5 KB gzipped) on
+  `requestIdleCallback`, after first paint; the h1 stays the LCP element. The
+  CSS water (`caustic-bg`, `BubbleField`) paints first and stays underneath.
+- **Falls back to the CSS water** — and the page must look finished on it — when
+  there is no `IntersectionObserver`/`ResizeObserver`, on data saver or ≤ 2 GB
+  devices, with no WebGL, **on software rasterisers** (SwiftShader, llvmpipe:
+  `failIfMajorPerformanceCaveat` plus a renderer-name check), on compile
+  failure or context loss, and when frames stay over 34 ms after stepping the
+  resolution down to half.
+- **Cost controls:** DPR capped at 1.5 (1 on touch) within a 2.2 MP budget;
+  pauses off-screen and in hidden tabs; repaints immediately after a resize
+  (resizing clears the buffer — skipping this shows a black frame).
+- **Reduced motion:** still frames, rendered on demand; no pointer lens.
+- **QA:** `localStorage["atw.water.force"] = "1"` keeps the GPU scene on
+  software renderers and slow frames. The app never sets it.
+- **Sticky layout:** the scene sticks inside an **absolute track** spanning the
+  dive. Don't reach for `-mb-[100svh]` to take it out of flow: a negative margin
+  extends the sticky range and the canvas paints over the next section.
+- **Subjects:** `src/data/waterSubjects.ts` is the single source for the five
+  chapters on Home, `/water`, the product page's guide strip and the planner.
+
 ## Water Motion & Depth Layer
 
-The storefront's differentiator: water as the interface. No WebGL and no motion
-library — CSS 3D transforms plus ~25 lines of `IntersectionObserver`.
+Everywhere else, water is CSS 3D transforms plus small `IntersectionObserver`
+hooks.
 
 | Utility / Component | Role |
 |---------------------|------|
@@ -270,6 +336,12 @@ library — CSS 3D transforms plus ~25 lines of `IntersectionObserver`.
 | `<Reveal>` / `useReveal` | Scroll-reveal with stagger. **Fails open:** with no `IntersectionObserver` the content starts visible rather than blank |
 | `<Product3DPanel>` | PDP centrepiece — lit stage in a water scene |
 | `useRipple` | Touch-the-water ring feedback for chips and tiles |
+| `glass-card` | The one glass material for text over water or photos: near-opaque (`bg-white/90`, dark `ink-900/85`) because axe can't measure contrast against a canvas |
+| `parallax-back` / `parallax-front` | Layers inside a `TiltCard` that drift against / with the tilt via `--tilt-px`/`--tilt-py`. Translation, not `translateZ`: the card clips, and `overflow:hidden` flattens `preserve-3d` |
+| `<PhotoFrame>` | A photo slot with a reserved aspect ratio (or `fill` to cover a positioned parent), optional scroll parallax inside the clip |
+| `<TransitionLink>` / `<TransitionNavLink>` | Links that run the `vt-flood` view transition and preload the route chunk on hover/focus. Hand-rolled because React Router's `viewTransition` needs data mode; skipped for modified clicks, reduced motion and browsers without the API |
+| `flyToCart(button)` | The add-to-cart droplet; the Navbar registers the target and pops the badge on landing |
+| `useScrollProgress` / `useParallax` | Per-frame scroll progress through an element (drives the dive); image parallax inside a frame |
 
 Inline `style` **attributes** are how the tilt sets its CSS custom properties.
 That is CSP-legal (`style-src-attr 'unsafe-inline'`); injected `<style>`
@@ -287,6 +359,19 @@ at runtime.
 Depth shadows are deliberately blue-tinted (`rgba(7,46,75,…)`) rather than
 neutral grey, so floating elements read as suspended in water, not hovering
 over paper.
+
+---
+
+## Photography
+
+Free-licence Pexels stand-ins, self-hosted as 800w/1600w WebP in named slots
+(`src/data/photos.ts`: source, purity, sparkling, hot, cold, refill, home,
+about, shop) until the brand's own shoot replaces them file-for-file. Rules: no
+identifiable faces, no visible bottle brands. Photographers are credited on
+`/water` and in `src/assets/photos/CREDITS.md`.
+
+**Product photos are a different thing:** they're shot on white, so any product
+surface keeps a light stage and `mix-blend-multiply` — in dark mode too.
 
 ---
 
@@ -320,5 +405,7 @@ Toggle via `dark` class on `<html>` (ThemeContext). Key inversions:
 
 - Free delivery threshold: **R 500**
 - Delivery fee (below threshold): **R 75**
-- Show free-shipping progress bar in cart when order < R 500
+- The cart's free-delivery bar is a **water tube**: a full-width fill translated
+  by `translateX(progress − 100%)` (transform, never width), a meniscus at the
+  waterline, and a `ring-out` splash when the order crosses R 500
 - Currency format: South African Rand via `Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' })`

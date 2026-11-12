@@ -36,7 +36,7 @@ npm run deno:test  # Deno unit tests for PayFast signature builder
 ThemeProvider → BrowserRouter → CartProvider → App
 ```
 
-**Routing** (`src/App.tsx`): `Layout` wraps all routes. Pages: `/`, `/shop`, `/product/:slug`, `/cart`, `/checkout`, `/about`, `/contact`.
+**Routing** (`src/App.tsx`): `Layout` wraps all routes. Pages: `/`, `/shop`, `/product/:slug`, `/water` (the water guide), `/cart`, `/checkout`, `/about`, `/contact`. Route chunks are lazy and shared via `src/routes.ts`; links that should animate use `TransitionLink`.
 
 **Data layer** — no backend, no API. All product data lives in `src/data/products.ts` as a static array. Prices are in ZAR. Editing that file is how you add/update products, prices, and stock.
 
