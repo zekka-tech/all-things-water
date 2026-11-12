@@ -1,26 +1,41 @@
-import { lazy, Suspense, useEffect } from "react";
-import { Routes, Route } from "react-router";
+import { Suspense, useEffect, useLayoutEffect } from "react";
+import { Routes, Route, useLocation } from "react-router";
 import { Layout } from "@/components/Layout";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { JsonLdOrganization } from "@/components/JsonLd";
 import { captureReferralFromUrl } from "@/lib/referral";
+import { routeCommitted } from "@/lib/routeSignal";
+import { routes } from "@/routes";
 
-const Home = lazy(() => import("@/pages/Home").then((m) => ({ default: m.Home })));
-const Shop = lazy(() => import("@/pages/Shop").then((m) => ({ default: m.Shop })));
-const ProductDetail = lazy(() => import("@/pages/ProductDetail").then((m) => ({ default: m.ProductDetail })));
-const Cart = lazy(() => import("@/pages/Cart").then((m) => ({ default: m.Cart })));
-const Checkout = lazy(() => import("@/pages/Checkout").then((m) => ({ default: m.Checkout })));
-const CheckoutReturn = lazy(() => import("@/pages/CheckoutReturn").then((m) => ({ default: m.CheckoutReturn })));
-const CheckoutCancel = lazy(() => import("@/pages/CheckoutCancel").then((m) => ({ default: m.CheckoutCancel })));
-const About = lazy(() => import("@/pages/About").then((m) => ({ default: m.About })));
-const Contact = lazy(() => import("@/pages/Contact").then((m) => ({ default: m.Contact })));
-const Business = lazy(() => import("@/pages/Business").then((m) => ({ default: m.Business })));
-const Terms = lazy(() => import("@/pages/Terms").then((m) => ({ default: m.Terms })));
-const Privacy = lazy(() => import("@/pages/Privacy").then((m) => ({ default: m.Privacy })));
-const Returns = lazy(() => import("@/pages/Returns").then((m) => ({ default: m.Returns })));
-const Admin = lazy(() => import("@/pages/Admin").then((m) => ({ default: m.Admin })));
-const Account = lazy(() => import("@/pages/Account").then((m) => ({ default: m.Account })));
-const NotFound = lazy(() => import("@/pages/NotFound").then((m) => ({ default: m.NotFound })));
+const {
+  home: { Component: Home },
+  shop: { Component: Shop },
+  product: { Component: ProductDetail },
+  water: { Component: WaterGuide },
+  cart: { Component: Cart },
+  checkout: { Component: Checkout },
+  checkoutReturn: { Component: CheckoutReturn },
+  checkoutCancel: { Component: CheckoutCancel },
+  about: { Component: About },
+  contact: { Component: Contact },
+  business: { Component: Business },
+  terms: { Component: Terms },
+  privacy: { Component: Privacy },
+  returns: { Component: Returns },
+  admin: { Component: Admin },
+  account: { Component: Account },
+  notFound: { Component: NotFound },
+} = routes;
+
+/** Lives inside the Suspense boundary, so its layout effect fires when the
+ *  page has committed — never for the loading fallback. */
+function RouteSignal() {
+  const { key } = useLocation();
+  useLayoutEffect(() => {
+    routeCommitted();
+  }, [key]);
+  return null;
+}
 
 function PageLoading() {
   return (
@@ -45,10 +60,12 @@ export default function App() {
       <ScrollToTop />
       <Layout>
         <Suspense fallback={<PageLoading />}>
+          <RouteSignal />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/product/:slug" element={<ProductDetail />} />
+            <Route path="/water" element={<WaterGuide />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/checkout/return" element={<CheckoutReturn />} />

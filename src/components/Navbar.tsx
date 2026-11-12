@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router";
 import { Droplets, Menu, Moon, Settings, ShoppingCart, Sun, UserCircle, X } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/useAuth";
 import { cx } from "@/lib/format";
+import { registerCartTarget } from "@/lib/cartFlight";
+import { TransitionLink, TransitionNavLink } from "./TransitionLink";
 
 const links = [
   { to: "/", label: "Home", end: true },
   { to: "/shop", label: "Shop" },
+  { to: "/water", label: "Water guide" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
 ];
@@ -18,25 +21,37 @@ export function Navbar() {
   const { theme, toggle } = useTheme();
   const { user, hasConfig } = useAuth();
   const [open, setOpen] = useState(false);
+  const cartRef = useRef<HTMLAnchorElement>(null);
+  // Bumped when a flyToCart droplet lands; keys the badge so its pop replays.
+  const [landings, setLandings] = useState(0);
+
+  useEffect(
+    () =>
+      registerCartTarget({
+        element: () => cartRef.current,
+        onLand: () => setLandings((n) => n + 1),
+      }),
+    [],
+  );
 
   return (
-    <header className="sticky top-0 z-40 border-b border-ink-200/70 bg-white/90 backdrop-blur-md dark:border-ink-800/70 dark:bg-ink-950/90">
+    <header className="site-header sticky top-0 z-40 border-b border-ink-200/70 bg-white/90 backdrop-blur-md dark:border-ink-800/70 dark:bg-ink-950/90">
       <div className="container-page flex h-16 items-center justify-between gap-4 max-[359px]:gap-2">
 
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 font-extrabold tracking-tight max-[359px]:gap-2">
+        <TransitionLink to="/" className="flex items-center gap-2.5 font-extrabold tracking-tight max-[359px]:gap-2">
           <span className="grid h-9 w-9 place-items-center rounded-xl max-[359px]:h-8 max-[359px]:w-8 bg-linear-to-br from-brand-500 to-brand-700 text-white shadow-xs transition-shadow hover:shadow-glow-sm">
             <Droplets className="h-5 w-5" />
           </span>
           <span className="whitespace-nowrap font-display text-base max-[359px]:text-[15px] sm:text-lg">
             All Things <span className="text-brand-600 dark:text-brand-400">Water</span>
           </span>
-        </Link>
+        </TransitionLink>
 
         {/* Desktop nav */}
         <nav className="hidden items-center gap-0.5 md:flex">
           {links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end}>
+            <TransitionNavLink key={l.to} to={l.to} end={l.end}>
               {({ isActive }) => (
                 <span
                   className={cx(
@@ -52,7 +67,7 @@ export function Navbar() {
                   )}
                 </span>
               )}
-            </NavLink>
+            </TransitionNavLink>
           ))}
         </nav>
 
@@ -67,14 +82,32 @@ export function Navbar() {
             {theme === "dark" ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
           </button>
 
-          <Link to="/cart" className="btn-ghost relative h-10 w-10 rounded-xl p-0 max-[359px]:w-9" aria-label="Cart">
+          <TransitionLink
+            ref={cartRef}
+            to="/cart"
+            className="btn-ghost relative h-10 w-10 rounded-xl p-0 max-[359px]:w-9"
+            aria-label={count > 0 ? `Cart, ${count} item${count === 1 ? "" : "s"}` : "Cart"}
+          >
             <ShoppingCart className="h-5 w-5" />
+            {landings > 0 && (
+              <span
+                key={`ring-${landings}`}
+                aria-hidden
+                className="animate-ring-out pointer-events-none absolute left-1/2 top-1/2 h-12 w-12 rounded-full border-2 border-brand-400"
+              />
+            )}
             {count > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-ink-950">
+              <span
+                key={`badge-${landings}`}
+                className={cx(
+                  "absolute -right-0.5 -top-0.5 grid h-5 min-w-5 place-items-center rounded-full bg-brand-600 px-1 text-[10px] font-bold text-white ring-2 ring-white dark:ring-ink-950",
+                  landings > 0 && "animate-bounce-once",
+                )}
+              >
                 {count > 9 ? "9+" : count}
               </span>
             )}
-          </Link>
+          </TransitionLink>
 
           {/* On phones the account link lives in the menu drawer instead,
               so the header row fits next to the logo. */}
@@ -105,7 +138,7 @@ export function Navbar() {
         <nav className="animate-slide-up border-t border-ink-200 bg-white/95 px-4 pb-4 pt-2 backdrop-blur-xs dark:border-ink-800 dark:bg-ink-950/95">
           <div className="space-y-0.5">
             {links.map((l) => (
-              <NavLink
+              <TransitionNavLink
                 key={l.to}
                 to={l.to}
                 end={l.end}
@@ -120,7 +153,7 @@ export function Navbar() {
                 }
               >
                 {l.label}
-              </NavLink>
+              </TransitionNavLink>
             ))}
 
             {/* Account link — shown only when accounts are configured */}

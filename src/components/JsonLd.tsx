@@ -18,6 +18,22 @@ function JsonLdScript({ data }: { data: object }) {
   );
 }
 
+export function JsonLdFaq({ items }: { items: { q: string; a: string }[] }) {
+  return (
+    <JsonLdScript
+      data={{
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: items.map((item) => ({
+          "@type": "Question",
+          name: item.q,
+          acceptedAnswer: { "@type": "Answer", text: item.a },
+        })),
+      }}
+    />
+  );
+}
+
 export function JsonLdOrganization() {
   const org = {
     "@context": "https://schema.org",
