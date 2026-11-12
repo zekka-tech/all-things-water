@@ -13,7 +13,7 @@ import {
 import { checkRateLimit } from "../_shared/rate-limit.ts";
 import { alert, logInfo, logWarn, toErrorFields } from "../_shared/log.ts";
 import { isAllowedPayfastIp } from "../_shared/payfast-ip.ts";
-import { clientIp as getClientIp, isUuid } from "../_shared/http.ts";
+import { clientIp as getClientIp, HttpError, isUuid, readText } from "../_shared/http.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
@@ -40,10 +40,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const text = await req.text();
-    if (text.length > 16 * 1024) {
-      return errorResponse("Payload too large", 413);
-    }
+    const text = await readText(req, 16 * 1024);
     const formParams = parseFormParams(text);
 
     const sandbox = Deno.env.get("PAYFAST_SANDBOX") === "true";
@@ -88,7 +85,7 @@ Deno.serve(async (req: Request) => {
     });
     const validateText = await validateRes.text();
 
-    if (validateText.trim() !== "VALID") {
+    if (!validateRes.ok || validateText.trim() !== "VALID") {
       logWarn("PayFast server validation failed", {
         event: "payfast.itn.validation_failed",
         fn: "payments-payfast-itn",
@@ -227,6 +224,7 @@ Deno.serve(async (req: Request) => {
     });
     return jsonResponse({ received: true });
   } catch (err) {
+    if (err instanceof HttpError) return errorResponse(err.message, err.status);
     await alert("unhandled ITN handler error", {
       event: "payfast.itn.exception",
       fn: "payments-payfast-itn",

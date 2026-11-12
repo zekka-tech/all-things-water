@@ -29,6 +29,10 @@ export function TiltCard({
 
     el.style.setProperty("--tilt-x", `${offsetX * max * 2}deg`);
     el.style.setProperty("--tilt-y", `${-offsetY * max * 2}deg`);
+    // Unitless twins (-0.5..0.5) for the parallax-* layers: a deg value can't
+    // be turned into a px offset in calc().
+    el.style.setProperty("--tilt-px", offsetX.toFixed(3));
+    el.style.setProperty("--tilt-py", offsetY.toFixed(3));
   };
 
   const reset = () => {
@@ -36,6 +40,8 @@ export function TiltCard({
     if (!el) return;
     el.style.setProperty("--tilt-x", "0deg");
     el.style.setProperty("--tilt-y", "0deg");
+    el.style.setProperty("--tilt-px", "0");
+    el.style.setProperty("--tilt-py", "0");
   };
 
   return (

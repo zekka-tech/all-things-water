@@ -61,7 +61,7 @@ function initMetaPixel(): void {
 
 /** Initialise configured destinations. Idempotent; consent-gated. */
 export function initMarketing(): void {
-  if (initialized || !hasTrackingConsent()) return;
+  if (initialized || !env.analyticsEnabled || !hasTrackingConsent()) return;
   initGa();
   initMetaPixel();
   initialized = true;
@@ -112,7 +112,7 @@ function toMeta(e: MarketingEvent): { name: string; params: Record<string, unkno
 
 /** Emit one commerce event to every configured destination. No-op without consent. */
 export function trackMarketing(event: MarketingEvent): void {
-  if (!hasTrackingConsent()) return;
+  if (!env.analyticsEnabled || !hasTrackingConsent()) return;
   // Lazily init in case consent was granted after first load.
   if (!initialized) initMarketing();
 

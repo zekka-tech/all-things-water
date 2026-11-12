@@ -14,6 +14,7 @@ export interface ValidOrderItem {
 }
 
 export interface ValidOrderRequest {
+  expectedTotal?: number;
   items: ValidOrderItem[];
   customer: { name: string; email: string; phone: string };
   delivery: {
@@ -41,6 +42,9 @@ const fail = (message: string, details?: unknown, status = 400) =>
 export function validateOrderRequest(raw: unknown): ValidationResult<ValidOrderRequest> {
   if (!raw || typeof raw !== "object") return fail("Invalid request body");
   const body = raw as Record<string, unknown>;
+  if (body.expectedTotal !== undefined && (typeof body.expectedTotal !== "number" || !Number.isSafeInteger(body.expectedTotal) || body.expectedTotal <= 0)) {
+    return fail("Invalid expected order total");
+  }
   const customer = (body.customer ?? {}) as Record<string, unknown>;
   const delivery = (body.delivery ?? {}) as Record<string, unknown>;
 
@@ -98,6 +102,7 @@ export function validateOrderRequest(raw: unknown): ValidationResult<ValidOrderR
   return {
     ok: true,
     value: {
+      expectedTotal: body.expectedTotal as number | undefined,
       items: [...merged].map(([productId, quantity]) => ({ productId, quantity })),
       customer: { name, email, phone },
       delivery: {
@@ -111,35 +116,6 @@ export function validateOrderRequest(raw: unknown): ValidationResult<ValidOrderR
       deliverySlot: method === "delivery" ? clip(body.deliverySlot, 100) : undefined,
     },
   };
-}
-
-export type OrderStatus =
-  | "pending_payment"
-  | "paid"
-  | "processing"
-  | "shipped"
-  | "delivered"
-  | "cancelled"
-  | "expired";
-
-/**
- * Allowed admin transitions. Forward-only, so stock is never dispatched twice
- * (shipped → processing → shipped would decrement warehouse on-hand again)
- * and terminal states stay terminal.
- */
-const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
-  pending_payment: ["cancelled"],
-  paid: ["processing", "shipped", "cancelled"],
-  processing: ["shipped", "cancelled"],
-  shipped: ["delivered"],
-  delivered: [],
-  cancelled: [],
-  expired: [],
-};
-
-export function canTransition(from: string, to: string): boolean {
-  const allowed = TRANSITIONS[from as OrderStatus];
-  return Array.isArray(allowed) && allowed.includes(to as OrderStatus);
 }
 
 /** Order reference: ATW- + 10 uppercase hex chars (~1.1e12 space, no realistic collisions). */

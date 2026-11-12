@@ -47,18 +47,18 @@ export function CheckoutCancel() {
   }, [orderId, token]);
 
   const statusCopy = {
-    idle: "Your order has not been processed and you have not been charged.",
+    idle: "Checkout was interrupted. Check your payment confirmation before trying again.",
     releasing:
       "We’re releasing your reserved stock now so you can retry checkout without waiting for the payment window to expire.",
     released:
-      "Your payment was cancelled, you have not been charged, and the reserved stock has been released.",
+      "The reserved stock has been released. If you completed a payment, contact us with your order reference before trying again.",
     error:
-      "Your payment was cancelled and you have not been charged. If stock does not return immediately, the reservation will expire automatically shortly.",
+      "We couldn’t confirm the cancellation. Check your payment confirmation or contact us before trying again. Unpaid stock reservations expire automatically.",
   } as const;
 
   return (
     <>
-      <Seo title="Payment cancelled" description="Your payment was cancelled and no charges were made." />
+      <Seo title="Checkout interrupted" description="Check the status of your interrupted checkout." noIndex />
 
       <div className="container-page flex flex-col items-center py-28 text-center">
         <div className="grid h-20 w-20 place-items-center rounded-full bg-ink-100 dark:bg-ink-800">
@@ -66,7 +66,7 @@ export function CheckoutCancel() {
         </div>
 
         <h1 className="mt-6 font-display text-3xl font-extrabold text-ink-900 dark:text-white">
-          Payment cancelled
+          Checkout interrupted
         </h1>
 
         <p className="mt-3 max-w-md text-ink-500 dark:text-ink-400">

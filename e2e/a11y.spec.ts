@@ -5,7 +5,7 @@ import AxeBuilder from "@axe-core/playwright";
  * Accessibility gate. Scans the primary storefront routes with axe-core and
  * fails on serious/critical WCAG 2 A/AA violations. Run on chromium only.
  */
-const ROUTES = ["/", "/shop", "/about", "/contact", "/cart"];
+const ROUTES = ["/", "/shop", "/water", "/about", "/contact", "/cart"];
 
 test.describe("accessibility (axe)", () => {
   test.skip(({ browserName }) => browserName !== "chromium", "axe runs on chromium");

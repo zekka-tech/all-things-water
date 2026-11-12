@@ -1,5 +1,31 @@
 import { assertEquals, assertNotEquals } from "jsr:@std/assert";
-import { buildApiSignature } from "./payfast-api.ts";
+import { buildApiSignature, chargeAdhoc } from "./payfast-api.ts";
+
+Deno.test("ad-hoc charges require an explicit success and payment id; unknown outcomes stay unresolved", async () => {
+  const originalFetch = globalThis.fetch;
+  const config = { merchantId: "10000100", passphrase: "test", sandbox: true };
+  try {
+    for (const [body, paid, uncertain] of [
+      ['{"status":"success","data":{"response":true,"pf_payment_id":"12345"}}', true, false],
+      ['{"status":"failed","data":{"response":4}}', false, false],
+      ['{"status":"success","data":{"response":false}}', false, true],
+      ["<html>proxy error</html>", false, true],
+      ["{}", false, true],
+      ["null", false, true],
+    ] as const) {
+      globalThis.fetch = () => Promise.resolve(new Response(body));
+      const result = await chargeAdhoc("test-token", 100, "Order", "order-id", config);
+      assertEquals(result.ok, paid);
+      assertEquals(result.uncertain, uncertain);
+    }
+    globalThis.fetch = () => Promise.reject(new Error("connection lost after sending"));
+    const result = await chargeAdhoc("test-token", 100, "Order", "order-id", config);
+    assertEquals(result.ok, false);
+    assertEquals(result.uncertain, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 Deno.test("buildApiSignature is deterministic", () => {
   const a = buildApiSignature({ "merchant-id": "10000", amount: "1000" }, "pass");

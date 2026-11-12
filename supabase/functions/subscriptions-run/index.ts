@@ -1,4 +1,4 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2.107.0";
 import { hasSharedSecret } from "../_shared/http.ts";
 import { handleCors, jsonResponse, errorResponse } from "../_shared/cors.ts";
 import { buildSignedQuery, getProcessUrl } from "../_shared/payfast.ts";
@@ -62,6 +62,7 @@ Deno.serve(async (req: Request) => {
     if (!merchantId || !merchantKey) {
       return errorResponse("PayFast merchant configuration is incomplete", 500);
     }
+    if (!sandbox && !passphrase) return errorResponse("PayFast passphrase must be configured", 500);
     if (!siteUrl || siteUrl.includes("localhost")) {
       return errorResponse("PUBLIC_SITE_URL must be configured", 500);
     }
@@ -157,6 +158,14 @@ Deno.serve(async (req: Request) => {
         );
 
         if (!result.ok) {
+          if (result.uncertain) {
+            failures.push(item.subscriptionId);
+            await alert("subscription charge outcome unknown; reconcile before collecting payment again", {
+              event: "subscription.run.adhoc_uncertain", fn: "subscriptions-run", ref: o.order_ref,
+              subscriptionId: item.subscriptionId, status: result.status,
+            });
+            continue;
+          }
           // Charge failed (e.g. expired card) — fall back to a tokenizing link
           // and alert so ops can follow up.
           await alert("ad-hoc subscription charge failed; sent pay link", {

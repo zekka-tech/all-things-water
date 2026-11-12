@@ -80,6 +80,9 @@ Deno.serve(async (req: Request) => {
 
     const deliveryFee = calculateDelivery(subtotal, order.delivery.method);
     const total = subtotal + deliveryFee;
+    if (order.expectedTotal !== undefined && order.expectedTotal !== total) {
+      return errorResponse("Prices have changed. Refresh your cart and review the total before ordering.", 422, undefined, req);
+    }
     const orderRef = newOrderRef();
 
     const { data: result, error: rpcErr } = await supabase.rpc("create_order", {

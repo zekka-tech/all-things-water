@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const consent = vi.hoisted(() => ({ accepted: true }));
+vi.mock("@/lib/consent", () => ({ hasTrackingConsent: () => consent.accepted }));
+vi.mock("@/lib/env", () => ({ env: { analyticsEnabled: true } }));
+
 // We test the analytics module. Since ANALYTICS_ENABLED is set at
 // import time based on import.meta.env, we test the public API by
 // injecting custom trackers via setTracker — this side-steps env
@@ -19,8 +23,18 @@ const noopTracker = {
 
 describe("analytics", () => {
   beforeEach(() => {
+    consent.accepted = true;
     // Reset to a no-op tracker so tests don't leak state
     setTracker(noopTracker);
+  });
+  it("stops an already-initialized tracker after consent is withdrawn", () => {
+    const tracker = { trackPageView: vi.fn(), trackEvent: vi.fn() };
+    setTracker(tracker);
+    consent.accepted = false;
+    trackPageView("/account");
+    trackEvent("purchase");
+    expect(tracker.trackPageView).not.toHaveBeenCalled();
+    expect(tracker.trackEvent).not.toHaveBeenCalled();
   });
   it("trackPageView delegates to the active tracker", () => {
     // Arrange

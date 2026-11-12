@@ -4,7 +4,7 @@
  * Never decode a JWT by hand to get a user id — anyone can mint an unsigned
  * token with any `sub`. Always ask Supabase Auth to verify it.
  */
-import { createClient, type SupabaseClient, type User } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient, type User } from "jsr:@supabase/supabase-js@2.107.0";
 import { bearerToken } from "./http.ts";
 
 export function serviceClient(): SupabaseClient {

@@ -4,6 +4,11 @@ Use this checklist to configure and deploy the storefront for production. The en
 
 ## Current status (2026-11-08)
 
+**Readiness review update (2026-11-11):** the observations below are historical.
+Follow [DEPLOYMENT_REVIEW.md](DEPLOYMENT_REVIEW.md) for the new migration,
+per-environment Vault `project_url`, backend-first rollout and release build
+commands. Local validation does not revalidate these hosted-service observations.
+
 Canonical domain is **`https://allthingswater.co.za`** (with `www.` as an alias);
 `all-things-water.pages.dev` remains as the Pages origin and a permitted origin.
 
@@ -94,7 +99,9 @@ the Supabase Edge Function secrets so the `business-quote` function verifies the
 challenge server-side (it fails closed on a bad/missing token; if the secret is
 unset, verification is skipped).
 
-If `VITE_CONTACT_FORM_ENDPOINT` or `VITE_NEWSLETTER_ENDPOINT` are unset, the site fails gracefully rather than reporting false success.
+If `VITE_CONTACT_FORM_ENDPOINT` or `VITE_NEWSLETTER_ENDPOINT` are unset, they
+default to the configured Supabase project's functions. Without an endpoint or
+Supabase configuration, the forms report that submission is unavailable.
 
 ## Supabase Edge Function Secrets
 
@@ -176,7 +183,7 @@ The move from `all-things-water.pages.dev` to `https://allthingswater.co.za` is 
 
 1. Set the Cloudflare Pages production variables.
 2. Set the Supabase Edge Function secrets.
-3. Apply database migrations (`supabase db push`) — through `021_contact_and_newsletter.sql`. Run `npm run test:db` first; it applies every migration to a throwaway database and runs the RLS/privilege tests.
+3. Configure this environment's Vault `project_url`, then apply database migrations (`supabase db push`) through `20261111064118_deployment_readiness.sql`. Run `npm run test:db` first; it applies every migration to a throwaway database and runs the security and transaction tests.
 4. Redeploy Cloudflare Pages production.
 5. Redeploy the Supabase functions that depend on secrets:
    - `orders`
@@ -202,9 +209,8 @@ CI (`.github/workflows/ci.yml`) gates every push/PR with typecheck, lint, unit
 tests, build, Deno checks/tests, a production-dependency audit, and the
 database job (`npm run test:db`: every migration applied to a fresh
 supabase/postgres container, then `supabase/tests/security.sql`). Secret
-scanning (gitleaks) is blocking. The Playwright e2e + axe and Lighthouse CWV
-jobs run as informational until verified green in your environment (flip
-`continue-on-error: false` to make them hard gates).
+scanning (gitleaks) and Playwright e2e + axe are blocking. Lighthouse CWV remains
+informational. CI also covers the `staging` and `all-things-water` branches.
 
 To run the **full PayFast-sandbox funnel** in CI, set repository variable
 `RUN_PAYFAST_E2E=true` and add secrets `E2E_SUPABASE_URL` and

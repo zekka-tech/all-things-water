@@ -53,7 +53,7 @@ export function jsonResponse(
   const cors = req ? corsHeadersFor(req) : corsHeaders;
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...cors, "Content-Type": "application/json" },
+    headers: { ...cors, "Content-Type": "application/json", "Cache-Control": "no-store" },
   });
 }
 

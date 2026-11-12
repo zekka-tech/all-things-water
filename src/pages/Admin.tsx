@@ -4,7 +4,8 @@ import AdminProducts from "@/components/admin/AdminProducts";
 import AdminOrders from "@/components/admin/AdminOrders";
 import AdminStock from "@/components/admin/AdminStock";
 import AdminWarehouses from "@/components/admin/AdminWarehouses";
-import { products } from "@/data/products";
+import { adminCatalogRequest, type CatalogUpdate } from "@/lib/adminCatalog";
+import { productFromRow, type ProductRow } from "@/lib/catalog";
 import { cx } from "@/lib/format";
 import {
   signInAdmin,
@@ -12,7 +13,6 @@ import {
   isCurrentUserAdmin,
   onAdminAuthChange,
 } from "@/lib/adminAuth";
-import { logAuditEvent, syncToSupabase } from "@/lib/adminAudit";
 import type { Product } from "@/types";
 import {
   Package,
@@ -23,26 +23,7 @@ import {
   Warehouse,
 } from "lucide-react";
 
-// ── Constants ──
-const STORAGE_STOCK = "atw.admin.stock";
-const STORAGE_VISIBILITY = "atw.admin.visibility";
-const STORAGE_PRODUCTS = "atw.admin.products";
-
 type Tab = "products" | "orders" | "stock" | "warehouses";
-
-// ── LocalStorage helpers ──
-function loadJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function saveJson(key: string, value: unknown) {
-  localStorage.setItem(key, JSON.stringify(value));
-}
 
 // ── Login Gate (Supabase Auth) ──
 function LoginGate({ onAuthed }: { onAuthed: () => void }) {
@@ -94,6 +75,8 @@ function LoginGate({ onAuthed }: { onAuthed: () => void }) {
             type="email"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setError(null); }}
+            aria-label="Email"
+            required
             placeholder="Email"
             autoComplete="username"
             className="input"
@@ -103,6 +86,8 @@ function LoginGate({ onAuthed }: { onAuthed: () => void }) {
             type="password"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError(null); }}
+            aria-label="Password"
+            required
             placeholder="Password"
             autoComplete="current-password"
             className={cx(
@@ -132,7 +117,7 @@ export function Admin() {
   useEffect(() => {
     let active = true;
     const resolve = async () => {
-      const isAdmin = await isCurrentUserAdmin();
+      const isAdmin = await isCurrentUserAdmin().catch(() => false);
       if (active) setStatus(isAdmin ? "authed" : "unauthed");
     };
     resolve();
@@ -143,181 +128,70 @@ export function Admin() {
     };
   }, []);
 
-  // Stock overrides (merged with static data)
-  const [stockOverrides, setStockOverrides] = useState<Record<string, number>>(() =>
-    loadJson<Record<string, number>>(STORAGE_STOCK, {}),
-  );
-
-  // Visibility overrides
-  const [visibility, setVisibility] = useState<Record<string, boolean>>(() =>
-    loadJson<Record<string, boolean>>(STORAGE_VISIBILITY, {}),
-  );
-
-  // Product field overrides (name, price, cost)
-  const [productOverrides, setProductOverrides] = useState<Record<string, Partial<Product>>>(() =>
-    loadJson<Record<string, Partial<Product>>>(STORAGE_PRODUCTS, {}),
-  );
-
-  // Editing state for products tab
+  const [catalogRows, setCatalogRows] = useState<ProductRow[]>([]);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<Partial<Product>>({});
-
-  // Stock tab: unsaved edits only, keyed by product id. Products without an
-  // entry show their current stock. Cleared on save, reset and tab switch.
   const [stockDraft, setStockDraft] = useState<Record<string, number>>({});
 
-  // Merge static products with overrides
-  const mergedProducts = useMemo(() => {
-    return products.map((p) => ({
-      ...p,
-      ...productOverrides[p.id],
-      stock: stockOverrides[p.id] ?? p.stock,
-    }));
-  }, [stockOverrides, productOverrides]);
+  useEffect(() => {
+    if (status !== "authed") return;
+    let active = true;
+    void adminCatalogRequest<{ products: ProductRow[] }>({ action: "list" })
+      .then(({ products }) => { if (active) { setCatalogRows(products); setCatalogError(null); } })
+      .catch(() => { if (active) setCatalogError("Could not load the catalogue. Reload to try again."); });
+    return () => { active = false; };
+  }, [status]);
 
-  // Compute stats
-  const stats = useMemo(() => {
-    const totalProducts = mergedProducts.length;
-    const totalStock = mergedProducts.reduce((sum, p) => sum + p.stock, 0);
-    const totalValue = mergedProducts.reduce((sum, p) => sum + p.price * p.stock, 0);
-    const outOfStock = mergedProducts.filter((p) => p.stock === 0).length;
-    return { totalProducts, totalStock, totalValue, outOfStock };
-  }, [mergedProducts]);
+  const mergedProducts = useMemo(() => catalogRows.map((row) => productFromRow(row, false)), [catalogRows]);
+  const visibility = Object.fromEntries(catalogRows.map((row) => [row.id, row.visible !== false]));
+  const stats = useMemo(() => ({
+    totalProducts: mergedProducts.length,
+    totalStock: mergedProducts.reduce((sum, p) => sum + p.stock, 0),
+    totalValue: mergedProducts.reduce((sum, p) => sum + p.price * p.stock, 0),
+    outOfStock: mergedProducts.filter((p) => p.stock === 0).length,
+  }), [mergedProducts]);
 
-  const currentStock = (id: string) =>
-    stockDraft[id] ?? mergedProducts.find((p) => p.id === id)?.stock ?? 0;
-
-  const switchTab = (next: Tab) => {
-    setTab(next);
-    setStockDraft({}); // discard unsaved stock edits
-  };
-
-  // ── Handlers ──
-  const handleLogout = () => {
-    // onAdminAuthChange fires on sign-out and flips status back to "unauthed".
-    void signOutAdmin();
-  };
-
-  const handleToggleVisibility = (id: string) => {
-    const next = { ...visibility, [id]: !visibility[id] };
-    setVisibility(next);
-    saveJson(STORAGE_VISIBILITY, next);
-
-    const product = products.find((p) => p.id === id);
-    if (product) {
-      logAuditEvent({
-        action: "visibility_toggled",
-        productId: id,
-        productName: product.name,
-        changes: { visible: next[id] },
-      });
+  const saveUpdates = async (updates: CatalogUpdate[]): Promise<boolean> => {
+    if (saving) return false;
+    setSaving(true);
+    setCatalogError(null);
+    try {
+      await adminCatalogRequest({ updates });
+      setCatalogRows((rows) => rows.map((row) => ({ ...row, ...updates.find((update) => update.id === row.id) })));
+      return true;
+    } catch (error) {
+      setCatalogError(error instanceof Error ? error.message : "Could not save changes. Please retry.");
+      return false;
+    } finally {
+      setSaving(false);
     }
   };
 
+  const switchTab = (next: Tab) => { setTab(next); setStockDraft({}); };
+  const handleLogout = () => { void signOutAdmin(); };
+  const handleToggleVisibility = (id: string) => { void saveUpdates([{ id, visible: !visibility[id] }]); };
   const startEditing = (product: Product) => {
     setEditingId(product.id);
-    setEditDraft({
-      name: product.name,
-      price: product.price,
-      cost: product.cost,
-    });
+    setEditDraft({ name: product.name, price: product.price, cost: product.cost });
   };
-
-  const cancelEditing = () => {
-    setEditingId(null);
-    setEditDraft({});
+  const cancelEditing = () => { setEditingId(null); setEditDraft({}); };
+  const saveEditing = async (id: string) => {
+    if (await saveUpdates([{ id, name: editDraft.name, price: editDraft.price, cost: editDraft.cost }])) cancelEditing();
   };
-
-  const saveEditing = (id: string) => {
-    const next = { ...productOverrides, [id]: { ...productOverrides[id], ...editDraft } };
-    // Remove keys that match the original to keep storage clean
-    const original = products.find((p) => p.id === id);
-    if (original) {
-      const cleaned: Partial<Product> = {};
-      if (editDraft.name && editDraft.name !== original.name) cleaned.name = editDraft.name;
-      if (editDraft.price !== undefined && editDraft.price !== original.price) cleaned.price = editDraft.price;
-      if (editDraft.cost !== undefined && editDraft.cost !== original.cost) cleaned.cost = editDraft.cost;
-      if (Object.keys(cleaned).length === 0) {
-        delete next[id];
-      } else {
-        next[id] = cleaned;
-      }
-    }
-    setProductOverrides(next);
-    saveJson(STORAGE_PRODUCTS, next);
-
-    const product = products.find((p) => p.id === id);
-    if (product) {
-      const changes: Record<string, unknown> = {};
-      if (editDraft.name && editDraft.name !== product.name) changes.name = editDraft.name;
-      if (editDraft.price !== undefined && editDraft.price !== product.price) changes.price = editDraft.price;
-      if (editDraft.cost !== undefined && editDraft.cost !== product.cost) changes.cost = editDraft.cost;
-      if (Object.keys(changes).length > 0) {
-        logAuditEvent({
-          action: "product_updated",
-          productId: id,
-          productName: editDraft.name || product.name,
-          changes,
-        });
-      }
-    }
-
-    setEditingId(null);
-    setEditDraft({});
-  };
-
   const adjustStock = (id: string, delta: number) => {
-    const current = currentStock(id);
-    setStockDraft((prev) => ({ ...prev, [id]: Math.max(0, (prev[id] ?? current) + delta) }));
+    const stock = mergedProducts.find((p) => p.id === id)?.stock ?? 0;
+    setStockDraft((previous) => ({ ...previous, [id]: Math.max(0, (previous[id] ?? stock) + delta) }));
   };
-
-  const setStockDirect = (id: string, value: number) => {
-    setStockDraft((prev) => ({ ...prev, [id]: Math.max(0, value) }));
+  const setStockDirect = (id: string, value: number) => { setStockDraft((previous) => ({ ...previous, [id]: value })); };
+  const saveStockChanges = async () => {
+    const updates = mergedProducts.filter((p) => stockDraft[p.id] !== undefined && stockDraft[p.id] !== p.stock)
+      .map((p) => ({ id: p.id, stock: stockDraft[p.id] }));
+    if (updates.length && await saveUpdates(updates)) setStockDraft({});
   };
-
-  const saveStockChanges = () => {
-    // Only save values that differ from static data
-    const clean: Record<string, number> = {};
-    for (const p of products) {
-      const draftVal = currentStock(p.id);
-      if (draftVal !== p.stock) {
-        clean[p.id] = draftVal;
-      }
-    }
-    setStockOverrides(clean);
-    saveJson(STORAGE_STOCK, clean);
-
-    const updates: Record<string, number> = {};
-    const events: Parameters<typeof logAuditEvent>[0][] = [];
-    for (const p of products) {
-      const draftVal = currentStock(p.id);
-      if (draftVal !== p.stock) {
-        updates[p.id] = draftVal;
-        events.push({
-          action: "stock_adjusted",
-          productId: p.id,
-          productName: p.name,
-          changes: { from: p.stock, to: draftVal },
-        });
-        logAuditEvent(events[events.length - 1]);
-      }
-    }
-    if (Object.keys(updates).length > 0) {
-      syncToSupabase(updates, events).catch(() => {});
-    }
-    setStockDraft({});
-  };
-
-  const resetStockChanges = () => {
-    setStockDraft({});
-  };
-
-  const hasStockChanges = useMemo(() => {
-    return mergedProducts.some((p) => {
-      const draftVal = stockDraft[p.id];
-      return draftVal !== undefined && draftVal !== p.stock;
-    });
-  }, [mergedProducts, stockDraft]);
+  const resetStockChanges = () => { setStockDraft({}); };
+  const hasStockChanges = mergedProducts.some((p) => stockDraft[p.id] !== undefined && stockDraft[p.id] !== p.stock);
 
   if (status === "loading") {
     return (
@@ -384,8 +258,10 @@ export function Admin() {
           ))}
         </div>
 
+        {catalogError && <p role="alert" className="mt-4 text-sm text-red-600 dark:text-red-400">{catalogError}</p>}
+        {saving && <p role="status" className="mt-4 text-sm">Saving changes…</p>}
         {/* ── Tab Content ── */}
-        <div className="mt-6">
+        <fieldset disabled={saving} className="mt-6">
           {tab === "products" && (
             <AdminProducts
               products={mergedProducts}
@@ -416,7 +292,7 @@ export function Admin() {
           )}
 
           {tab === "warehouses" && <AdminWarehouses />}
-        </div>
+        </fieldset>
       </div>
     </>
   );

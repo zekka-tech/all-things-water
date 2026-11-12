@@ -15,10 +15,10 @@ on its own branch as an independent application.
 
 ## Tech stack
 
-- **React 18** + **TypeScript**
-- **Vite 5** for dev/build
-- **Tailwind CSS 3** (with class-based dark mode)
-- **React Router 6** for routing
+- **React 19** + **TypeScript**
+- **Vite 8** for dev/build
+- **Tailwind CSS 4** (with class-based dark mode)
+- **React Router 7** for routing
 - **lucide-react** for icons
 - Cart & theme state via React Context (persisted to `localStorage`)
 
@@ -49,6 +49,8 @@ npm run dev      # http://localhost:5180
 | ------------------- | ------------------------------------ |
 | `npm run dev`       | Start the Vite dev server            |
 | `npm run build`     | Type-check and build for production   |
+| `npm run build:staging` | Validate staging configuration and build |
+| `npm run build:production` | Validate production configuration and build |
 | `npm run preview`   | Preview the production build          |
 | `npm run lint`      | Lint the source                      |
 | `npm run typecheck` | Type-check without emitting          |
@@ -68,4 +70,7 @@ The catalog in `src/data/products.ts` is derived from the company's *Item Pricin
 | Aquafria Sparkling 500ml (×24)    | Bottled                | R120   |
 | Aquafria Still 500ml (×24)        | Bottled                | R120   |
 
-Prices and stock levels can be adjusted directly in `src/data/products.ts`.
+Configured deployments read prices, visibility and available stock from Supabase.
+Manage them through `/admin`; bundled product data supports development without a
+backend. Purchasing costs are server-only. See [DEPLOYMENT_REVIEW.md](DEPLOYMENT_REVIEW.md)
+for release commands, the deployment sequence and external release gates.

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/useAuth";
 import { supabase } from "@/lib/supabase";
-import { products } from "@/data/products";
+import { useCatalog } from "@/context/CatalogContext";
 import { cx, formatZAR } from "@/lib/format";
 import { captureException } from "@/lib/sentry";
 import { trackMarketing } from "@/lib/marketing";
@@ -35,9 +35,9 @@ interface DeliveryPrefill {
   delivery_postal_code: string | null;
 }
 
-const SELLABLE = products.filter((p) => p.stock > 0);
-
 export function Subscriptions() {
+  const { products, ready: catalogReady } = useCatalog();
+  const sellable = products.filter((p) => p.stock > 0);
   const { user } = useAuth();
   const location = useLocation();
   const [subs, setSubs] = useState<SubscriptionRow[]>([]);
@@ -48,7 +48,7 @@ export function Subscriptions() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const [creating, setCreating] = useState(false);
-  const [productId, setProductId] = useState(SELLABLE[0]?.id ?? "");
+  const [productId, setProductId] = useState(sellable[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
   const [frequency, setFrequency] = useState<Frequency>("monthly");
   const [autoPay, setAutoPay] = useState(false);
@@ -193,7 +193,7 @@ export function Subscriptions() {
   const [handledIntent, setHandledIntent] = useState<NewSubscriptionIntent | null>(null);
   if (intent && user && intent !== handledIntent) {
     setHandledIntent(intent);
-    if (SELLABLE.some((p) => p.id === intent.productId)) {
+    if (products.some((p) => p.id === intent.productId && p.stock > 0)) {
       setProductId(intent.productId);
     }
     if (intent.quantity) setQuantity(Math.max(1, intent.quantity));
@@ -207,6 +207,7 @@ export function Subscriptions() {
     if (!user || !supabase) return;
 
     const product = products.find((p) => p.id === productId);
+    if (!catalogReady) { setFormError("Please wait for current prices and availability."); return; }
     if (!product) {
       setFormError("Please choose a product.");
       return;
@@ -297,7 +298,8 @@ export function Subscriptions() {
                 onChange={(e) => setProductId(e.target.value)}
                 className="input"
               >
-                {SELLABLE.map((p) => (
+                <option value="" disabled>Select a product</option>
+                {sellable.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name} — {formatZAR(p.price)}
                   </option>

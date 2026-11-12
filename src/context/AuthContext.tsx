@@ -19,32 +19,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const client = supabase;
     let cancelled = false;
+    let revision = 0;
+
+    const updateUser = (nextUser: CustomerUser | null) => {
+      setUser(nextUser);
+      setLoading(false);
+      try {
+        if (nextUser) localStorage.setItem(CUSTOMER_USER_KEY, JSON.stringify(nextUser));
+        else localStorage.removeItem(CUSTOMER_USER_KEY);
+      } catch {
+        /* storage may be unavailable */
+      }
+    };
 
     const restore = async () => {
-      const { data } = await client.auth.getUser();
-      if (cancelled) return;
-      if (data.user) {
-        const nextUser = { id: data.user.id, email: data.user.email ?? "" };
-        setUser(nextUser);
-        try {
-          localStorage.setItem(CUSTOMER_USER_KEY, JSON.stringify(nextUser));
-        } catch {
-          /* ignore */
-        }
-      } else {
-        try {
-          localStorage.removeItem(CUSTOMER_USER_KEY);
-        } catch {
-          /* ignore */
-        }
+      const startedAt = revision;
+      try {
+        const { data, error } = await client.auth.getUser();
+        if (cancelled || startedAt !== revision) return;
+        updateUser(!error && data.user ? { id: data.user.id, email: data.user.email ?? "" } : null);
+      } catch {
+        if (!cancelled && startedAt === revision) updateUser(null);
       }
-      setLoading(false);
     };
 
     void restore();
 
-    const { data: sub } = client.auth.onAuthStateChange(() => {
-      void restore();
+    // Do not call another Auth API from this callback: Supabase holds its
+    // session lock while delivering events. The server authorizes all data.
+    const { data: sub } = client.auth.onAuthStateChange((_event, session) => {
+      revision++;
+      if (!cancelled) {
+        updateUser(session?.user ? { id: session.user.id, email: session.user.email ?? "" } : null);
+      }
     });
 
     return () => {
@@ -92,9 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async refresh() {
       if (!supabase) return;
       const { data } = await supabase.auth.getUser();
-      if (data.user) {
-        setUser({ id: data.user.id, email: data.user.email ?? "" });
-      }
+      setUser(data.user ? { id: data.user.id, email: data.user.email ?? "" } : null);
     },
   };
 

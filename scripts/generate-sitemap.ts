@@ -5,6 +5,7 @@ const BASE_URL = process.env.PUBLIC_SITE_URL || "https://allthingswater.co.za";
 const staticPages: { path: string; priority: string; changefreq: string }[] = [
   { path: "/", priority: "1.0", changefreq: "weekly" },
   { path: "/shop", priority: "0.9", changefreq: "weekly" },
+  { path: "/water", priority: "0.8", changefreq: "monthly" },
   { path: "/about", priority: "0.7", changefreq: "monthly" },
   { path: "/contact", priority: "0.6", changefreq: "monthly" },
   { path: "/cart", priority: "0.3", changefreq: "always" },

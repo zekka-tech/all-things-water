@@ -108,7 +108,7 @@ describe("isCurrentUserAdmin", () => {
 });
 
 describe("onAdminAuthChange", () => {
-  it("subscribes and returns an unsubscribe function", () => {
+  it("defers session lookups until the auth callback releases its lock", async () => {
     const unsubscribe = vi.fn();
     let registered: (() => void) | undefined;
     mockAuth.onAuthStateChange.mockImplementation((cb: () => void) => {
@@ -121,7 +121,8 @@ describe("onAdminAuthChange", () => {
 
     // The Supabase listener fires our callback.
     registered?.();
-    expect(callback).toHaveBeenCalledOnce();
+    expect(callback).not.toHaveBeenCalled();
+    await vi.waitFor(() => expect(callback).toHaveBeenCalledOnce());
 
     off();
     expect(unsubscribe).toHaveBeenCalledOnce();

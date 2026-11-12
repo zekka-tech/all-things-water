@@ -40,4 +40,20 @@ test.describe("storefront purchase funnel", () => {
     await expect(page).toHaveURL(/\/product\//);
     await expect(page.getByRole("button", { name: /add to cart|add|sold out/i }).first()).toBeVisible();
   });
+
+  test("the planner adds a whole setup to the cart", async ({ page }) => {
+    // Keep the consent banner from covering the planner's controls.
+    await page.addInitScript(() => localStorage.setItem("atw.cookie-consent", "declined"));
+    await page.goto("/water#planner");
+    const planner = page.locator("#planner");
+    // The radios are visually hidden inside their chips; click the chip.
+    await planner.locator("label", { hasText: /from a cooler/i }).click();
+    await expect(planner.getByRole("radio", { name: /from a cooler/i })).toBeChecked();
+    await planner.getByRole("button", { name: /add setup to cart/i }).click();
+
+    // The cart icon's label carries the item count.
+    await expect(page.getByRole("link", { name: /cart.*[1-9]/i }).first()).toBeVisible();
+    await page.goto("/cart");
+    await expect(page.getByRole("link", { name: /checkout/i })).toBeVisible();
+  });
 });

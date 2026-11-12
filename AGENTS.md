@@ -15,7 +15,7 @@ Run `npm install` once, then:
 - `npm run deno:check` and `npm run deno:test` validate Supabase Edge Functions.
 
 ## Coding Style & Naming Conventions
-This project uses TypeScript with strict compiler settings, React 18, and Tailwind CSS. Follow the existing style: 2-space indentation, double quotes, and semicolons. Use PascalCase for components and page files (`ProductCard.tsx`), camelCase for utilities (`adminAudit.ts`), and colocated `*.test.ts` or `*.test.tsx` files for tests. Prefer the `@/` alias for imports from `src/`.
+This project uses TypeScript with strict compiler settings, React 19, and Tailwind CSS 4. Follow the existing style: 2-space indentation, double quotes, and semicolons. Use PascalCase for components and page files (`ProductCard.tsx`), camelCase for utilities (`adminAudit.ts`), and colocated `*.test.ts` or `*.test.tsx` files for tests. Prefer the `@/` alias for imports from `src/`.
 
 ## Testing Guidelines
 Vitest runs in `jsdom` with Testing Library setup from `src/test/setup.ts`. Frontend tests should cover behavior, not implementation details, and use the existing naming pattern like `CartContext.test.tsx` or `format.test.ts`. Add or update tests whenever routing, cart logic, inventory behavior, validation, or admin auth changes. Use `npm run test:coverage` before larger merges.
@@ -25,3 +25,11 @@ Recent history follows Conventional Commit prefixes such as `feat:`, `fix:`, and
 
 ## Security & Configuration Tips
 Copy values from `.env.example` and keep service-role, PayFast, and Resend secrets out of the browser. Public values must use the `VITE_` prefix; server-only secrets belong in Supabase Edge Function secrets.
+
+## Deployment Readiness Standards
+- Use `npm ci` and committed lockfiles for repeatable releases. Use `npm run build:staging` or `npm run build:production` with the target environment's public configuration.
+- Treat the database as authoritative for prices, visibility, inventory and payment state. Show save failures; never report browser-only changes as committed server changes.
+- Keep related database changes atomic, including status history and audit records. Add a new migration instead of rewriting an applied migration.
+- Keep staging projects, payment sandbox credentials, cron destinations and frontend configuration isolated from production.
+- Test observable behavior and actual failure cases. Keep critical browser, database and security checks blocking; do not weaken assertions or add mocks solely to obtain passing checks. Avoid redundant tests and arbitrary coverage targets.
+- Prefer small shared helpers and existing patterns over new frameworks or speculative abstractions. Record verified results, deployment order and external release gates in `DEPLOYMENT_REVIEW.md` and `PRODUCTION_GO_LIVE.md`.

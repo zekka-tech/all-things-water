@@ -31,21 +31,41 @@ export function clientIp(req: Request): string {
  * bare SyntaxError so handlers can map it to a clean client error.
  */
 export async function readJson<T = unknown>(req: Request, maxBytes = MAX_JSON_BYTES): Promise<T> {
-  const declared = Number(req.headers.get("content-length") || "0");
-  if (declared > maxBytes) throw new HttpError(413, "Request body too large");
-
-  const text = await req.text();
-  if (new TextEncoder().encode(text).byteLength > maxBytes) {
-    throw new HttpError(413, "Request body too large");
-  }
+  const text = await readText(req, maxBytes);
   try {
     const parsed = JSON.parse(text);
-    if (parsed === null || typeof parsed !== "object") {
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
       throw new Error("not an object");
     }
     return parsed as T;
   } catch {
     throw new HttpError(400, "Invalid JSON body");
+  }
+}
+
+/** Stop reading as soon as the byte limit is exceeded, even without Content-Length. */
+export async function readText(req: Request, maxBytes = MAX_JSON_BYTES): Promise<string> {
+  const declared = Number(req.headers.get("content-length") || "0");
+  if (declared > maxBytes) throw new HttpError(413, "Request body too large");
+  if (!req.body) return "";
+  const reader = req.body.getReader();
+  const decoder = new TextDecoder();
+  let size = 0;
+  let text = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > maxBytes) {
+        await reader.cancel();
+        throw new HttpError(413, "Request body too large");
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    return text + decoder.decode();
+  } finally {
+    reader.releaseLock();
   }
 }
 

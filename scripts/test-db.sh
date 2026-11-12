@@ -59,9 +59,11 @@ for f in supabase/migrations/*.sql; do
   "${PSQL[@]}" "$DB_URL" -f "$f" >/dev/null
 done
 
-echo "Running supabase/tests/security.sql ..."
-if ! out=$("${PSQL[@]}" "$DB_URL" -f supabase/tests/security.sql 2>&1); then
-  echo "$out" >&2
-  exit 1
-fi
-echo "$out" | grep "all checks passed"
+for suite in supabase/tests/security.sql supabase/tests/readiness.sql; do
+  echo "Running $suite ..."
+  if ! out=$("${PSQL[@]}" "$DB_URL" -f "$suite" 2>&1); then
+    echo "$out" >&2
+    exit 1
+  fi
+  echo "$out" | grep "all checks passed"
+done

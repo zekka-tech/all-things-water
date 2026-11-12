@@ -22,7 +22,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { orderId, token } = await readJson<{ orderId?: unknown; token?: unknown }>(req);
+    const { orderId, token, action } = await readJson<{ orderId?: unknown; token?: unknown; action?: unknown }>(req);
+    if (action !== undefined && action !== "status") return errorResponse("Invalid action", 400, undefined, req);
     if (!isUuid(orderId)) {
       return errorResponse("orderId is required", 400, undefined, req);
     }
@@ -72,6 +73,10 @@ Deno.serve(async (req: Request) => {
     // cannot be probed.
     if (fetchErr || !order || !timingSafeEqual(String(order.checkout_token), token)) {
       return errorResponse("Order not found", 404, undefined, req);
+    }
+
+    if (action === "status") {
+      return jsonResponse({ status: order.status, orderRef: order.order_ref, total: Number(order.total) }, 200, req);
     }
 
     if (order.status === "expired") {

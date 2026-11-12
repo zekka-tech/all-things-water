@@ -32,19 +32,8 @@ export const products: Product[] = productCatalog.map((product) => {
     throw new Error(`Missing product image for ${product.id}`);
   }
 
-  return { ...product, image };
+  return { ...product, image, cost: 0 };
 });
-
-export const getProductBySlug = (slug: string): Product | undefined =>
-  products.find((p) => p.slug === slug);
-
-export const getRelatedProducts = (product: Product, limit = 3): Product[] =>
-  products
-    .filter((p) => p.id !== product.id && p.category === product.category)
-    .concat(products.filter((p) => p.id !== product.id && p.category !== product.category))
-    .slice(0, limit);
-
-export const featuredProducts = (): Product[] => products.filter((p) => p.featured);
 
 export const productReviews: Review[] = [
   { id: "r1", productId: "atw-001", author: "Thandi M.", rating: 5, date: "2026-05-12", comment: "Best investment for our office. Hot and cold water on tap — everyone loves it. Delivery was quick and installation was a breeze." },

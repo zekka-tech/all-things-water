@@ -60,6 +60,14 @@ export async function isCurrentUserAdmin(): Promise<boolean> {
 /** Subscribe to sign-in/sign-out changes. Returns an unsubscribe function. */
 export function onAdminAuthChange(callback: () => void): () => void {
   if (!supabase) return () => {};
-  const { data } = supabase.auth.onAuthStateChange(() => callback());
-  return () => data.subscription.unsubscribe();
+  // Defer callers that use getUser/getSession until the auth lock is released.
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  const { data } = supabase.auth.onAuthStateChange(() => {
+    clearTimeout(pending);
+    pending = setTimeout(callback, 0);
+  });
+  return () => {
+    clearTimeout(pending);
+    data.subscription.unsubscribe();
+  };
 }

@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import type { SupabaseClient } from "jsr:@supabase/supabase-js@2.107.0";
 
 const WINDOW_MS = 60_000; // 1 minute
 const MAX_REQUESTS = 10;

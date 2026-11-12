@@ -1,5 +1,7 @@
-export const ANALYTICS_ENABLED =
-  import.meta.env.VITE_ANALYTICS_ENABLED === "true";
+import { env } from "@/lib/env";
+import { hasTrackingConsent } from "@/lib/consent";
+
+export const ANALYTICS_ENABLED = env.analyticsEnabled;
 
 interface AnalyticsTracker {
   trackPageView(path: string): void;
@@ -24,9 +26,11 @@ export function setTracker(tracker: AnalyticsTracker) {
 }
 
 export function trackPageView(path: string) {
+  if (!ANALYTICS_ENABLED || !hasTrackingConsent()) return;
   activeTracker.trackPageView(path);
 }
 
 export function trackEvent(name: string, props?: Record<string, unknown>) {
+  if (!ANALYTICS_ENABLED || !hasTrackingConsent()) return;
   activeTracker.trackEvent(name, props);
 }
