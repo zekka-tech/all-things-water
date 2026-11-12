@@ -120,18 +120,20 @@ delivery proof. Static product reviews and business claims require owner approva
 
 ## Publication and merge status
 
-All reviewed changes are committed and pushed. The independently releasable
-tooling changes are proposed in [PR #45](https://github.com/zekka-tech/all-things-water/pull/45).
+As of 2026-11-12, GitHub Actions runner access is restored and `main` passes
+every CI job. The independently releasable tooling changes
+([PR #45](https://github.com/zekka-tech/all-things-water/pull/45)) and the
+dependency updates (#42, #43 react-router 8, #44) are merged into `main`. The
+immersive UI ([PR #47](https://github.com/zekka-tech/all-things-water/pull/47))
+is merged into this branch.
+
 The complete storefront/backend changes, rollout instructions and UI screenshot
 are proposed in [draft PR #46](https://github.com/zekka-tech/all-things-water/pull/46).
-
-Neither PR has been merged. GitHub Actions reports that jobs cannot start
-because recent account payments failed or the spending limit must be increased.
-The same restriction affects existing dependency PRs. Restore runner access
-and obtain passing checks rather than bypassing the failed checks. Cloudflare's
-tooling preview build passed; that does not verify database/payment behavior.
-PR #46 additionally requires the backend-first rollout above before it can
-safely publish the new frontend through the production branch.
+Its checks pass, but it must not merge until the backend-first rollout above is
+done: merging publishes the new frontend through the production branch. On
+2026-11-12 the production project still listed migrations 001–021 only (no
+`20261111064118_deployment_readiness`), and its Edge Functions predated this
+branch.
 
 References used for integration review:
 [Supabase function authorization](https://supabase.com/docs/guides/functions/auth),
