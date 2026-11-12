@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, all-things-water, staging]
   pull_request:
-    branches: [main]
+    branches: [main, all-things-water, staging]
+  workflow_dispatch:
 
 # Least privilege for the workflow token; no job needs to write.
 permissions:
@@ -29,6 +30,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
+      - run: npm run test:release
       - run: npm run build
       - uses: actions/upload-artifact@v7
         with:
@@ -48,9 +50,9 @@ jobs:
       - run: npm run deno:check
       - run: npm run deno:test
 
-  # ── Dependency audit (blocking on production deps) ─────────────────────
+  # ── Dependency audit (blocking on all dependencies) ───────────────────
   audit:
-    name: npm audit (prod, high+)
+    name: npm audit (all, moderate+)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -59,9 +61,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      # Only production dependencies gate the build; build-tool-only
-      # advisories (braces via Tailwind 3) are tracked in SECURITY_AUDIT.md.
-      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --audit-level=moderate
 
   # ── Secret scanning (blocking) ─────────────────────────────────────────
   secret-scan:
@@ -89,13 +89,10 @@ jobs:
       # runs supabase/tests/security.sql (RLS, grants, pricing, loyalty).
       - run: npm run test:db
 
-  # ── End-to-end purchase funnel + a11y (informational until tuned) ──────
+  # ── End-to-end purchase funnel + a11y (blocking) ───────────────────────
   e2e:
     name: playwright e2e + axe a11y
     runs-on: ubuntu-latest
-    # Flip continue-on-error to false once green in your environment to make
-    # this a hard gate.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

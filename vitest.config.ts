@@ -1,12 +1,12 @@
 import { defineConfig, mergeConfig } from "vitest/config";
-import baseConfig from "./vite.config";
+import baseConfig from "./vite.config.ts";
 
 export default mergeConfig(
   baseConfig,
   defineConfig({
     test: {
       pool: "threads",
-      singleThread: true,
+      maxWorkers: 1,
       globals: true,
       testTimeout: 10000,
       hookTimeout: 10000,
@@ -15,6 +15,7 @@ export default mergeConfig(
       include: ["src/**/*.{test,spec}.{ts,tsx}"],
       coverage: {
         provider: "v8",
+        include: ["src/**/*.{ts,tsx}"],
         exclude: [
           "node_modules",
           "dist",

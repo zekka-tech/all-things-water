@@ -7,22 +7,25 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:staging": "node scripts/check-release-env.mjs staging && tsc -b && vite build --mode staging",
+    "build:production": "node scripts/check-release-env.mjs production && tsc -b && vite build --mode production",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:release": "node --test scripts/check-release-env.test.mjs",
     "test:db": "bash scripts/test-db.sh",
     "typecheck": "tsc -b --noEmit",
     "e2e": "playwright test",
     "e2e:install": "playwright install --with-deps chromium",
     "e2e:ui": "playwright test --ui",
     "generate-sitemap": "npx tsx scripts/generate-sitemap.ts > public/sitemap.xml",
-    "deno:check": "cd supabase/functions && deno check **/*.ts",
-    "deno:test": "cd supabase/functions && deno test --allow-env --allow-net _shared/payfast.test.ts _shared/payfast-ip.test.ts _shared/subscription.test.ts _shared/turnstile.test.ts _shared/payfast-api.test.ts _shared/slo.test.ts _shared/http.test.ts _shared/order-validation.test.ts"
+    "deno:check": "cd supabase/functions && deno check --frozen **/*.ts",
+    "deno:test": "cd supabase/functions && deno test --frozen --allow-env --allow-net _shared/"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.100.1",
+    "@supabase/supabase-js": "2.100.1",
     "lucide-react": "^1.70.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -55,6 +58,7 @@
     "wrangler": "^4.151.1"
   },
   "overrides": {
+    "minimatch@>=7.0.0 <11.0.1": "^11.0.1",
     "minimatch@3": {
       "brace-expansion": "^1.1.21"
     },
