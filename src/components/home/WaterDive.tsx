@@ -143,7 +143,6 @@ export function WaterDive() {
       <div className="pointer-events-none absolute inset-0">
         <div className="sticky top-0 h-[100svh]">
           <WaterCanvas ref={water} className="absolute inset-0" />
-          <div className="grain" />
           {/* Depth gauge: a slim rail that fits the page margin beside the
               right-hand cards. Over deep water by the time it shows, so it's
               light-on-dark in both themes. */}
