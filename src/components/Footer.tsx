@@ -1,9 +1,20 @@
 import { useState } from "react";
-import { Link } from "react-router";
 import { Droplets, Mail, MapPin, Phone, ArrowRight, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 import { env } from "@/lib/env";
 import { validateEmail } from "@/lib/validation";
-import { CONTACT_EMAIL, CONTACT_EMAIL_HREF, CONTACT_PHONE, CONTACT_PHONE_HREF } from "@/lib/contact";
+import {
+  CONTACT_EMAIL,
+  CONTACT_EMAIL_HREF,
+  CONTACT_PHONE,
+  CONTACT_PHONE_HREF,
+  DEPOT_ADDRESS_PARTS,
+} from "@/lib/contact";
+import { TransitionLink as Link } from "./TransitionLink";
+import { WaterSurface } from "./WaterSurface";
+
+const linkClass = "text-white/75 transition-colors hover:text-white";
+const headingClass = "label text-brand-200";
+const iconClass = "grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/10 text-brand-200";
 
 export function Footer() {
   const [email, setEmail] = useState("");
@@ -43,26 +54,27 @@ export function Footer() {
   };
 
   return (
-    <footer className="mt-20 border-t border-ink-200 dark:border-ink-800">
-      {/* Brand gradient accent */}
-      <div className="h-1 bg-linear-to-r from-brand-500 via-brand-400 to-brand-600" />
+    // The page ends in deep water: a crest rises out of the footer's top edge.
+    <footer className="relative mt-32 bg-abyss text-white/75">
+      {/* `!` because WaterSurface's own colour sorts after text-abyss. */}
+      <WaterSurface className="bottom-full h-12 text-abyss!" />
 
-      <div className="bg-ink-50 dark:bg-ink-950">
+      <div>
         {/* Newsletter strip */}
-        <div className="border-b border-ink-200 dark:border-ink-800">
-          <div className="container-page flex flex-col gap-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+        <div className="border-b border-white/10">
+          <div className="container-page flex flex-col gap-4 py-10 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-display font-semibold text-ink-900 dark:text-white">
-                Stay hydrated — stay informed
+              <p className="font-display text-xl font-semibold tracking-tight text-white">
+                Stay hydrated — <span className="accent text-brand-200!">stay informed.</span>
               </p>
-              <p className="mt-0.5 text-sm text-ink-500 dark:text-ink-400">
+              <p className="mt-1 text-sm text-white/70">
                 Product updates and promotions, straight to your inbox.
               </p>
             </div>
 
             {/* ── Success state ── */}
             {state === "success" && (
-              <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 animate-fade-in">
+              <p className="text-sm font-semibold text-emerald-300 animate-fade-in">
                 ✓ Thanks for subscribing!
               </p>
             )}
@@ -135,22 +147,21 @@ export function Footer() {
         <div className="container-page grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div>
-            <Link to="/" className="flex items-center gap-2.5 font-extrabold">
+            <Link to="/" className="flex items-center gap-2.5 font-extrabold text-white">
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-linear-to-br from-brand-500 to-brand-700 text-white shadow-xs">
                 <Droplets className="h-5 w-5" />
               </span>
               <span className="font-display text-base">All Things Water</span>
             </Link>
-            <p className="mt-3 max-w-xs text-sm leading-relaxed text-ink-500 dark:text-ink-400">
-              Premium bottled water, dispensers and water filters — delivered across South Africa.
+            <p className="mt-3 max-w-xs text-sm leading-relaxed text-white/70">
+              Bottled water, dispensers and coolers — delivered from {DEPOT_ADDRESS_PARTS.addressLocality} across{" "}
+              {DEPOT_ADDRESS_PARTS.addressRegion} and nearby.
             </p>
           </div>
 
           {/* Shop */}
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
-              Shop
-            </h2>
+            <h2 className={headingClass}>Shop</h2>
             <ul className="mt-4 space-y-2.5 text-sm">
               {[
                 { to: "/shop", label: "All products" },
@@ -162,7 +173,7 @@ export function Footer() {
                 <li key={l.to}>
                   <Link
                     to={l.to}
-                    className="text-ink-600 transition-colors hover:text-brand-600 dark:text-ink-400 dark:hover:text-brand-300"
+                    className={linkClass}
                   >
                     {l.label}
                   </Link>
@@ -173,11 +184,10 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
-              Company
-            </h2>
+            <h2 className={headingClass}>Company</h2>
             <ul className="mt-4 space-y-2.5 text-sm">
               {[
+                { to: "/water", label: "Water guide" },
                 { to: "/about", label: "About us" },
                 { to: "/business", label: "For business" },
                 { to: "/contact", label: "Contact" },
@@ -186,7 +196,7 @@ export function Footer() {
                 <li key={l.to}>
                   <Link
                     to={l.to}
-                    className="text-ink-600 transition-colors hover:text-brand-600 dark:text-ink-400 dark:hover:text-brand-300"
+                    className={linkClass}
                   >
                     {l.label}
                   </Link>
@@ -197,60 +207,58 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-ink-500 dark:text-ink-400">
-              Get in touch
-            </h2>
-            <ul className="mt-4 space-y-3 text-sm text-ink-500 dark:text-ink-400">
+            <h2 className={headingClass}>Get in touch</h2>
+            <ul className="mt-4 space-y-3 text-sm">
               <li className="flex items-center gap-2.5">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
+                <span className={iconClass}>
                   <Phone className="h-3.5 w-3.5" />
                 </span>
-                <a href={CONTACT_PHONE_HREF} className="transition-colors hover:text-brand-600 dark:hover:text-brand-400">
+                <a href={CONTACT_PHONE_HREF} className={linkClass}>
                   {CONTACT_PHONE}
                 </a>
               </li>
               <li className="flex items-center gap-2.5">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
+                <span className={iconClass}>
                   <Mail className="h-3.5 w-3.5" />
                 </span>
-                <a href={CONTACT_EMAIL_HREF} className="transition-colors hover:text-brand-600 dark:hover:text-brand-400">
+                <a href={CONTACT_EMAIL_HREF} className={linkClass}>
                   {CONTACT_EMAIL}
                 </a>
               </li>
               <li className="flex items-center gap-2.5">
-                <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-brand-100 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400">
+                <span className={iconClass}>
                   <MapPin className="h-3.5 w-3.5" />
                 </span>
-                South Africa
+                {DEPOT_ADDRESS_PARTS.addressLocality}, {DEPOT_ADDRESS_PARTS.addressRegion}
               </li>
             </ul>
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="border-t border-ink-200 py-5 dark:border-ink-800">
-          <div className="container-page flex flex-col items-center justify-between gap-2 text-xs text-ink-500 dark:text-ink-400 sm:flex-row">
+        <div className="border-t border-white/10 py-5">
+          <div className="container-page flex flex-col items-center justify-between gap-2 text-xs text-white/70 sm:flex-row">
             <span>© {new Date().getFullYear()} All Things Water. All rights reserved.</span>
             <div className="flex items-center gap-4">
               <Link
                 to="/terms"
-                className="transition-colors hover:text-ink-600 dark:hover:text-ink-300"
+                className="transition-colors hover:text-white"
               >
                 Terms
               </Link>
               <Link
                 to="/privacy"
-                className="transition-colors hover:text-ink-600 dark:hover:text-ink-300"
+                className="transition-colors hover:text-white"
               >
                 Privacy
               </Link>
               <Link
                 to="/returns"
-                className="transition-colors hover:text-ink-600 dark:hover:text-ink-300"
+                className="transition-colors hover:text-white"
               >
                 Returns
               </Link>
-              <span className="text-ink-500 dark:text-ink-400">Proudly South African 🇿🇦</span>
+              <span>Proudly South African</span>
             </div>
           </div>
         </div>

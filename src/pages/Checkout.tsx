@@ -164,8 +164,8 @@ export function Checkout() {
       <>
         <Seo title="Checkout" />
         <div className="container-page py-24 text-center">
-          <h1 className="font-display text-2xl font-bold text-ink-900 dark:text-white">
-            Your cart is empty
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-ink-900 dark:text-white">
+            Your cart is <span className="accent">empty.</span>
           </h1>
           <Link to="/shop" className="btn-primary mt-6 px-5 py-3">
             Browse products
@@ -321,9 +321,7 @@ export function Checkout() {
     <>
       <Seo title="Checkout" />
       <form onSubmit={placeOrder} className="container-page py-10">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink-900 dark:text-white">
-          Checkout
-        </h1>
+        <h1 className="display-2">Checkout</h1>
 
         {/* Step indicators */}
         <div className="mt-6 flex items-center gap-0">

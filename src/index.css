@@ -130,7 +130,6 @@
   --animate-caustic-shift: caustic-shift 16s ease-in-out infinite alternate;
   --animate-ring-out: ring-out 0.7s ease-out forwards;
   --animate-blur-rise: blur-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
-  --animate-crest-drift: wave-drift 6s linear infinite;
 
   @keyframes blur-rise {
     0% {
