@@ -1,7 +1,8 @@
-import { Link } from "react-router";
-import { ArrowRight, ShoppingBag, Trash2, Truck } from "lucide-react";
+import { useId, useState } from "react";
+import { ArrowRight, Trash2, Truck } from "lucide-react";
 import { Seo } from "@/components/Seo";
 import { QuantityStepper } from "@/components/QuantityStepper";
+import { TransitionLink as Link } from "@/components/TransitionLink";
 import { useCart } from "@/context/CartContext";
 import { formatZAR } from "@/lib/format";
 import { DELIVERY_FEE, DELIVERY_THRESHOLD } from "@/lib/delivery";
@@ -15,16 +16,22 @@ export function Cart() {
   const shippingProgress = Math.min(100, (subtotal / DELIVERY_THRESHOLD) * 100);
   const freeShipping = subtotal >= DELIVERY_THRESHOLD && subtotal > 0;
 
+  // A splash when the cart crosses into free delivery (not on arrival).
+  const [wasFree, setWasFree] = useState(freeShipping);
+  const [splashes, setSplashes] = useState(0);
+  if (freeShipping !== wasFree) {
+    setWasFree(freeShipping);
+    if (freeShipping) setSplashes((n) => n + 1);
+  }
+
   if (items.length === 0) {
     return (
       <>
         <Seo title="Your cart" />
-        <div className="container-page flex flex-col items-center justify-center py-28 text-center">
-          <div className="icon-wrap-lg mb-2">
-            <ShoppingBag className="h-7 w-7" />
-          </div>
-          <h1 className="mt-4 font-display text-2xl font-bold text-ink-900 dark:text-white">
-            Your cart is empty
+        <div className="group container-page flex flex-col items-center justify-center py-24 text-center">
+          <EmptyGlass />
+          <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight text-ink-900 dark:text-white">
+            Your cart is <span className="accent">empty.</span>
           </h1>
           <p className="mt-2 text-ink-500 dark:text-ink-400">
             Add some water to get started.
@@ -41,8 +48,8 @@ export function Cart() {
     <>
       <Seo title="Your cart" />
       <div className="container-page py-10">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink-900 dark:text-white">
-          Your cart
+        <h1 className="display-2">
+          Your <span className="accent">cart.</span>
         </h1>
 
         {/* Free shipping progress */}
@@ -67,11 +74,35 @@ export function Cart() {
               </div>
               <span className="shrink-0 text-xs text-ink-500">{formatZAR(DELIVERY_THRESHOLD)}</span>
             </div>
-            <div className="progress-track mt-2">
+            {/* The tube fills by transform, not width, so it never re-lays out. */}
+            <div className="relative mt-3">
               <div
-                className={`progress-fill ${freeShipping ? "from-emerald-500 to-emerald-600" : ""}`}
-                style={{ width: `${shippingProgress}%` }}
-              />
+                role="progressbar"
+                aria-label="Progress to free delivery"
+                aria-valuemin={0}
+                aria-valuemax={DELIVERY_THRESHOLD}
+                aria-valuenow={Math.min(subtotal, DELIVERY_THRESHOLD)}
+                className="relative h-3 overflow-hidden rounded-full bg-brand-100/80 ring-1 ring-brand-200/80 ring-inset dark:bg-ink-800 dark:ring-white/10"
+              >
+                <div
+                  className={`absolute inset-0 rounded-full bg-linear-to-r transition-transform duration-700 ease-out-expo ${
+                    freeShipping ? "from-emerald-400 to-emerald-600" : "from-brand-400 to-brand-600"
+                  }`}
+                  style={{ transform: `translateX(${shippingProgress - 100}%)` }}
+                >
+                  {/* Meniscus at the waterline. */}
+                  <span className="absolute inset-y-0 right-0 w-2.5 rounded-full bg-white/55" />
+                </div>
+                {/* Glass highlight along the tube. */}
+                <span className="absolute inset-x-2 top-0.5 h-px rounded-full bg-white/70 dark:bg-white/15" />
+              </div>
+              {splashes > 0 && (
+                <span
+                  key={splashes}
+                  aria-hidden
+                  className="animate-ring-out pointer-events-none absolute right-0 top-1/2 h-6 w-6 -translate-y-1/2 translate-x-1/2 rounded-full border-2 border-emerald-400"
+                />
+              )}
             </div>
           </div>
         )}
@@ -180,5 +211,35 @@ export function Cart() {
         </div>
       </div>
     </>
+  );
+}
+
+/** An empty tumbler that fills with water while the empty state is hovered. */
+function EmptyGlass() {
+  const clip = useId();
+  return (
+    <svg viewBox="0 0 120 140" aria-hidden className="h-36 w-32 text-ink-300 dark:text-ink-600">
+      <defs>
+        <clipPath id={clip}>
+          <path d="M26 18h68l-8 106a8 8 0 0 1-8 7H42a8 8 0 0 1-8-7Z" />
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${clip})`}>
+        <g className="translate-y-[78%] transition-transform duration-1000 ease-out-expo group-hover:translate-y-[38%] motion-reduce:transition-none">
+          <path
+            d="M0 12q15-7 30 0t30 0 30 0 30 0V140H0Z"
+            className="fill-brand-300/70 dark:fill-brand-600/60"
+          />
+        </g>
+      </g>
+      <path
+        d="M26 18h68l-8 106a8 8 0 0 1-8 7H42a8 8 0 0 1-8-7Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinejoin="round"
+      />
+      <path d="M38 30l5 86" stroke="currentColor" strokeOpacity="0.5" strokeWidth="3" strokeLinecap="round" />
+    </svg>
   );
 }

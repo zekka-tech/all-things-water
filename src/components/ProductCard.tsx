@@ -1,19 +1,21 @@
-import { Link } from "react-router";
 import { ShoppingCart, Check } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Product } from "@/types";
 import { formatZAR } from "@/lib/format";
 import { useCart } from "@/context/CartContext";
 import { useCatalog } from "@/context/CatalogContext";
+import { flyToCart } from "@/lib/cartFlight";
 import { trackMarketing } from "@/lib/marketing";
 import { StockBadge } from "./StockBadge";
 import { OptimizedImage } from "./OptimizedImage";
 import { TiltCard } from "./TiltCard";
+import { TransitionLink } from "./TransitionLink";
 
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   const { ready } = useCatalog();
   const [added, setAdded] = useState(false);
+  const addRef = useRef<HTMLButtonElement>(null);
   const soldOut = product.stock <= 0;
 
   const handleAdd = () => {
@@ -25,6 +27,7 @@ export function ProductCard({ product }: { product: Product }) {
       price: product.price,
       quantity: 1,
     });
+    flyToCart(addRef.current);
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1400);
   };
@@ -35,14 +38,15 @@ export function ProductCard({ product }: { product: Product }) {
         {/* Image */}
         {/* The image stage stays light in dark mode: catalogue photos are shot
             on white, so a dark stage renders them as white rectangles. */}
-        <Link
+        <TransitionLink
           to={`/product/${product.slug}`}
           className="relative block aspect-square overflow-hidden bg-linear-to-b from-brand-50 via-brand-50/60 to-white"
         >
+          {/* parallax-front: the product lifts off the stage as the card tilts. */}
           <OptimizedImage
             src={product.image}
             alt={product.name}
-            wrapperClassName="h-full w-full bg-transparent"
+            wrapperClassName="parallax-front h-full w-full bg-transparent"
             className="h-full w-full object-contain p-6 mix-blend-multiply transition-transform duration-500 group-hover:scale-[1.06]"
           />
           <span className="absolute left-3 top-3">
@@ -53,20 +57,18 @@ export function ProductCard({ product }: { product: Product }) {
               Featured
             </span>
           )}
-        </Link>
+        </TransitionLink>
 
         {/* Body */}
         <div className="flex flex-1 flex-col p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">
-            {product.unit}
-          </p>
+          <p className="label text-brand-700 dark:text-brand-400">{product.unit}</p>
           <h3 className="mt-1 font-display font-semibold leading-snug text-ink-900 dark:text-ink-50">
-            <Link
+            <TransitionLink
               to={`/product/${product.slug}`}
               className="hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
             >
               {product.name}
-            </Link>
+            </TransitionLink>
           </h3>
           <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-ink-500 dark:text-ink-400">
             {product.tagline}
@@ -77,6 +79,7 @@ export function ProductCard({ product }: { product: Product }) {
               {formatZAR(product.price)}
             </span>
             <button
+              ref={addRef}
               type="button"
               onClick={handleAdd}
               disabled={soldOut || !ready}

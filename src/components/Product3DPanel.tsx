@@ -19,13 +19,6 @@ export function Product3DPanel({ src, alt }: Product3DPanelProps) {
     <div className="card relative aspect-square overflow-hidden bg-linear-to-b from-brand-50 via-brand-50/40 to-white dark:from-ink-800 dark:via-ink-800/60 dark:to-ink-900">
       <div aria-hidden className="caustic-bg absolute inset-0" />
 
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 grid place-items-center"
-      >
-        <div className="h-2/3 w-2/3 rounded-full bg-brand-200/40 blur-3xl dark:bg-brand-700/25" />
-      </div>
-
       <BubbleField className="opacity-70" />
 
       <TiltCard
