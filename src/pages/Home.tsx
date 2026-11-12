@@ -71,8 +71,12 @@ function CategoryPortal({
 
 export function Home() {
   const { products } = useCatalog();
-  // Four fill a row at every breakpoint; a fifth would sit alone.
-  const featured = products.filter((p) => p.featured).slice(0, 4);
+  // Four fill a row at every breakpoint; a fifth would sit alone. What can be
+  // ordered today leads, so a sold-out pick never displaces one in stock.
+  const featured = products
+    .filter((p) => p.featured)
+    .sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0))
+    .slice(0, 4);
 
   return (
     <>
